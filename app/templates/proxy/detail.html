@@ -98,7 +98,11 @@
         <div class="panel-head">
           <i class="bi bi-sliders" style="color:var(--primary);font-size:.9rem;"></i>
           <span class="panel-head-title">Settings</span>
-          <button type="button" class="btn-edit-profile ms-auto" id="editProxyBtn">
+          <a href="{{ url_for('proxy_manager.logs_proxy', proxy_id=proxy.id) }}"
+             class="btn-edit-profile ms-auto" style="text-decoration:none;">
+            <i class="bi bi-card-list"></i>Logs
+          </a>
+          <button type="button" class="btn-edit-profile" id="editProxyBtn">
             <i class="bi bi-pencil-fill"></i>Edit
           </button>
         </div>

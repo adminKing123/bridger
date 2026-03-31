@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}Logs — {{ proxy.name }} — Bridger{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:960px;">
+
+  <!-- ── Back + page title ───────────────────────────────────── -->
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{{ url_for('proxy_manager.detail_proxy', proxy_id=proxy.id) }}" class="btn-back" aria-label="Back">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h1 class="dash-title mb-0">Request Logs</h1>
+      <p class="dash-subtitle mb-0">
+        {{ proxy.name }}
+        <span class="proxy-log-slug">{{ proxy.access_url }}</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Stats strip ─────────────────────────────────────────── -->
+  <div class="proxy-log-stats mb-3">
+    <div class="proxy-log-stat">
+      <span class="proxy-log-stat-val">{{ logs.total }}</span>
+      <span class="proxy-log-stat-label">Total Requests</span>
+    </div>
+    <div class="proxy-log-stat">
+      {%- set ok_count = logs.items | selectattr('status_code', 'lt', 400) | list | length -%}
+      <span class="proxy-log-stat-val" style="color:var(--success);">{{ ok_count }}</span>
+      <span class="proxy-log-stat-label">2xx / 3xx</span>
+    </div>
+    <div class="proxy-log-stat">
+      {%- set err_count = logs.items | selectattr('status_code', 'ge', 400) | list | length -%}
+      <span class="proxy-log-stat-val" style="color:var(--danger);">{{ err_count }}</span>
+      <span class="proxy-log-stat-label">4xx / 5xx</span>
+    </div>
+    <div class="proxy-log-stat">
+      {%- set durations = logs.items | selectattr('duration_ms') | map(attribute='duration_ms') | list -%}
+      <span class="proxy-log-stat-val">
+        {{ (durations | sum / durations | length) | round(0) | int if durations else '—' }}
+        {% if durations %}<small>ms</small>{% endif %}
+      </span>
+      <span class="proxy-log-stat-label">Avg Duration</span>
+    </div>
+  </div>
+
+  <!-- ── Log table ───────────────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-head">
+      <i class="bi bi-card-list" style="color:var(--primary);font-size:.9rem;"></i>
+      <span class="panel-head-title">Log Entries</span>
+      <span class="proxy-log-count ms-auto">
+        Page {{ logs.page }} of {{ logs.pages }} &nbsp;·&nbsp; {{ logs.total }} total
+      </span>
+    </div>
+
+    {% if logs.items %}
+      <div class="panel-body p-0">
+        <div class="proxy-log-table-wrap">
+          <table class="proxy-log-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Status</th>
+                <th>Duration</th>
+                <th>Client IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for entry in logs.items %}
+                <tr>
+                  <!-- Time -->
+                  <td class="proxy-log-time" title="{{ entry.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}">
+                    {{ entry.created_at.strftime('%d %b %H:%M:%S') }}
+                  </td>
+
+                  <!-- Method -->
+                  <td>
+                    <span class="proxy-log-method proxy-log-method--{{ entry.method | lower }}">
+                      {{ entry.method }}
+                    </span>
+                  </td>
+
+                  <!-- Path -->
+                  <td class="proxy-log-path" title="{{ entry.path }}">
+                    {{ entry.path if entry.path else '/' }}
+                  </td>
+
+                  <!-- Status -->
+                  <td>
+                    {% if entry.status_code %}
+                      <span class="proxy-log-status
+                        {% if entry.status_code < 300 %}proxy-log-status--ok
+                        {% elif entry.status_code < 400 %}proxy-log-status--redirect
+                        {% elif entry.status_code < 500 %}proxy-log-status--client-err
+                        {% else %}proxy-log-status--server-err{% endif %}">
+                        {{ entry.status_code }}
+                      </span>
+                    {% else %}
+                      <span class="proxy-log-status proxy-log-status--unknown">—</span>
+                    {% endif %}
+                  </td>
+
+                  <!-- Duration -->
+                  <td class="proxy-log-duration">
+                    {% if entry.duration_ms is not none %}
+                      {{ entry.duration_ms }}<small>ms</small>
+                    {% else %}—{% endif %}
+                  </td>
+
+                  <!-- Client IP -->
+                  <td class="proxy-log-ip">{{ entry.client_ip }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      {% if logs.pages > 1 %}
+        <div class="panel-body" style="border-top:1px solid var(--border); padding-top:.75rem;">
+          <div class="proxy-log-pagination">
+            {% if logs.has_prev %}
+              <a href="{{ url_for('proxy_manager.logs_proxy', proxy_id=proxy.id, page=logs.prev_num) }}"
+                 class="proxy-log-page-btn">
+                <i class="bi bi-chevron-left"></i> Prev
+              </a>
+            {% else %}
+              <span class="proxy-log-page-btn disabled"><i class="bi bi-chevron-left"></i> Prev</span>
+            {% endif %}
+
+            <span class="proxy-log-page-info">{{ logs.page }} / {{ logs.pages }}</span>
+
+            {% if logs.has_next %}
+              <a href="{{ url_for('proxy_manager.logs_proxy', proxy_id=proxy.id, page=logs.next_num) }}"
+                 class="proxy-log-page-btn">
+                Next <i class="bi bi-chevron-right"></i>
+              </a>
+            {% else %}
+              <span class="proxy-log-page-btn disabled">Next <i class="bi bi-chevron-right"></i></span>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+
+    {% else %}
+      <div class="panel-body" style="text-align:center; padding:2.5rem 1rem; color:var(--text-3);">
+        <i class="bi bi-inbox" style="font-size:2rem; display:block; margin-bottom:.5rem;"></i>
+        No requests logged yet. Start the proxy and hit its URL to see logs here.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

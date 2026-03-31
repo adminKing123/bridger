@@ -13,6 +13,7 @@ POST           /proxies/<id>/edit    — save proxy edits
 POST           /proxies/<id>/delete  — permanently delete a proxy
 POST           /proxies/<id>/start   — set status=running
 POST           /proxies/<id>/stop    — set status=stopped
+GET            /proxies/<id>/logs    — paginated request log for a proxy
 """
 
 import logging
@@ -23,6 +24,7 @@ from flask_login import current_user, login_required
 from app import db
 from app.forms.proxy_forms import ProxyCreateForm, ProxyEditForm
 from app.models.proxy import ProxyConfig
+from app.models.proxy_log import ProxyLog
 
 logger = logging.getLogger(__name__)
 
@@ -178,3 +180,18 @@ def stop_proxy(proxy_id: int):
         logger.info("Proxy stopped: slug=%s", proxy.slug)
         flash(f"Proxy '{proxy.name}' has been stopped.", "info")
     return redirect(url_for("proxy_manager.detail_proxy", proxy_id=proxy.id))
+
+
+@proxy_manager_bp.route("/<int:proxy_id>/logs")
+@login_required
+def logs_proxy(proxy_id: int):
+    """Show paginated request logs for a proxy owned by the current user."""
+    proxy = _own_proxy_or_404(proxy_id)
+    page = request.args.get("page", 1, type=int)
+    logs = (
+        ProxyLog.query
+        .filter_by(proxy_id=proxy.id)
+        .order_by(ProxyLog.created_at.desc())
+        .paginate(page=page, per_page=50, error_out=False)
+    )
+    return render_template("proxy/logs.html", proxy=proxy, logs=logs)
