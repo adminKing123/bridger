@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+
+{% block title %}New HTTP Proxy — Bridger{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:620px;">
+
+  <!-- ── Back + page title ───────────────────────────────────── -->
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{{ url_for('proxy_manager.list_proxies') }}" class="btn-back" aria-label="Back">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h1 class="dash-title mb-0">New HTTP Proxy</h1>
+      <p class="dash-subtitle mb-0">Set up a proxy to forward requests to a target URL.</p>
+    </div>
+  </div>
+
+  <!-- ── Create form ─────────────────────────────────────────── -->
+  <form
+    method="POST"
+    action="{{ url_for('proxy_manager.create_proxy') }}"
+    novalidate
+    autocomplete="off"
+    data-loadable
+  >
+    {{ form.hidden_tag() }}
+
+    <!-- Section: Identity -->
+    <div class="panel mb-3">
+      <div class="panel-head">
+        <i class="bi bi-tag" style="color:var(--primary);font-size:.9rem;"></i>
+        <span class="panel-head-title">Proxy Identity</span>
+      </div>
+      <div class="panel-body">
+
+        <!-- Display name -->
+        <div class="mb-3">
+          {{ form.name.label(class="form-label") }}
+          {{ form.name(
+            class="form-control" + (" is-invalid" if form.name.errors else ""),
+            placeholder="e.g. My API Proxy",
+            autofocus=true
+          ) }}
+          {% for e in form.name.errors %}
+            <div class="invalid-feedback"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}</div>
+          {% endfor %}
+          <div class="form-text">A recognisable label shown in your proxy list.</div>
+        </div>
+
+        <!-- Slug -->
+        <div class="mb-3">
+          {{ form.slug.label(class="form-label") }}
+          <div class="proxy-slug-input-wrap">
+            {{ form.slug(
+              class="form-control font-mono" + (" is-invalid" if form.slug.errors else ""),
+              placeholder="swift-ray-a3f9",
+              id="proxy_slug"
+            ) }}
+            <button
+              type="button"
+              class="btn-regen-slug"
+              id="regenSlugBtn"
+              title="Generate a new random name"
+            >
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
+          </div>
+          {% for e in form.slug.errors %}
+            <div class="invalid-feedback" style="display:block;"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}</div>
+          {% endfor %}
+          <div class="form-text">
+            Lowercase letters, numbers, hyphens. 3–80 chars. Cannot be changed after creation.
+          </div>
+        </div>
+
+        <!-- Target URL -->
+        <div class="mb-0">
+          {{ form.target_url.label(class="form-label") }}
+          {{ form.target_url(
+            class="form-control font-mono" + (" is-invalid" if form.target_url.errors else ""),
+            placeholder="https://api.example.com",
+            id="proxy_target_url"
+          ) }}
+          {% for e in form.target_url.errors %}
+            <div class="invalid-feedback"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}</div>
+          {% endfor %}
+          <div class="form-text">All requests to your proxy URL will be forwarded here.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section: Access mode -->
+    <div class="panel mb-3">
+      <div class="panel-head">
+        <i class="bi bi-globe" style="color:var(--primary);font-size:.9rem;"></i>
+        <span class="panel-head-title">Access Mode</span>
+      </div>
+      <div class="panel-body">
+
+        <!-- Radio-style mode options -->
+        <div class="proxy-mode-selector" id="proxyModeGroup">
+          {% for subfield in form.proxy_type %}
+            <label class="proxy-mode-opt {{ 'active' if loop.first }}" for="{{ subfield.id }}">
+              {{ subfield() }}
+              <div class="proxy-mode-opt-icon">
+                <i class="bi bi-{{ 'link-45deg' if subfield.data == 'endpoint' else 'globe' }}"></i>
+              </div>
+              <div class="proxy-mode-opt-content">
+                <span class="proxy-mode-opt-title">{{ 'Endpoint' if subfield.data == 'endpoint' else 'Subdomain' }}</span>
+                <span class="proxy-mode-opt-example">
+                  {% if subfield.data == 'endpoint' %}/proxy/<em>name</em>/<br><small>path-based routing</small>{% else %}<em>name</em>.localhost/<br><small>subdomain routing</small>{% endif %}
+                </span>
+              </div>
+              {% if subfield.data == 'endpoint' %}
+                <span class="proxy-mode-opt-tag">Recommended</span>
+              {% endif %}
+            </label>
+          {% endfor %}
+        </div>
+        <p class="proxy-mode-subdomain-note" id="subdomainNote" style="display:none;">
+          <i class="bi bi-info-circle me-1"></i>Subdomain mode requires *.localhost DNS
+          (RFC&nbsp;6761 — supported automatically on most modern operating systems).
+        </p>
+
+        <!-- Live preview URL -->
+        <div class="proxy-url-preview mt-3">
+          <span class="proxy-url-preview-label">Your proxy URL will be:</span>
+          <code id="urlPreview" class="proxy-url-preview-val">http://localhost:5000/proxy/<span id="previewSlug">…</span>/</code>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section: Options -->
+    <div class="panel mb-3">
+      <div class="panel-head">
+        <i class="bi bi-sliders" style="color:var(--primary);font-size:.9rem;"></i>
+        <span class="panel-head-title">Options</span>
+      </div>
+      <div class="panel-body">
+
+        <div class="proxy-option-row">
+          <div class="proxy-option-text">
+            <span class="proxy-option-label">Bypass CORS</span>
+            <span class="proxy-option-desc">Adds <code>Access-Control-Allow-Origin: *</code> to every response.</span>
+          </div>
+          <label class="proxy-toggle">
+            {{ form.cors_bypass(class="proxy-toggle-input") }}
+            <span class="proxy-toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="proxy-option-row" style="border-bottom:none;">
+          <div class="proxy-option-text">
+            <span class="proxy-option-label">Skip Ngrok Warning</span>
+            <span class="proxy-option-desc">Adds the <code>ngrok-skip-browser-warning</code> header to upstream requests.</span>
+          </div>
+          <label class="proxy-toggle">
+            {{ form.skip_ngrok_warning(class="proxy-toggle-input") }}
+            <span class="proxy-toggle-track"></span>
+          </label>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section: Allowed Methods -->
+    <div class="panel mb-4">
+      <div class="panel-head">
+        <i class="bi bi-diagram-3" style="color:var(--primary);font-size:.9rem;"></i>
+        <span class="panel-head-title">Allowed Methods</span>
+      </div>
+      <div class="panel-body">
+        <p class="form-text mb-3">
+          Select which HTTP methods this proxy will forward. Unlisted methods receive a <code>405 Method Not Allowed</code>.
+        </p>
+        <div class="proxy-method-chips">
+          {% for subfield in form.allowed_methods %}
+            <label class="proxy-method-chip" for="{{ subfield.id }}">
+              {{ subfield(class="proxy-method-chip-input") }}
+              <span>{{ subfield.label.text }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        {% for e in form.allowed_methods.errors %}
+          <div class="text-danger small mt-2"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <button
+      type="submit"
+      class="btn-save w-100"
+      data-submit-btn
+      data-loading-text="Creating proxy…"
+    >
+      <i class="bi bi-plus-lg"></i>Create Proxy
+    </button>
+    <div class="text-center mt-2">
+      <a href="{{ url_for('proxy_manager.list_proxies') }}" class="btn-discard-link">
+        Cancel
+      </a>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  var slugInput   = document.getElementById('proxy_slug');
+  var previewSlug = document.getElementById('previewSlug');
+  var urlPreview  = document.getElementById('urlPreview');
+  var modeGroup   = document.getElementById('proxyModeGroup');
+  var modeCards   = modeGroup ? Array.from(modeGroup.querySelectorAll('.proxy-mode-opt')) : [];
+  var subdomainNote = document.getElementById('subdomainNote');
+  var regenBtn    = document.getElementById('regenSlugBtn');
+  var form        = document.querySelector('form[data-loadable]');
+
+  /* ── Slug validation rules (mirrors server-side) ── */
+  var SLUG_RE    = /^[a-z0-9][a-z0-9-]{1,78}[a-z0-9]$/;
+  var RESERVED   = new Set([
+    'proxy','proxies','auth','dashboard','profile','static','api',
+    'admin','login','logout','signup','register','www','mail','ftp',
+    'localhost','new'
+  ]);
+
+  function getSlugError(val) {
+    var slug = val.trim().toLowerCase();
+    if (!slug)                        return 'Proxy name is required.';
+    if (slug.length < 3)              return 'Proxy name must be at least 3 characters.';
+    if (slug.length > 80)             return 'Proxy name cannot exceed 80 characters.';
+    if (/\s/.test(slug))              return 'Proxy name cannot contain spaces.';
+    if (/[^a-z0-9-]/.test(slug))      return 'Only lowercase letters, numbers, and hyphens are allowed.';
+    if (slug.startsWith('-'))         return 'Proxy name cannot start with a hyphen.';
+    if (slug.endsWith('-'))           return 'Proxy name cannot end with a hyphen.';
+    if (/--/.test(slug))              return 'Proxy name cannot contain consecutive hyphens.';
+    if (RESERVED.has(slug))           return `'${slug}' is a reserved name. Please choose another.`;
+    return null; /* valid */
+  }
+
+  function showSlugError(msg) {
+    slugInput.classList.add('is-invalid');
+    var errEl = slugInput.closest('.mb-3').querySelector('.slug-js-err');
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.className = 'invalid-feedback slug-js-err';
+      slugInput.closest('.proxy-slug-input-wrap').insertAdjacentElement('afterend', errEl);
+    }
+    errEl.innerHTML = '<i class="bi bi-exclamation-circle-fill me-1"></i>' + msg;
+    errEl.style.display = 'flex';
+  }
+
+  function clearSlugError() {
+    slugInput.classList.remove('is-invalid');
+    var errEl = slugInput.closest('.mb-3').querySelector('.slug-js-err');
+    if (errEl) errEl.style.display = 'none';
+  }
+
+  /* ── Validate on submit ── */
+  if (form && slugInput) {
+    form.addEventListener('submit', function (e) {
+      var err = getSlugError(slugInput.value);
+      if (err) {
+        e.preventDefault();
+        showSlugError(err);
+        slugInput.focus();
+        return;
+      }
+      /* Normalise to lowercase before submit */
+      slugInput.value = slugInput.value.trim().toLowerCase();
+      clearSlugError();
+    });
+  }
+
+  /* Clear error once user starts editing again */
+  if (slugInput) {
+    slugInput.addEventListener('input', function () {
+      if (slugInput.classList.contains('is-invalid')) clearSlugError();
+      syncSlugPreview();
+      syncUrlPreview();
+    });
+  }
+
+  /* ── Live URL preview ── */
+  function syncSlugPreview() {
+    var val = slugInput ? slugInput.value.trim() || '…' : '…';
+    if (previewSlug) previewSlug.textContent = val;
+  }
+
+  function syncUrlPreview() {
+    var checked = modeGroup ? modeGroup.querySelector('input[type=radio]:checked') : null;
+    var mode = checked ? checked.value : 'endpoint';
+    var slug = slugInput ? (slugInput.value.trim() || '…') : '…';
+    var host = window.location.host;
+    if (mode === 'subdomain') {
+      var base = host.split(':')[0];
+      var port = host.includes(':') ? ':' + host.split(':')[1] : '';
+      urlPreview.textContent = 'http://' + slug + '.' + base + port + '/';
+    } else {
+      urlPreview.textContent = 'http://' + host + '/proxy/' + slug + '/';
+    }
+  }
+
+  function syncSubdomainNote() {
+    var checked = modeGroup ? modeGroup.querySelector('input[type=radio]:checked') : null;
+    if (subdomainNote) {
+      subdomainNote.style.display = (checked && checked.value === 'subdomain') ? 'block' : 'none';
+    }
+  }
+
+  modeCards.forEach(function (card) {
+    var radio = card.querySelector('input[type=radio]');
+    if (radio) {
+      radio.addEventListener('change', function () {
+        modeCards.forEach(function (c) { c.classList.remove('active'); });
+        card.classList.add('active');
+        syncUrlPreview();
+        syncSubdomainNote();
+      });
+    }
+  });
+  syncSubdomainNote();
+
+  /* ── Regen button ── */
+  var _adj  = ['swift','bright','calm','dark','fast','jade','keen','lean','mist','nova','open','teal','bold','crisp','gold'];
+  var _noun = ['fox','ray','hub','net','arc','key','link','node','path','port','gate','beam','wave','core','edge'];
+  function randHex(n) {
+    var s = '';
+    for (var i = 0; i < n; i++) s += Math.floor(Math.random() * 16).toString(16);
+    return s;
+  }
+  function genSlug() {
+    return _adj[Math.floor(Math.random() * _adj.length)] + '-' +
+           _noun[Math.floor(Math.random() * _noun.length)] + '-' +
+           randHex(4);
+  }
+  if (regenBtn && slugInput) {
+    regenBtn.addEventListener('click', function () {
+      slugInput.value = genSlug();
+      clearSlugError();
+      syncSlugPreview();
+      syncUrlPreview();
+    });
+  }
+
+  /* Initial sync */
+  syncSlugPreview();
+  syncUrlPreview();
+})();
+</script>
+{% endblock %}

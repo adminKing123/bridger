@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}HTTP Proxies — Bridger{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:960px;">
+
+  <!-- ── Page header ─────────────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <h1 class="dash-title">HTTP Proxies</h1>
+      <p class="dash-subtitle">Forward requests through Bridger to bypass CORS.</p>
+    </div>
+    <a
+      href="{{ url_for('proxy_manager.create_proxy') }}"
+      class="btn-save"
+      style="text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;"
+    >
+      <i class="bi bi-plus-lg"></i>New Proxy
+    </a>
+  </div>
+
+  {% if proxies %}
+
+    <div class="panel">
+      <div class="proxy-table-wrap">
+        <table class="proxy-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Proxy URL</th>
+              <th>Target</th>
+              <th>Mode</th>
+              <th>Status</th>
+              <th class="proxy-table-actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for proxy in proxies %}
+              <tr>
+                <!-- Name -->
+                <td>
+                  <a
+                    href="{{ url_for('proxy_manager.detail_proxy', proxy_id=proxy.id) }}"
+                    class="proxy-table-name"
+                  >{{ proxy.name }}</a>
+                  <div style="font-size:.7rem;color:var(--text-3);margin-top:.1rem;">
+                    {{ proxy.created_at.strftime('%d %b %Y') }}
+                  </div>
+                </td>
+
+                <!-- Proxy URL -->
+                <td>
+                  <code class="proxy-table-slug">
+                    {% if proxy.proxy_type == 'subdomain' %}
+                      {{ proxy.slug }}.localhost/
+                    {% else %}
+                      /proxy/{{ proxy.slug }}/
+                    {% endif %}
+                  </code>
+                </td>
+
+                <!-- Target -->
+                <td class="proxy-table-target">{{ proxy.target_url }}</td>
+
+                <!-- Mode -->
+                <td>
+                  <span class="proxy-type-badge {{ proxy.proxy_type }}">
+                    <i class="bi bi-{{ 'globe' if proxy.proxy_type == 'subdomain' else 'link-45deg' }}"></i>
+                    {{ proxy.type_label }}
+                  </span>
+                </td>
+
+                <!-- Status -->
+                <td>
+                  <span class="proxy-status-badge {{ proxy.status }}">
+                    <span class="proxy-status-dot"></span>
+                    {{ 'Running' if proxy.is_running else 'Stopped' }}
+                  </span>
+                </td>
+
+                <!-- Actions -->
+                <td class="proxy-table-actions-col">
+                  <div class="d-flex gap-2 align-items-center">
+                    <a
+                      href="{{ url_for('proxy_manager.detail_proxy', proxy_id=proxy.id) }}"
+                      class="btn-proxy-action view"
+                      title="View details"
+                    >
+                      <i class="bi bi-box-arrow-up-right"></i>
+                    </a>
+                    <form
+                      method="POST"
+                      action="{{ url_for(
+                        'proxy_manager.stop_proxy' if proxy.is_running else 'proxy_manager.start_proxy',
+                        proxy_id=proxy.id
+                      ) }}"
+                      style="display:contents;"
+                    >
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button
+                        type="submit"
+                        class="btn-proxy-action {{ 'stop' if proxy.is_running else 'start' }}"
+                        title="{{ 'Stop proxy' if proxy.is_running else 'Start proxy' }}"
+                      >
+                        <i class="bi bi-{{ 'stop-circle' if proxy.is_running else 'play-circle' }}"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  {% else %}
+
+    <!-- Empty state -->
+    <div class="dash-empty-panel">
+      <div class="dash-empty-icon">
+        <i class="bi bi-arrow-left-right"></i>
+      </div>
+      <h2 class="dash-empty-title">No proxies yet</h2>
+      <p class="dash-empty-body">
+        Create your first HTTP proxy to forward requests, bypass CORS restrictions,
+        and skip third-party browser warnings.
+      </p>
+      <a
+        href="{{ url_for('proxy_manager.create_proxy') }}"
+        class="btn-auth btn-ind"
+        style="display:inline-flex;text-decoration:none;font-size:.875rem;"
+      >
+        <i class="bi bi-plus-lg"></i>Create your first proxy
+      </a>
+    </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}

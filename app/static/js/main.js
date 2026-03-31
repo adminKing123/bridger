@@ -329,6 +329,43 @@
     }
     showStep(errorStep);
   }
+  /* ── Copy-to-clipboard for proxy URLs ───────────────────────────────────── */
+  function initProxyCopy() {
+    document.querySelectorAll('[data-copy-target]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var targetId = btn.getAttribute('data-copy-target');
+        var el = document.getElementById(targetId);
+        if (!el) return;
+
+        var text = el.textContent || el.value || '';
+        if (!navigator.clipboard) {
+          /* Fallback for older browsers */
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity  = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          _setCopied(btn);
+          return;
+        }
+        navigator.clipboard.writeText(text).then(function () { _setCopied(btn); });
+      });
+    });
+
+    function _setCopied(btn) {
+      var orig = btn.innerHTML;
+      btn.innerHTML = '<i class="bi bi-check-lg"></i>Copied!';
+      btn.classList.add('copied');
+      setTimeout(function () {
+        btn.innerHTML = orig;
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+  }
+
   /* ── Profile edit toggle ─────────────────────────────────────────────────── */
   function initProfileEdit() {
     var view      = document.getElementById('profileView');
@@ -415,5 +452,6 @@
     initStepForm();
     initLogoutModal();
     initProfileEdit();
+    initProxyCopy();
   });
 })();

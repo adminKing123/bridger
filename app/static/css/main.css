@@ -1020,6 +1020,592 @@ body {
   margin-right: auto;
 }
 
+/* Service entry cards on dashboard */
+.dash-service-card {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+  color: var(--text);
+}
+.dash-service-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-ring);
+  transform: translateY(-2px);
+  color: var(--text);
+}
+.dash-service-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+.dash-service-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0 0 0.1rem;
+}
+.dash-service-desc {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  margin: 0;
+}
+
+/* ── 14b. HTTP Proxy pages ──────────────────────────────────── */
+
+/* Back link / button */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-size: 0.9rem;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: border-color var(--transition), color var(--transition);
+}
+.btn-back:hover { border-color: var(--primary); color: var(--primary); }
+
+.proxy-back-link {
+  font-size: 0.84rem;
+  color: var(--text-3);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition);
+}
+.proxy-back-link:hover { color: var(--primary); }
+
+/* Proxy hero (detail page) */
+.proxy-hero {
+  background: linear-gradient(135deg, #312e81 0%, #4338ca 55%, #4f46e5 100%);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem 1.75rem;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.proxy-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 80% -20%, rgba(255,255,255,.08), transparent 65%);
+  pointer-events: none;
+}
+.proxy-hero-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+.proxy-hero-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.2rem;
+  letter-spacing: -0.02em;
+}
+.proxy-hero-slug {
+  font-size: 0.78rem;
+  opacity: 0.72;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  margin: 0 0 0.625rem;
+}
+
+/* Status badge */
+.proxy-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.proxy-status-badge.running {
+  background: rgba(220, 252, 231, 0.85);
+  color: #15803d;
+}
+/* On dark hero, use white-tinted running badge */
+.proxy-hero .proxy-status-badge.running {
+  background: rgba(255,255,255,.2);
+  color: #fff;
+}
+.proxy-status-badge.stopped {
+  background: rgba(241, 245, 249, 0.9);
+  color: #64748b;
+}
+.proxy-hero .proxy-status-badge.stopped {
+  background: rgba(255,255,255,.14);
+  color: rgba(255,255,255,.75);
+}
+.proxy-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.proxy-status-badge.running .proxy-status-dot {
+  animation: proxy-pulse 1.6s ease-in-out infinite;
+}
+
+/* Type badge */
+.proxy-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: var(--radius);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.proxy-type-badge.endpoint  { background: var(--primary-light); color: var(--primary); }
+.proxy-type-badge.subdomain { background: #ede9fe; color: #7c3aed; }
+.proxy-hero .proxy-type-badge {
+  background: rgba(255,255,255,.18);
+  color: #fff;
+}
+
+/* Start / Stop lifecycle button (hero) */
+.btn-proxy-lifecycle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.25rem;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+}
+.btn-proxy-lifecycle.start {
+  background: rgba(255,255,255,.92);
+  color: #16a34a;
+}
+.btn-proxy-lifecycle.start:hover { background: #fff; transform: translateY(-1px); }
+.btn-proxy-lifecycle.stop {
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,.35);
+}
+.btn-proxy-lifecycle.stop:hover { background: rgba(239,68,68,.75); border-color: transparent; }
+
+/* Proxy list table */
+.proxy-table-wrap { overflow-x: auto; }
+.proxy-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.proxy-table thead tr {
+  border-bottom: 2px solid var(--border);
+}
+.proxy-table th {
+  padding: 0.75rem 1.25rem;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.proxy-table td {
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.proxy-table tbody tr:last-child td { border-bottom: none; }
+.proxy-table tbody tr:hover td { background: var(--bg); }
+.proxy-table-name {
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.proxy-table-name:hover { color: var(--primary); }
+.proxy-table-slug {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.75rem;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 0.18rem 0.45rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.proxy-table-target {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-2);
+  font-size: 0.8rem;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+.proxy-table-actions-col { width: 90px; }
+
+/* Proxy list cards (kept for reference, no longer used in list view) */
+.proxy-card { margin-bottom: 0; }
+.proxy-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.proxy-card-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.2rem;
+}
+.proxy-card-slug {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  background: var(--bg);
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+.proxy-card-body { padding: 0.875rem 1.25rem 1.25rem; }
+.proxy-card-target {
+  font-size: 0.79rem;
+  color: var(--text-2);
+  margin: 0.4rem 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* List card action buttons */
+.btn-proxy-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: var(--radius);
+  font-size: 0.79rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  transition: background var(--transition), color var(--transition);
+}
+.btn-proxy-action.view    { background: var(--primary-light); color: var(--primary); }
+.btn-proxy-action.view:hover  { background: #e0e7ff; }
+.btn-proxy-action.start   { background: #dcfce7; color: #16a34a; }
+.btn-proxy-action.start:hover { background: #bbf7d0; }
+.btn-proxy-action.stop    { background: #fee2e2; color: #dc2626; }
+.btn-proxy-action.stop:hover  { background: #fecaca; }
+
+/* Access URL display box */
+.proxy-url-box {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.75rem;
+}
+.proxy-url-text {
+  flex: 1;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.82rem;
+  color: var(--text);
+  word-break: break-all;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.btn-copy-url {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.22rem 0.55rem;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.btn-copy-url:hover  { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+.btn-copy-url.copied { color: #16a34a; border-color: #16a34a; background: #f0fdf4; }
+
+/* Slug input with regen button */
+.proxy-slug-input-wrap {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.proxy-slug-input-wrap .form-control { flex: 1; }
+.btn-regen-slug {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-3);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition), transform 0.2s;
+}
+.btn-regen-slug:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+.btn-regen-slug:active { transform: rotate(180deg); }
+
+/* Access mode selector */
+.proxy-mode-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+}
+.proxy-mode-opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  background: var(--surface);
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+  user-select: none;
+}
+.proxy-mode-opt input[type=radio] {
+  /* hidden — selection shown via border/background */
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.proxy-mode-opt:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.proxy-mode-opt.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 3px var(--primary-ring);
+}
+.proxy-mode-opt-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+  transition: background 0.18s, color 0.18s;
+}
+.proxy-mode-opt.active .proxy-mode-opt-icon,
+.proxy-mode-opt:hover .proxy-mode-opt-icon {
+  background: rgba(79, 70, 229, 0.12);
+  color: var(--primary);
+}
+.proxy-mode-opt-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.proxy-mode-opt-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.proxy-mode-opt-example {
+  font-size: 0.73rem;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  color: var(--text-3);
+}
+.proxy-mode-opt.active .proxy-mode-opt-example { color: var(--primary); }
+/* Recommended tag */
+.proxy-mode-opt-tag {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.625rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--primary);
+  color: #fff;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+}
+/* Subdomain note */
+.proxy-mode-subdomain-note {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius);
+  padding: 0.6rem 0.875rem;
+  margin-top: 0.625rem;
+  margin-bottom: 0;
+}
+.proxy-mode-subdomain-note code {
+  font-size: 0.75rem;
+  background: rgba(0,0,0,.06);
+  padding: 0.08rem 0.3rem;
+  border-radius: 3px;
+}
+@media (max-width: 480px) {
+  .proxy-mode-selector { grid-template-columns: 1fr; }
+}
+
+/* Live URL preview */
+.proxy-url-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.proxy-url-preview-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+}
+.proxy-url-preview-val {
+  font-size: 0.82rem;
+  color: var(--primary);
+  background: var(--primary-light);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.65rem;
+  word-break: break-all;
+}
+
+/* Options toggle rows */
+.proxy-option-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.proxy-option-text { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.proxy-option-label { font-size: 0.875rem; font-weight: 600; color: var(--text); }
+.proxy-option-desc  { font-size: 0.76rem; color: var(--text-3); }
+.proxy-option-desc code { font-size: 0.72rem; background: var(--bg); padding: 0.1rem 0.3rem; border-radius: 3px; }
+
+/* Toggle switch */
+.proxy-toggle { position: relative; display: inline-block; flex-shrink: 0; }
+.proxy-toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
+.proxy-toggle-track {
+  display: block;
+  width: 40px;
+  height: 22px;
+  background: var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+}
+.proxy-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: transform 0.2s;
+}
+.proxy-toggle-input:checked + .proxy-toggle-track { background: var(--primary); }
+.proxy-toggle-input:checked + .proxy-toggle-track::after { transform: translateX(18px); }
+
+/* Monospace helper class */
+.font-mono { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; }
+
+/* ── Allowed-methods chip selector ──────────────────────────── */
+/* Wraps a row of pill-shaped method chips (used in create + edit forms). */
+.proxy-method-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+/* Each chip is a <label> containing a hidden checkbox + visible <span>. */
+.proxy-method-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-2);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.proxy-method-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+/* Hide the underlying checkbox; visual state driven by :has() or .disabled */
+.proxy-method-chip-input {
+  display: none;
+}
+/* Checked state: chip becomes filled/highlighted */
+.proxy-method-chip:has(.proxy-method-chip-input:checked) {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+/* Disabled/inactive state (view mode only) */
+.proxy-method-chip.disabled {
+  opacity: 0.38;
+  text-decoration: line-through;
+  cursor: default;
+}
+.proxy-method-chip.disabled:hover {
+  border-color: var(--border);
+  color: var(--text-2);
+}
+
 /* ── 14. Keyframes ──────────────────────────────────────────── */
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(14px); }
@@ -1043,6 +1629,11 @@ body {
   0%,100% { transform: translateX(0); }
   20%,60%  { transform: translateX(-4px); }
   40%,80%  { transform: translateX(4px); }
+}
+
+@keyframes proxy-pulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.35; }
 }
 
 /* ── 15. Responsive ─────────────────────────────────────────── */

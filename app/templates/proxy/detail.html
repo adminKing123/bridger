@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ proxy.name }} — Bridger Proxy{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:840px;">
+
+  <!-- ── Back link ───────────────────────────────────────────── -->
+  <div class="mb-3">
+    <a href="{{ url_for('proxy_manager.list_proxies') }}" class="proxy-back-link">
+      <i class="bi bi-arrow-left me-1"></i>All Proxies
+    </a>
+  </div>
+
+  <!-- ── Proxy hero ──────────────────────────────────────────── -->
+  <div class="proxy-hero mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+
+      <!-- Left: icon + identity -->
+      <div class="d-flex align-items-center gap-3">
+        <div class="proxy-hero-icon">
+          <i class="bi bi-{{ 'globe' if proxy.proxy_type == 'subdomain' else 'link-45deg' }}"></i>
+        </div>
+        <div>
+          <h1 class="proxy-hero-name">{{ proxy.name }}</h1>
+          <p class="proxy-hero-slug">
+            {% if proxy.proxy_type == 'subdomain' %}
+              {{ proxy.slug }}.localhost/
+            {% else %}
+              /proxy/{{ proxy.slug }}/
+            {% endif %}
+          </p>
+          <div class="d-flex gap-2 flex-wrap">
+            <span class="proxy-status-badge {{ proxy.status }}">
+              <span class="proxy-status-dot"></span>
+              {{ 'Running' if proxy.is_running else 'Stopped' }}
+            </span>
+            <span class="proxy-type-badge {{ proxy.proxy_type }}">
+              {{ proxy.type_label }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Start / Stop button -->
+      <form
+        method="POST"
+        action="{{ url_for(
+          'proxy_manager.stop_proxy' if proxy.is_running else 'proxy_manager.start_proxy',
+          proxy_id=proxy.id
+        ) }}"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-proxy-lifecycle {{ 'stop' if proxy.is_running else 'start' }}">
+          <i class="bi bi-{{ 'stop-circle-fill' if proxy.is_running else 'play-circle-fill' }}"></i>
+          {{ 'Stop Proxy' if proxy.is_running else 'Start Proxy' }}
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ── Access URL ──────────────────────────────────────────── -->
+  <div class="panel mb-3">
+    <div class="panel-head">
+      <i class="bi bi-link-45deg" style="color:var(--primary);font-size:.9rem;"></i>
+      <span class="panel-head-title">Access URL</span>
+    </div>
+    <div class="panel-body">
+      <div class="proxy-url-box">
+        <span class="proxy-url-text" id="proxyAccessUrl">{{ proxy.access_url }}</span>
+        <button
+          type="button"
+          class="btn-copy-url"
+          id="copyUrlBtn"
+          data-copy-target="proxyAccessUrl"
+          title="Copy URL"
+        >
+          <i class="bi bi-clipboard"></i>Copy
+        </button>
+      </div>
+      {% if proxy.proxy_type == 'subdomain' %}
+        <p class="form-text mt-2 mb-0">
+          <i class="bi bi-info-circle me-1"></i>
+          Subdomain routing works automatically on most modern OSes (RFC 6761).
+          If it doesn't resolve, add <code>127.0.0.1 {{ proxy.slug }}.localhost</code> to your hosts file.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Main two-column layout ──────────────────────────────── -->
+  <div class="row g-3">
+
+    <!-- Left: Settings (view / edit toggle) -->
+    <div class="col-md-7">
+      <div class="panel">
+        <div class="panel-head">
+          <i class="bi bi-sliders" style="color:var(--primary);font-size:.9rem;"></i>
+          <span class="panel-head-title">Settings</span>
+          <button type="button" class="btn-edit-profile ms-auto" id="editProxyBtn">
+            <i class="bi bi-pencil-fill"></i>Edit
+          </button>
+        </div>
+
+        <!-- View mode (default) -->
+        <div id="proxyView" class="panel-body">
+          <div class="profile-view-field">
+            <span class="profile-view-label">Name</span>
+            <span class="profile-view-val">{{ proxy.name }}</span>
+          </div>
+          <div class="profile-view-field">
+            <span class="profile-view-label">Target URL</span>
+            <span class="profile-view-val" style="font-family:monospace;font-size:.83rem;word-break:break-all;white-space:normal;">{{ proxy.target_url }}</span>
+          </div>
+          <div class="profile-view-field">
+            <span class="profile-view-label">Bypass CORS</span>
+            <span class="profile-view-val">
+              {% if proxy.cors_bypass %}
+                <span style="color:var(--success);font-weight:600;font-size:.84rem;"><i class="bi bi-check-circle-fill me-1"></i>Enabled</span>
+              {% else %}
+                <span style="color:var(--text-3);font-size:.84rem;">Disabled</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="profile-view-field" style="border-bottom:none;">
+            <span class="profile-view-label">Ngrok Skip</span>
+            <span class="profile-view-val">
+              {% if proxy.skip_ngrok_warning %}
+                <span style="color:var(--success);font-weight:600;font-size:.84rem;"><i class="bi bi-check-circle-fill me-1"></i>Enabled</span>
+              {% else %}
+                <span style="color:var(--text-3);font-size:.84rem;">Disabled</span>
+              {% endif %}
+            </span>
+          </div>
+          <!-- Allowed methods chips (read-only) -->
+          <div class="profile-view-field" style="align-items:flex-start;padding-top:.85rem;border-bottom:none;">
+            <span class="profile-view-label" style="padding-top:.15rem;">Methods</span>
+            <div class="proxy-method-chips" style="flex:1;">
+              {% set active_methods = proxy.allowed_methods_list() %}
+              {% for m in ['GET','POST','PUT','DELETE','PATCH','OPTIONS'] %}
+                <span class="proxy-method-chip {{ '' if m in active_methods else 'disabled' }}">
+                  {{ m }}
+                </span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit form (hidden by default; opens on "Edit" click or server errors) -->
+        <div id="proxyEditForm" class="panel-body" style="display:none;">
+          <form
+            method="POST"
+            action="{{ url_for('proxy_manager.edit_proxy', proxy_id=proxy.id) }}"
+            novalidate
+            autocomplete="off"
+            data-loadable
+          >
+            {{ edit_form.hidden_tag() }}
+
+            <div class="mb-3">
+              {{ edit_form.name.label(class="form-label") }}
+              {{ edit_form.name(
+                class="form-control" + (" is-invalid" if edit_form.name.errors else ""),
+                placeholder="Display name"
+              ) }}
+              {% for e in edit_form.name.errors %}
+                <div class="invalid-feedback"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="mb-3">
+              {{ edit_form.target_url.label(class="form-label") }}
+              {{ edit_form.target_url(
+                class="form-control font-mono" + (" is-invalid" if edit_form.target_url.errors else ""),
+                placeholder="https://api.example.com"
+              ) }}
+              {% for e in edit_form.target_url.errors %}
+                <div class="invalid-feedback"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="proxy-option-row">
+              <div class="proxy-option-text">
+                <span class="proxy-option-label">Bypass CORS</span>
+                <span class="proxy-option-desc">Adds <code>Access-Control-Allow-Origin: *</code></span>
+              </div>
+              <label class="proxy-toggle">
+                {{ edit_form.cors_bypass(class="proxy-toggle-input") }}
+                <span class="proxy-toggle-track"></span>
+              </label>
+            </div>
+
+            <div class="proxy-option-row" style="border-bottom:none;margin-bottom:1rem;">
+              <div class="proxy-option-text">
+                <span class="proxy-option-label">Skip Ngrok Warning</span>
+                <span class="proxy-option-desc">Adds <code>ngrok-skip-browser-warning</code> header</span>
+              </div>
+              <label class="proxy-toggle">
+                {{ edit_form.skip_ngrok_warning(class="proxy-toggle-input") }}
+                <span class="proxy-toggle-track"></span>
+              </label>
+            </div>
+
+            <!-- Allowed Methods checkboxes -->
+            <div class="mb-3">
+              <label class="form-label">{{ edit_form.allowed_methods.label.text }}</label>
+              <div class="proxy-method-chips">
+                {% for subfield in edit_form.allowed_methods %}
+                  <label class="proxy-method-chip" for="{{ subfield.id }}">
+                    {{ subfield(class="proxy-method-chip-input") }}
+                    <span>{{ subfield.label.text }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+              {% for e in edit_form.allowed_methods.errors %}
+                <div class="text-danger small mt-2"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}</div>
+              {% endfor %}
+            </div>
+
+            <div class="profile-form-actions">
+              <button type="button" class="btn-profile-discard" id="discardProxyBtn">Discard</button>
+              <button type="submit" class="btn-save" data-submit-btn data-loading-text="Saving…">
+                <i class="bi bi-check-lg"></i>Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Right: Proxy info tiles -->
+    <div class="col-md-5">
+      <div class="panel">
+        <div class="panel-head">
+          <i class="bi bi-info-circle" style="color:var(--text-2);font-size:.9rem;"></i>
+          <span class="panel-head-title">Proxy Info</span>
+        </div>
+        <div class="panel-body p-0">
+
+          <div class="info-tile">
+            <div class="info-tile-icon" style="background:var(--primary-light);color:var(--primary);">
+              <i class="bi bi-hash"></i>
+            </div>
+            <div class="info-tile-body">
+              <span class="info-tile-label">Slug</span>
+              <span class="info-tile-val" style="font-family:monospace;">{{ proxy.slug }}</span>
+            </div>
+          </div>
+
+          <div class="info-tile">
+            <div class="info-tile-icon" style="background:{% if proxy.proxy_type == 'subdomain' %}#ede9fe;color:#7c3aed;{% else %}#e0f2fe;color:#0369a1;{% endif %}">
+              <i class="bi bi-{{ 'globe' if proxy.proxy_type == 'subdomain' else 'link-45deg' }}"></i>
+            </div>
+            <div class="info-tile-body">
+              <span class="info-tile-label">Access Mode</span>
+              <span class="info-tile-val">{{ proxy.type_label }}</span>
+            </div>
+          </div>
+
+          <div class="info-tile">
+            <div class="info-tile-icon" style="background:{% if proxy.is_running %}#dcfce7;color:#16a34a;{% else %}#f1f5f9;color:#64748b;{% endif %}">
+              <i class="bi bi-{{ 'play-circle-fill' if proxy.is_running else 'stop-circle' }}"></i>
+            </div>
+            <div class="info-tile-body">
+              <span class="info-tile-label">Status</span>
+              <span class="info-tile-val" style="font-weight:600;color:{% if proxy.is_running %}var(--success){% else %}var(--text-3){% endif %};">
+                {{ 'Running' if proxy.is_running else 'Stopped' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="info-tile" style="border-bottom:none;">
+            <div class="info-tile-icon" style="background:#fef9c3;color:#a16207;">
+              <i class="bi bi-calendar3"></i>
+            </div>
+            <div class="info-tile-body">
+              <span class="info-tile-label">Created</span>
+              <span class="info-tile-val">{{ proxy.created_at.strftime('%d %b %Y') }}</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /row -->
+
+  <!-- ── Danger zone ─────────────────────────────────────────── -->
+  <div class="panel danger-zone mt-3">
+    <div class="panel-head">
+      <i class="bi bi-shield-exclamation" style="font-size:.9rem;color:var(--danger);"></i>
+      <span class="panel-head-title">Danger Zone</span>
+    </div>
+    <div class="panel-body">
+      <p style="font-size:.84rem;color:var(--text-2);margin-bottom:.75rem;">
+        Permanently delete this proxy. All integrations pointing to
+        <code>/proxy/{{ proxy.slug }}/</code> will stop working immediately.
+      </p>
+      <button
+        type="button"
+        class="btn-danger-outline"
+        id="deleteProxyTrigger"
+      >
+        <i class="bi bi-trash3"></i>Delete Proxy
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Delete confirmation modal ───────────────────────────── -->
+<div
+  class="br-modal-backdrop"
+  id="deleteProxyModal"
+  aria-hidden="true"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="deleteProxyModalTitle"
+>
+  <div class="br-modal">
+    <div class="br-modal-icon">
+      <i class="bi bi-trash3"></i>
+    </div>
+    <h2 class="br-modal-title" id="deleteProxyModalTitle">Delete proxy?</h2>
+    <p class="br-modal-body">
+      <strong>{{ proxy.name }}</strong> will be permanently removed. Any integrations
+      using its URL will stop working. This cannot be undone.
+    </p>
+    <div class="br-modal-actions">
+      <button type="button" class="br-modal-cancel" id="deleteProxyCancel">Cancel</button>
+      <form
+        method="POST"
+        action="{{ url_for('proxy_manager.delete_proxy', proxy_id=proxy.id) }}"
+        style="flex:1;"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="br-modal-confirm" style="width:100%;">
+          <i class="bi bi-trash3"></i>Delete
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  /* ── Proxy edit toggle (same pattern as profile) ── */
+  var view       = document.getElementById('proxyView');
+  var editForm   = document.getElementById('proxyEditForm');
+  var openBtn    = document.getElementById('editProxyBtn');
+  var discardBtn = document.getElementById('discardProxyBtn');
+
+  function openEdit() {
+    view.style.display     = 'none';
+    editForm.style.display = 'block';
+    openBtn.style.display  = 'none';
+    var first = editForm.querySelector('input:not([type=hidden])');
+    if (first) first.focus();
+  }
+  function closeEdit() {
+    editForm.style.display = 'none';
+    view.style.display     = 'block';
+    openBtn.style.display  = '';
+  }
+  if (editForm && editForm.querySelector('.is-invalid')) openEdit();
+  if (openBtn)    openBtn.addEventListener('click', openEdit);
+  if (discardBtn) discardBtn.addEventListener('click', closeEdit);
+
+  /* ── Delete modal ── */
+  var backdrop  = document.getElementById('deleteProxyModal');
+  var trigger   = document.getElementById('deleteProxyTrigger');
+  var cancelBtn = document.getElementById('deleteProxyCancel');
+
+  function openDelete() {
+    backdrop.classList.add('open');
+    backdrop.removeAttribute('aria-hidden');
+    if (cancelBtn) cancelBtn.focus();
+  }
+  function closeDelete() {
+    backdrop.classList.remove('open');
+    backdrop.setAttribute('aria-hidden', 'true');
+  }
+
+  if (trigger)   trigger.addEventListener('click', openDelete);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeDelete);
+  if (backdrop)  backdrop.addEventListener('click', function (e) {
+    if (e.target === backdrop) closeDelete();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && backdrop && backdrop.classList.contains('open')) closeDelete();
+  });
+
+  /* ── Open edit if server returned an edit_open flag (via data-attr) ── */
+  {% if edit_open %}openEdit();{% endif %}
+})();
+</script>
+{% endblock %}

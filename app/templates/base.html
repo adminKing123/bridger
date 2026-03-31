@@ -50,6 +50,11 @@
             </a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('proxy_manager.list_proxies') }}">
+              <i class="bi bi-arrow-left-right me-1"></i>Proxies
+            </a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" href="{{ url_for('profile.profile') }}">
               <i class="bi bi-person-circle me-1"></i>{{ current_user.username }}
             </a>
