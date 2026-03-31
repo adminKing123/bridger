@@ -12,7 +12,7 @@ ProxyEditForm   — update an existing proxy (slug and type are locked)
 import re
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, BooleanField, SubmitField, SelectMultipleField
+from wtforms import StringField, RadioField, BooleanField, SubmitField, SelectMultipleField
 from wtforms.validators import DataRequired, Length, ValidationError
 from wtforms.widgets import ListWidget, CheckboxInput
 
@@ -53,7 +53,7 @@ class ProxyCreateForm(FlaskForm):
         validators=[DataRequired(), Length(7, 500)],
         description="The upstream URL this proxy will forward all requests to.",
     )
-    proxy_type = SelectField(
+    proxy_type = RadioField(
         "Access Mode",
         choices=[
             ("endpoint",  "Endpoint  —  /proxy/{name}/"),

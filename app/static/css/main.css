@@ -562,7 +562,7 @@ body {
 
 /* Save button in profile form */
 .btn-save {
-  display: inline-flex; align-items: center; gap: 0.4rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
   padding: 0.55rem 1.375rem;
   background: var(--primary); color: #fff;
   font-size: 0.875rem; font-weight: 600;
@@ -641,6 +641,29 @@ body {
   padding: 0;
 }
 .btn-discard-link:hover { color: var(--danger); text-decoration: underline; }
+
+/* Bordered cancel button used in form action rows */
+.btn-discard {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.14s, color 0.14s, background 0.14s;
+}
+.btn-discard:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: #fff1f2;
+}
 
 /* Profile form action row: Discard | Save side by side */
 .profile-form-actions {
@@ -1386,109 +1409,100 @@ body {
 .btn-regen-slug:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
 .btn-regen-slug:active { transform: rotate(180deg); }
 
-/* Access mode selector */
-.proxy-mode-selector {
+/* Access mode selector — 2-column card grid */
+.proxy-mode-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.625rem;
 }
-.proxy-mode-opt {
+.proxy-mode-card {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  padding: 1rem 1.125rem;
-  border: 2px solid var(--border);
-  border-radius: var(--radius-lg);
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.75rem 0.875rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
   cursor: pointer;
-  background: var(--surface);
-  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
   user-select: none;
+  transition: border-color 0.14s, background 0.14s, box-shadow 0.14s;
 }
-.proxy-mode-opt input[type=radio] {
-  /* hidden — selection shown via border/background */
+.proxy-mode-card input[type=radio] {
+  /* visually hidden + pointer-events:none so the synthetic radio click
+     can never bubble back up to the label and re-fire our handler */
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
+  pointer-events: none;
 }
-.proxy-mode-opt:hover {
+.proxy-mode-card:hover {
   border-color: var(--primary);
   background: var(--primary-light);
 }
-.proxy-mode-opt.active {
+.proxy-mode-card.active {
   border-color: var(--primary);
   background: var(--primary-light);
   box-shadow: 0 0 0 3px var(--primary-ring);
 }
-.proxy-mode-opt-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius);
-  background: var(--bg);
+.proxy-mode-card-head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.05rem;
-  color: var(--text-3);
-  flex-shrink: 0;
-  transition: background 0.18s, color 0.18s;
-}
-.proxy-mode-opt.active .proxy-mode-opt-icon,
-.proxy-mode-opt:hover .proxy-mode-opt-icon {
-  background: rgba(79, 70, 229, 0.12);
-  color: var(--primary);
-}
-.proxy-mode-opt-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-}
-.proxy-mode-opt-title {
-  font-size: 0.875rem;
+  gap: 0.4rem;
+  font-size: 0.83rem;
   font-weight: 700;
   color: var(--text);
 }
-.proxy-mode-opt-example {
-  font-size: 0.73rem;
+.proxy-mode-card-head .bi { font-size: 0.9rem; color: var(--text-3); }
+.proxy-mode-card.active .proxy-mode-card-head .bi { color: var(--primary); }
+.proxy-mode-card-url {
+  font-size: 0.72rem;
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.proxy-mode-opt.active .proxy-mode-opt-example { color: var(--primary); }
-/* Recommended tag */
-.proxy-mode-opt-tag {
+.proxy-mode-card.active .proxy-mode-card-url { color: var(--primary); }
+/* "Recommended" badge */
+.proxy-mode-card-badge {
   position: absolute;
-  top: 0.5rem;
-  right: 0.625rem;
-  font-size: 0.62rem;
+  top: 0.45rem;
+  right: 0.5rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   background: var(--primary);
   color: #fff;
-  padding: 0.12rem 0.4rem;
+  padding: 0.1rem 0.38rem;
   border-radius: 999px;
+  line-height: 1.5;
 }
-/* Subdomain note */
-.proxy-mode-subdomain-note {
-  font-size: 0.8rem;
+/* Info description row shown beneath the grid */
+.proxy-mode-desc {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  font-size: 0.79rem;
   color: var(--text-2);
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  line-height: 1.5;
+  padding: 0.5rem 0.7rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.6rem 0.875rem;
-  margin-top: 0.625rem;
-  margin-bottom: 0;
 }
-.proxy-mode-subdomain-note code {
-  font-size: 0.75rem;
-  background: rgba(0,0,0,.06);
-  padding: 0.08rem 0.3rem;
+.proxy-mode-desc > .bi { flex-shrink: 0; margin-top: 0.15rem; font-size: 0.8rem; color: var(--text-3); }
+.proxy-mode-desc code {
+  font-size: 0.74rem;
+  background: rgba(0,0,0,.055);
+  padding: 0.07rem 0.3rem;
   border-radius: 3px;
 }
-@media (max-width: 480px) {
-  .proxy-mode-selector { grid-template-columns: 1fr; }
+@media (max-width: 400px) {
+  .proxy-mode-grid { grid-template-columns: 1fr; }
 }
 
 /* Live URL preview */
