@@ -3,22 +3,148 @@ app/routes/dashboard.py
 ------------------------
 Dashboard blueprint — all routes require login.
 
+The page itself renders instantly with no heavy DB work.
+Per-service stats are fetched lazily via a JSON API called from the frontend
+after page load. Each service has its own API endpoint:
+
+    GET /dashboard/api/stats/proxy  — HTTP Proxy service statistics
+
+Adding a new service = add one more `_<service>_stats()` helper and one
+corresponding `/api/stats/<service>` route. The HTML/JS pattern stays the same.
+
 Routes:
-    GET  /dashboard  — Main dashboard (protected)
+    GET  /dashboard                  — Main shell (fast, no DB queries)
+    GET  /dashboard/api/stats/proxy  — HTTP Proxy stats JSON
 """
 
 import logging
+from datetime import datetime, timedelta
 
-from flask import Blueprint, render_template
-from flask_login import login_required, current_user
+from flask import Blueprint, jsonify, render_template
+from flask_login import current_user, login_required
+from sqlalchemy import func
+
+from app import db
+from app.models.proxy import ProxyConfig
+from app.models.proxy_log import ProxyLog
 
 logger = logging.getLogger(__name__)
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
 
+# ── Page route (no DB work) ────────────────────────────────────────────────────
+
 @dashboard_bp.route("/dashboard")
 @login_required
 def dashboard():
-    """Render the main application dashboard."""
+    """Render the dashboard shell. Stats are fetched client-side via the API."""
     return render_template("dashboard/dashboard.html")
+
+
+# ── JSON API — one endpoint per service ───────────────────────────────────────
+
+@dashboard_bp.route("/dashboard/api/stats/proxy")
+@login_required
+def api_proxy_stats():
+    """
+    Return HTTP Proxy service statistics as JSON.
+
+    Called by the frontend after page load. Scoped strictly to the current
+    user — no user data can leak across accounts.
+    """
+    user_id   = current_user.id
+    proxies   = ProxyConfig.query.filter_by(user_id=user_id).all()
+    proxy_ids = [p.id for p in proxies]
+    total     = len(proxies)
+    running   = sum(1 for p in proxies if p.is_running)
+
+    if not proxy_ids:
+        return jsonify({
+            "total": 0, "running": 0, "stopped": 0,
+            "total_requests": 0, "requests_24h": 0,
+            "success_rate": None,
+            "daily_labels": [], "daily_counts": [],
+            "method_labels": [], "method_counts": [],
+            "top_proxies": [],
+        })
+
+    now       = datetime.utcnow()
+    since_24h = now - timedelta(hours=24)
+    since_7d  = now - timedelta(days=7)
+
+    total_requests = ProxyLog.query.filter(
+        ProxyLog.proxy_id.in_(proxy_ids)
+    ).count()
+
+    requests_24h = ProxyLog.query.filter(
+        ProxyLog.proxy_id.in_(proxy_ids),
+        ProxyLog.created_at >= since_24h,
+    ).count()
+
+    ok_24h = ProxyLog.query.filter(
+        ProxyLog.proxy_id.in_(proxy_ids),
+        ProxyLog.created_at >= since_24h,
+        ProxyLog.status_code < 400,
+    ).count()
+
+    success_rate = round(ok_24h / requests_24h * 100) if requests_24h else None
+
+    # Requests per day — last 7 days (fill gaps with 0)
+    daily_rows = (
+        db.session.query(
+            func.strftime("%Y-%m-%d", ProxyLog.created_at).label("day"),
+            func.count(ProxyLog.id).label("cnt"),
+        )
+        .filter(ProxyLog.proxy_id.in_(proxy_ids), ProxyLog.created_at >= since_7d)
+        .group_by("day")
+        .order_by("day")
+        .all()
+    )
+    day_map = {row.day: row.cnt for row in daily_rows}
+    daily_labels, daily_counts = [], []
+    for offset in range(6, -1, -1):
+        dt = now - timedelta(days=offset)
+        daily_labels.append(dt.strftime("%d %b"))
+        daily_counts.append(day_map.get(dt.strftime("%Y-%m-%d"), 0))
+
+    # HTTP method breakdown
+    method_rows = (
+        db.session.query(ProxyLog.method, func.count(ProxyLog.id).label("cnt"))
+        .filter(ProxyLog.proxy_id.in_(proxy_ids))
+        .group_by(ProxyLog.method)
+        .all()
+    )
+
+    # Top 5 proxies by total request count
+    top_rows = (
+        db.session.query(
+            ProxyConfig.id,
+            ProxyConfig.name,
+            ProxyConfig.status,
+            func.count(ProxyLog.id).label("req_count"),
+        )
+        .outerjoin(ProxyLog, ProxyLog.proxy_id == ProxyConfig.id)
+        .filter(ProxyConfig.user_id == user_id)
+        .group_by(ProxyConfig.id)
+        .order_by(func.count(ProxyLog.id).desc())
+        .limit(5)
+        .all()
+    )
+
+    return jsonify({
+        "total":          total,
+        "running":        running,
+        "stopped":        total - running,
+        "total_requests": total_requests,
+        "requests_24h":   requests_24h,
+        "success_rate":   success_rate,
+        "daily_labels":   daily_labels,
+        "daily_counts":   daily_counts,
+        "method_labels":  [r.method for r in method_rows],
+        "method_counts":  [r.cnt    for r in method_rows],
+        "top_proxies":    [
+            {"id": r.id, "name": r.name, "status": r.status, "count": r.req_count}
+            for r in top_rows
+        ],
+    })

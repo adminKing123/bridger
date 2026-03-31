@@ -2,10 +2,14 @@
 
 {% block title %}Dashboard — Bridger{% endblock %}
 
-{% block content %}
-<div class="container py-4" style="max-width:900px;">
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+{% endblock %}
 
-  <!-- ── Page header ─────────────────────────────────────── -->
+{% block content %}
+<div class="container py-4" style="max-width:1100px;">
+
+  <!-- ── Page header ────────────────────────────────────────── -->
   <div class="dash-header mb-4">
     <div>
       <h1 class="dash-title">
@@ -15,7 +19,7 @@
           {% else %}{{ current_user.username }}{% endif %}
         </span> 👋
       </h1>
-      <p class="dash-subtitle">Here's your Bridger dashboard.</p>
+      <p class="dash-subtitle">Here's your Bridger overview.</p>
     </div>
     <a href="{{ url_for('profile.profile') }}" class="btn-dash-profile">
       <div class="dash-avatar-sm">
@@ -27,8 +31,8 @@
     </a>
   </div>
 
-  <!-- ── Stat cards row ──────────────────────────────────── -->
-  <div class="row g-3 mb-4">
+  <!-- ── Account stat strip ─────────────────────────────────── -->
+  <div class="row g-3 mb-5">
     <div class="col-sm-6 col-lg-3">
       <div class="dash-stat-card">
         <div class="dash-stat-icon" style="background:#ede9fe;color:#7c3aed;">
@@ -60,7 +64,9 @@
         </div>
         <div class="dash-stat-body">
           <span class="dash-stat-label">Email</span>
-          <span class="dash-stat-val" style="font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;">{{ current_user.email }}</span>
+          <span class="dash-stat-val" style="font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;">
+            {{ current_user.email }}
+          </span>
         </div>
       </div>
     </div>
@@ -77,5 +83,440 @@
     </div>
   </div>
 
+  <!-- ══════════════════════════════════════════════════════════
+       SERVICE PICKER
+       ══════════════════════════════════════════════════════════ -->
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <h2 class="dash-section-title mb-0">Services</h2>
+
+    <!-- Dropdown selector -->
+    <div class="dash-service-picker" id="servicePickerWrap">
+      <button class="dash-picker-btn" id="servicePickerBtn" type="button"
+              aria-haspopup="listbox" aria-expanded="false">
+        <span class="dash-picker-icon" id="servicePickerIcon">
+          <i class="bi bi-arrow-left-right"></i>
+        </span>
+        <span id="servicePickerLabel">HTTP Proxy</span>
+        <i class="bi bi-chevron-down dash-picker-chevron" id="servicePickerChevron"></i>
+      </button>
+      <ul class="dash-picker-menu" id="servicePickerMenu" role="listbox">
+        <li class="dash-picker-item active" role="option"
+            data-service="proxy"
+            data-label="HTTP Proxy"
+            data-icon="bi-arrow-left-right"
+            data-icon-bg="#e0f2fe" data-icon-color="#0369a1">
+          <span class="dash-picker-item-icon" style="background:#e0f2fe;color:#0369a1;">
+            <i class="bi bi-arrow-left-right"></i>
+          </span>
+          <div>
+            <p class="dash-picker-item-name">HTTP Proxy</p>
+            <p class="dash-picker-item-desc">Forward requests &amp; bypass CORS</p>
+          </div>
+          <i class="bi bi-check2 dash-picker-check"></i>
+        </li>
+        <li class="dash-picker-item" role="option"
+            data-service="coming"
+            data-label="More Services"
+            data-icon="bi-grid-1x2"
+            data-icon-bg="var(--bg)" data-icon-color="var(--text-3)">
+          <span class="dash-picker-item-icon" style="background:var(--bg);color:var(--text-3);">
+            <i class="bi bi-grid-1x2"></i>
+          </span>
+          <div>
+            <p class="dash-picker-item-name">More Services</p>
+            <p class="dash-picker-item-desc">Coming soon to Bridger</p>
+          </div>
+          <i class="bi bi-check2 dash-picker-check"></i>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SERVICE PANELS (only one visible at a time)
+       ══════════════════════════════════════════════════════════ -->
+
+  <!-- ── HTTP Proxy panel ─────────────────────────────────── -->
+  <div id="panel-proxy" class="dash-panel-section">
+
+    <!-- Section sub-header -->
+    <div class="dash-section-head mb-3">
+      <div class="dash-section-icon" style="background:#e0f2fe;color:#0369a1;">
+        <i class="bi bi-arrow-left-right"></i>
+      </div>
+      <div>
+        <p class="dash-section-title" style="margin:0;">HTTP Proxy</p>
+        <p class="dash-section-desc">Forward requests &amp; bypass CORS restrictions</p>
+      </div>
+      <a href="{{ url_for('proxy_manager.list_proxies') }}"
+         class="btn-dash-section-link ms-auto">
+        Manage <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    <!-- Skeleton / error / content — controlled by JS -->
+    <div id="proxy-loading">
+      <!-- Skeleton KPI row -->
+      <div class="row g-3 mb-3">
+        {% for _ in range(4) %}
+        <div class="col-6 col-md-3">
+          <div class="dash-kpi-card">
+            <div class="skel skel-kpi-val"></div>
+            <div class="skel skel-label mt-2"></div>
+            <div class="skel skel-label mt-2" style="width:50%;"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <!-- Skeleton chart row -->
+      <div class="row g-3">
+        <div class="col-lg-7"><div class="panel" style="margin:0;"><div class="panel-body"><div class="skel skel-chart"></div></div></div></div>
+        <div class="col-lg-5"><div class="panel" style="margin:0;"><div class="panel-body"><div class="skel skel-chart"></div></div></div></div>
+        <div class="col-12"><div class="panel" style="margin:0;"><div class="panel-body"><div class="skel skel-chart" style="height:80px;"></div></div></div></div>
+      </div>
+    </div>
+
+    <div id="proxy-error" style="display:none;">
+      <div class="dash-service-empty">
+        <i class="bi bi-exclamation-circle"></i>
+        <p>Could not load proxy stats. <button type="button" class="btn-link-inline" id="proxyRetryBtn">Try again</button></p>
+      </div>
+    </div>
+
+    <div id="proxy-content" style="display:none;">
+      <!-- KPI pills — filled by JS -->
+      <div class="row g-3 mb-3" id="proxy-kpis"></div>
+      <!-- Charts + top proxies — filled by JS -->
+      <div class="row g-3" id="proxy-charts"></div>
+    </div>
+
+  </div>
+  <!-- ── END HTTP Proxy panel ─────────────────────────────── -->
+
+  <!-- ── Coming Soon panel ────────────────────────────────── -->
+  <div id="panel-coming" class="dash-panel-section" style="display:none;">
+    <div class="dash-section-head mb-3">
+      <div class="dash-section-icon" style="background:var(--bg);color:var(--text-3);">
+        <i class="bi bi-grid-1x2"></i>
+      </div>
+      <div>
+        <p class="dash-section-title" style="margin:0;color:var(--text-2);">More Services</p>
+        <p class="dash-section-desc">Coming soon to Bridger</p>
+      </div>
+    </div>
+    <div class="row g-3">
+      <div class="col-sm-6 col-lg-4">
+        <div class="dash-coming-card">
+          <div class="dash-coming-icon" style="background:#fce7f3;color:#db2777;"><i class="bi bi-shield-lock"></i></div>
+          <div><p class="dash-coming-name">Auth Gateway</p><p class="dash-coming-desc">API key &amp; JWT validation layer</p></div>
+          <span class="dash-coming-badge">Soon</span>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="dash-coming-card">
+          <div class="dash-coming-icon" style="background:#f0fdf4;color:#16a34a;"><i class="bi bi-speedometer2"></i></div>
+          <div><p class="dash-coming-name">Rate Limiter</p><p class="dash-coming-desc">Throttle &amp; quota management</p></div>
+          <span class="dash-coming-badge">Soon</span>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <div class="dash-coming-card">
+          <div class="dash-coming-icon" style="background:#fff7ed;color:#ea580c;"><i class="bi bi-broadcast"></i></div>
+          <div><p class="dash-coming-name">WebSocket Proxy</p><p class="dash-coming-desc">Persistent connection forwarding</p></div>
+          <span class="dash-coming-badge">Soon</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ── END coming soon panel ────────────────────────────── -->
+
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  'use strict';
+
+  /* ── Design token helpers ─────────────────────────────────── */
+  var cs       = getComputedStyle(document.documentElement);
+  var primary  = cs.getPropertyValue('--primary').trim()  || '#6366f1';
+  var surface  = cs.getPropertyValue('--surface').trim()  || '#fff';
+  var border   = cs.getPropertyValue('--border').trim()   || '#e5e7eb';
+  var text2    = cs.getPropertyValue('--text-2').trim()   || '#64748b';
+  var text3    = cs.getPropertyValue('--text-3').trim()   || '#9ca3af';
+  var success  = cs.getPropertyValue('--success').trim()  || '#16a34a';
+  var danger   = cs.getPropertyValue('--danger').trim()   || '#dc2626';
+  var warning  = cs.getPropertyValue('--warning').trim()  || '#b45309';
+
+  var METHOD_COLORS = {
+    GET:'#22c55e', POST:'#3b82f6', PUT:'#f59e0b',
+    PATCH:'#a855f7', DELETE:'#ef4444', OPTIONS:'#94a3b8',
+  };
+
+  /* ── Service picker ───────────────────────────────────────── */
+  var currentService = 'proxy';
+  var URL_PROXY_LIST   = '{{ url_for("proxy_manager.list_proxies") }}';
+  var URL_PROXY_CREATE = '{{ url_for("proxy_manager.create_proxy") }}';
+  var pickerBtn    = document.getElementById('servicePickerBtn');
+  var pickerMenu   = document.getElementById('servicePickerMenu');
+  var pickerLabel  = document.getElementById('servicePickerLabel');
+  var pickerIcon   = document.getElementById('servicePickerIcon');
+  var pickerChevron = document.getElementById('servicePickerChevron');
+
+  function openPicker() {
+    pickerMenu.classList.add('open');
+    pickerBtn.setAttribute('aria-expanded', 'true');
+    pickerChevron.style.transform = 'rotate(180deg)';
+  }
+  function closePicker() {
+    pickerMenu.classList.remove('open');
+    pickerBtn.setAttribute('aria-expanded', 'false');
+    pickerChevron.style.transform = '';
+  }
+
+  pickerBtn.addEventListener('click', function () {
+    pickerMenu.classList.contains('open') ? closePicker() : openPicker();
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!document.getElementById('servicePickerWrap').contains(e.target)) closePicker();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closePicker();
+  });
+
+  pickerMenu.querySelectorAll('.dash-picker-item').forEach(function (item) {
+    item.addEventListener('click', function () {
+      selectService(item.getAttribute('data-service'), item);
+      closePicker();
+    });
+  });
+
+  function selectService(key, itemEl) {
+    if (key === currentService) return;
+    currentService = key;
+
+    /* Update button label + icon */
+    pickerLabel.textContent = itemEl.getAttribute('data-label');
+    var iconClass = itemEl.getAttribute('data-icon');
+    var iconBg    = itemEl.getAttribute('data-icon-bg');
+    var iconColor = itemEl.getAttribute('data-icon-color');
+    pickerIcon.style.background = iconBg;
+    pickerIcon.style.color      = iconColor;
+    pickerIcon.innerHTML = '<i class="bi ' + iconClass + '"></i>';
+
+    /* Mark active item */
+    pickerMenu.querySelectorAll('.dash-picker-item').forEach(function (i) {
+      i.classList.toggle('active', i === itemEl);
+    });
+
+    /* Show/hide panels */
+    document.querySelectorAll('.dash-panel-section').forEach(function (p) {
+      p.style.display = p.id === 'panel-' + key ? '' : 'none';
+    });
+
+    /* Lazy-load data if this service needs it */
+    if (key === 'proxy') loadProxyStats();
+  }
+
+  /* ── HTTP Proxy stats loader ──────────────────────────────── */
+  var proxyLoaded  = false;
+  var proxyCharts  = {};
+
+  function showProxyState(state) {
+    document.getElementById('proxy-loading').style.display = state === 'loading' ? '' : 'none';
+    document.getElementById('proxy-error').style.display   = state === 'error'   ? '' : 'none';
+    document.getElementById('proxy-content').style.display = state === 'content' ? '' : 'none';
+  }
+
+  function loadProxyStats() {
+    if (proxyLoaded) return;
+    showProxyState('loading');
+
+    fetch('{{ url_for("dashboard.api_proxy_stats") }}', { credentials: 'same-origin' })
+      .then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      })
+      .then(function (d) {
+        proxyLoaded = true;
+        renderProxyStats(d);
+        showProxyState('content');
+      })
+      .catch(function () { showProxyState('error'); });
+  }
+
+  document.getElementById('proxyRetryBtn').addEventListener('click', function () {
+    proxyLoaded = false;
+    loadProxyStats();
+  });
+
+  function renderProxyStats(d) {
+    /* ── KPI cards ────────────────────────────────────────── */
+    var successColor = d.success_rate === null ? text3
+      : d.success_rate >= 90 ? success
+      : d.success_rate >= 70 ? warning : danger;
+
+    var kpis = [
+      { val: d.total,          label: 'Total Proxies',      sub: '' },
+      { val: d.running,        label: 'Running',             sub: d.stopped + ' stopped', color: success },
+      { val: d.requests_24h,   label: 'Requests (24 h)',    sub: d.total_requests + ' all time' },
+      {
+        val:   d.success_rate !== null ? d.success_rate + '%' : '—',
+        label: 'Success Rate (24 h)',
+        sub:   '2xx / 3xx responses',
+        color: successColor,
+      },
+    ];
+
+    var kpiRow = document.getElementById('proxy-kpis');
+    kpiRow.innerHTML = kpis.map(function (k) {
+      return '<div class="col-6 col-md-3">'
+        + '<div class="dash-kpi-card">'
+        + '<span class="dash-kpi-val"' + (k.color ? ' style="color:' + k.color + ';"' : '') + '>' + k.val + '</span>'
+        + '<span class="dash-kpi-label">' + k.label + '</span>'
+        + '<span class="dash-kpi-sub">' + (k.sub || '') + '</span>'
+        + '</div></div>';
+    }).join('');
+
+    /* ── Charts + top list ────────────────────────────────── */
+    var chartsRow = document.getElementById('proxy-charts');
+
+    if (d.total === 0) {
+      /* Empty state */
+      chartsRow.innerHTML = '<div class="col-12">'
+        + '<div class="dash-service-empty">'
+        + '<i class="bi bi-arrow-left-right"></i>'
+        + '<p>No proxies created yet.</p>'
+        + '<a href="' + URL_PROXY_CREATE + '" class="btn-save"'
+        + ' style="text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;font-size:.83rem;padding:.45rem 1.1rem;">'
+        + '<i class="bi bi-plus-lg"></i>Create your first proxy</a>'
+        + '</div></div>';
+      return;
+    }
+
+    chartsRow.innerHTML =
+      /* Row 1 — bar chart + doughnut side by side */
+      '<div class="col-lg-7">'
+      + '<div class="panel" style="margin:0;height:100%;">'
+      + '<div class="panel-head"><i class="bi bi-bar-chart-line" style="color:var(--primary);font-size:.9rem;"></i>'
+      + '<span class="panel-head-title">Requests — Last 7 Days</span></div>'
+      + '<div class="panel-body" style="height:260px;padding:.75rem 1rem 1rem;">'
+      + '<canvas id="proxyDailyChart"></canvas></div></div></div>'
+
+      + '<div class="col-lg-5">'
+      + '<div class="panel" style="margin:0;height:100%;">'
+      + '<div class="panel-head"><i class="bi bi-pie-chart" style="color:var(--primary);font-size:.9rem;"></i>'
+      + '<span class="panel-head-title">Methods</span></div>'
+      + '<div class="panel-body d-flex align-items-center justify-content-center" style="height:260px;padding:1rem;">'
+      + (d.method_labels.length
+          ? '<canvas id="proxyMethodChart"></canvas>'
+          : '<span style="color:' + text3 + ';font-size:.8rem;">No requests yet</span>')
+      + '</div></div></div>'
+
+      /* Row 2 — full-width top proxies */
+      + '<div class="col-12">'
+      + '<div class="panel" style="margin:0;">'
+      + '<div class="panel-head"><i class="bi bi-trophy" style="color:var(--primary);font-size:.9rem;"></i>'
+      + '<span class="panel-head-title">Top Proxies</span>'
+      + '<a href="' + URL_PROXY_LIST + '" class="btn-dash-section-link ms-auto" style="font-size:.75rem;">View all <i class="bi bi-arrow-right"></i></a>'
+      + '</div>'
+      + '<div class="proxy-table-wrap">'
+      + '<table class="proxy-table" id="proxy-top-table">'
+      + '<thead><tr><th style="width:40%">Proxy</th><th>Status</th><th style="text-align:right">Total Requests</th></tr></thead>'
+      + '<tbody>'
+      + buildTopList(d.top_proxies)
+      + '</tbody></table></div></div></div>';
+
+    /* Apply Chart.js defaults after DOM is updated */
+    Chart.defaults.font.family = "'Inter','Segoe UI',system-ui,sans-serif";
+    Chart.defaults.font.size   = 11;
+    Chart.defaults.color       = text2;
+
+    /* Bar chart */
+    new Chart(document.getElementById('proxyDailyChart'), {
+      type: 'bar',
+      data: {
+        labels: d.daily_labels,
+        datasets: [{
+          label: 'Requests', data: d.daily_counts,
+          backgroundColor: primary + 'bb', borderColor: primary,
+          borderWidth: 1.5, borderRadius: 5, borderSkipped: false,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function (c) { return ' ' + c.parsed.y + ' requests'; } } },
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: text3 } },
+          y: { beginAtZero: true, ticks: { color: text3, precision: 0 }, grid: { color: border + '55' } },
+        },
+      },
+    });
+
+    /* Doughnut */
+    if (d.method_labels.length) {
+      var mColors = d.method_labels.map(function (m) { return METHOD_COLORS[m] || '#94a3b8'; });
+      new Chart(document.getElementById('proxyMethodChart'), {
+        type: 'doughnut',
+        data: {
+          labels: d.method_labels,
+          datasets: [{
+            data: d.method_counts,
+            backgroundColor: mColors.map(function (c) { return c + 'dd'; }),
+            borderColor: surface, borderWidth: 2, hoverOffset: 6,
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: true, cutout: '62%',
+          plugins: {
+            legend: { position: 'right', labels: { boxWidth: 10, padding: 8, color: text2 } },
+            tooltip: {
+              callbacks: {
+                label: function (c) {
+                  var t = c.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                  return ' ' + c.parsed + ' (' + (t ? Math.round(c.parsed / t * 100) : 0) + '%)';
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+  }
+
+  function buildTopList(rows) {
+    if (!rows.length) {
+      return '<tr><td colspan="3" style="padding:.9rem 1.25rem;font-size:.82rem;color:'
+        + text3 + ';text-align:center;">No data yet.</td></tr>';
+    }
+    return rows.map(function (r, i) {
+      var statusLabel = r.status === 'running'
+        ? '<span class="proxy-status-badge running"><span class="proxy-status-dot"></span>Running</span>'
+        : '<span class="proxy-status-badge stopped"><span class="proxy-status-dot"></span>Stopped</span>';
+      return '<tr>'
+        + '<td><span style="color:var(--text-3);font-size:.75rem;margin-right:.5rem;">#' + (i + 1) + '</span>'
+        + '<a href="/proxies/' + r.id + '" style="font-weight:600;color:var(--text);text-decoration:none;">' + _esc(r.name) + '</a></td>'
+        + '<td>' + statusLabel + '</td>'
+        + '<td style="text-align:right;font-weight:700;color:var(--text);">' + r.count + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function _esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ── Init ─────────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function () {
+    loadProxyStats(); /* auto-load the default service */
+  });
+
+})();
+</script>
 {% endblock %}
