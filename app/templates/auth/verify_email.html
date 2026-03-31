@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify Email — Bridger{% endblock %}
+
+{% block navbar %}
+<header class="auth-topbar">
+  <a href="{{ url_for('profile.index') }}" class="auth-brand">
+    <i class="bi bi-activity"></i>Bridger
+  </a>
+</header>
+{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+  <div class="auth-screen">
+    <div class="auth-card">
+
+      <!-- Icon + heading -->
+      <div class="auth-icon-wrap grn">
+        <i class="bi bi-envelope-check"></i>
+      </div>
+      <h1 class="auth-title">Check your inbox</h1>
+      <p class="auth-subtitle">
+        We sent a 6-digit code to<br>
+        <strong>{{ email }}</strong>
+      </p>
+
+      <!-- Verify form -->
+      <form
+        method="POST"
+        action="{{ url_for('auth.verify_email') }}"
+        novalidate
+        data-loadable
+      >
+        {{ form.hidden_tag() }}
+        {# Render the WTForms field as hidden — JS boxes populate it #}
+        {{ form.otp_code(type="hidden", id="otp_code") }}
+
+        <!-- 6 individual digit boxes -->
+        <div
+          class="otp-group"
+          data-hidden="otp_code"
+          data-autosubmit
+          role="group"
+          aria-label="6-digit verification code"
+        >
+          <input type="text" class="otp-box{% if form.otp_code.errors %} has-error{% endif %}" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Digit 1" />
+          <input type="text" class="otp-box{% if form.otp_code.errors %} has-error{% endif %}" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Digit 2" />
+          <input type="text" class="otp-box{% if form.otp_code.errors %} has-error{% endif %}" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Digit 3" />
+          <input type="text" class="otp-box{% if form.otp_code.errors %} has-error{% endif %}" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Digit 4" />
+          <input type="text" class="otp-box{% if form.otp_code.errors %} has-error{% endif %}" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Digit 5" />
+          <input type="text" class="otp-box{% if form.otp_code.errors %} has-error{% endif %}" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Digit 6" />
+        </div>
+
+        {% if form.otp_code.errors %}
+          <div class="otp-error text-center mt-1" style="font-size:.78rem;color:var(--danger);">
+            {% for e in form.otp_code.errors %}
+              <i class="bi bi-x-circle-fill me-1"></i>{{ e }}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <p class="text-center mt-2 mb-3" style="font-size:.78rem;color:var(--text-3);">
+          Code expires in <strong style="color:var(--text-2);">10 minutes</strong>.
+          Entered all 6 digits? It submits automatically.
+        </p>
+
+        <button
+          type="submit"
+          class="btn-auth btn-grn"
+          data-submit-btn
+          data-loading-text="Verifying…"
+        >
+          <i class="bi bi-check-lg"></i>Verify Email
+        </button>
+      </form>
+
+      <div class="auth-sep"><span>didn't get the code?</span></div>
+
+      <!-- Resend form -->
+      <form
+        method="POST"
+        action="{{ url_for('auth.resend_otp') }}"
+        class="text-center"
+        data-loadable
+      >
+        {{ form.hidden_tag() }}
+        <button
+          type="submit"
+          class="btn-auth"
+          style="background:transparent;color:var(--primary);border:1.5px solid var(--border);font-weight:600;"
+          data-submit-btn
+          data-loading-text="Sending…"
+        >
+          <i class="bi bi-arrow-clockwise"></i>Resend Code
+        </button>
+      </form>
+
+      <p class="auth-foot mt-3">
+        Wrong email? <a href="{{ url_for('auth.signup') }}">Sign up again</a>
+      </p>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-sm-10 col-md-7 col-lg-5">
+
+    <div class="auth-card card shadow border-0">
+      <div class="card-body p-4 p-md-5">
+
+        <!-- Header -->
+        <div class="text-center mb-4">
+          <div class="auth-icon bg-success-subtle rounded-circle mx-auto mb-3">
+            <i class="bi bi-envelope-check fs-2 text-success"></i>
+          </div>
+          <h2 class="fw-bold mb-1">Check your inbox</h2>
+          <p class="text-muted small">
+            We sent a 6-digit code to
+            <strong class="text-dark">{{ email }}</strong>
+          </p>
+        </div>
+
+        <!-- OTP Form -->
+        <form
+          method="POST"
+          action="{{ url_for('auth.verify_email') }}"
+          novalidate
+        >
+          {{ form.hidden_tag() }}
+
+          <div class="mb-4">
+            {{ form.otp_code.label(class="form-label fw-semibold") }}
+            {{ form.otp_code(
+                class="form-control otp-input text-center fs-4 fw-bold letter-spacing-wide"
+                      + (" is-invalid" if form.otp_code.errors else ""),
+                id="otp_code"
+            ) }}
+            {% for error in form.otp_code.errors %}
+              <div class="invalid-feedback text-center">{{ error }}</div>
+            {% endfor %}
+            <div class="form-text text-center">
+              The code expires in <strong>10 minutes</strong>.
+            </div>
+          </div>
+
+          {{ form.submit(class="btn btn-success w-100 py-2 fw-semibold") }}
+        </form>
+
+        <hr class="my-4" />
+
+        <!-- Resend OTP -->
+        <p class="text-center text-muted small mb-0">
+          Didn't receive the code?
+        </p>
+        <form
+          method="POST"
+          action="{{ url_for('auth.resend_otp') }}"
+          class="text-center mt-2"
+        >
+          {{ form.hidden_tag() }}
+          <button type="submit" class="btn btn-link p-0 fw-semibold text-decoration-none">
+            <i class="bi bi-arrow-clockwise me-1"></i>Resend Code
+          </button>
+        </form>
+
+        <p class="text-center text-muted small mt-3 mb-0">
+          Wrong email?
+          <a href="{{ url_for('auth.signup') }}" class="text-decoration-none fw-semibold">
+            Sign up again
+          </a>
+        </p>
+
+      </div>
+    </div><!-- /card -->
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  /* Auto-focus OTP input and auto-submit when 6 digits are entered */
+  (function () {
+    const otpInput = document.getElementById('otp_code');
+    if (!otpInput) return;
+    otpInput.focus();
+    otpInput.addEventListener('input', function () {
+      const val = this.value.replace(/\D/g, '').slice(0, 6);
+      this.value = val;
+      if (val.length === 6) this.closest('form').submit();
+    });
+  })();
+</script>
+{% endblock %}

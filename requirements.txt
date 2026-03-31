@@ -1,0 +1,19 @@
+# Core Flask framework
+Flask==3.0.3
+
+# ORM & database
+Flask-SQLAlchemy==3.1.1
+
+# Authentication session management
+Flask-Login==0.6.3
+
+# Password hashing
+Flask-Bcrypt==1.0.1
+
+# Form handling & CSRF protection
+Flask-WTF==1.2.1
+WTForms==3.1.2
+email-validator==2.1.1
+
+# Environment variable loading
+python-dotenv==1.0.1

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Bridger{% endblock %}</title>
+
+  <!-- Bootstrap 5.3 -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+    crossorigin="anonymous"
+  />
+  <!-- Bootstrap Icons -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    rel="stylesheet"
+  />
+  <!-- Bridger design system -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% block navbar %}
+<!-- ── App navbar (authenticated / marketing pages) ──────── -->
+<nav class="navbar app-navbar navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand" href="{{ url_for('profile.index') }}">
+      <i class="bi bi-activity"></i>Bridger
+    </a>
+    <button
+      class="navbar-toggler border-0 shadow-none"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#mainNav"
+      aria-controls="mainNav"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="mainNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+        {% if current_user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('profile.profile') }}">
+              <i class="bi bi-person-circle me-1"></i>{{ current_user.username }}
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              href="{{ url_for('auth.logout') }}"
+              data-logout-trigger
+            >
+              <i class="bi bi-box-arrow-right me-1"></i>Sign Out
+            </a>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('auth.login') }}">Sign In</a>
+          </li>
+          <li class="nav-item ms-lg-2">
+            <a class="btn-nav-cta nav-link" href="{{ url_for('auth.signup') }}">Sign Up</a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+<!-- ── Toast flash messages (fixed top-right) ────────────── -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="toast-stack" aria-live="polite" aria-atomic="false">
+      {% for category, message in messages %}
+        <div class="toast-item {{ category }}" role="alert">
+          <span class="toast-icon">
+            {% if category == 'success' %}<i class="bi bi-check-circle-fill"></i>
+            {% elif category == 'danger'  %}<i class="bi bi-x-circle-fill"></i>
+            {% elif category == 'warning' %}<i class="bi bi-exclamation-triangle-fill"></i>
+            {% else %}<i class="bi bi-info-circle-fill"></i>
+            {% endif %}
+          </span>
+          <div class="toast-body">{{ message }}</div>
+          <button class="toast-close" aria-label="Dismiss">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ── Logout confirmation modal ────────────────────────── -->
+<div class="br-modal-backdrop" id="logoutModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle">
+  <div class="br-modal">
+    <div class="br-modal-icon">
+      <i class="bi bi-box-arrow-right"></i>
+    </div>
+    <h2 class="br-modal-title" id="logoutModalTitle">Sign out?</h2>
+    <p class="br-modal-body">You'll need to sign in again to access your account.</p>
+    <div class="br-modal-actions">
+      <button type="button" class="br-modal-cancel" id="logoutCancel">Cancel</button>
+      <a href="{{ url_for('auth.logout') }}" class="br-modal-confirm">
+        <i class="bi bi-box-arrow-right"></i>Sign Out
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ── Page content ───────────────────────────────────────── -->
+{% block body %}
+<main class="flex-grow-1">{% block content %}{% endblock %}</main>
+<footer class="py-3 border-top" style="background:var(--surface);">
+  <div class="container text-center" style="font-size:.78rem;color:var(--text-3);">
+    &copy; 2026 Bridger &mdash; All rights reserved.
+  </div>
+</footer>
+{% endblock %}
+
+<!-- Bootstrap JS bundle -->
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+  crossorigin="anonymous"
+></script>
+<!-- Bridger scripts -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

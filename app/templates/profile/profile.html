@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile — Bridger{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:840px;">
+
+  <!-- ── Profile hero ──────────────────────────────────────── -->
+  <div class="profile-hero mb-4">
+    <div class="d-flex align-items-center gap-4">
+
+      <!-- Avatar: first initial, white circle -->
+      <div class="profile-avatar" aria-hidden="true">
+        {% if current_user.first_name %}{{ current_user.first_name[0] | upper }}
+        {% else %}{{ current_user.username[0] | upper }}{% endif %}
+      </div>
+
+      <!-- Info block -->
+      <div>
+        <!-- Name row -->
+        {% if current_user.first_name %}
+          <p class="profile-name">
+            {{ current_user.first_name }}{% if current_user.last_name %} {{ current_user.last_name }}{% endif %}
+          </p>
+          <p class="profile-handle">@{{ current_user.username }}</p>
+        {% else %}
+          <p class="profile-name">{{ current_user.username }}</p>
+        {% endif %}
+
+        <p class="profile-email">{{ current_user.email }}</p>
+
+        <!-- Badges -->
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          <span class="profile-tag">
+            {% if current_user.is_verified %}
+              <i class="bi bi-patch-check-fill"></i>Verified
+            {% else %}
+              <i class="bi bi-exclamation-circle"></i>Unverified
+            {% endif %}
+          </span>
+          <span class="profile-tag">
+            <i class="bi bi-calendar3"></i>
+            Joined {{ current_user.created_at.strftime('%B %Y') }}
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="row g-3">
+
+    <!-- ── Left: Edit profile ─────────────────────────────── -->
+    <div class="col-md-7">
+      <div class="panel">
+        <div class="panel-head">
+          <i class="bi bi-pencil" style="color:var(--primary);font-size:.9rem;"></i>
+          <span class="panel-head-title">Edit Profile</span>
+        </div>
+        <div class="panel-body">
+          <form
+            method="POST"
+            action="{{ url_for('profile.profile') }}"
+            novalidate
+            autocomplete="on"
+            data-loadable
+          >
+            {{ form.hidden_tag() }}
+
+            <!-- Username -->
+            <div class="mb-3">
+              {{ form.username.label(class="form-label") }}
+              {{ form.username(
+                class="form-control" + (" is-invalid" if form.username.errors else ""),
+                autocomplete="username"
+              ) }}
+              {% for e in form.username.errors %}
+                <div class="invalid-feedback">
+                  <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+                </div>
+              {% endfor %}
+              <div class="form-text">3–80 chars. Letters, numbers, underscores only.</div>
+            </div>
+
+            <!-- First + Last name side by side -->
+            <div class="d-flex gap-2 mb-3">
+              <div style="flex:1;min-width:0;">
+                {{ form.first_name.label(class="form-label") }}
+                {{ form.first_name(
+                  class="form-control" + (" is-invalid" if form.first_name.errors else ""),
+                  autocomplete="given-name"
+                ) }}
+                {% for e in form.first_name.errors %}
+                  <div class="invalid-feedback">
+                    <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+                  </div>
+                {% endfor %}
+              </div>
+              <div style="flex:1;min-width:0;">
+                {{ form.last_name.label(class="form-label") }}
+                {{ form.last_name(
+                  class="form-control" + (" is-invalid" if form.last_name.errors else ""),
+                  autocomplete="family-name",
+                  placeholder="Optional"
+                ) }}
+                {% for e in form.last_name.errors %}
+                  <div class="invalid-feedback">
+                    <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+              <button
+                type="submit"
+                class="btn-save"
+                data-submit-btn
+                data-loading-text="Saving…"
+              >
+                <i class="bi bi-check-lg"></i>Save Changes
+              </button>
+              <a href="{{ url_for('profile.profile') }}" class="btn-cancel">
+                Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Right: Account info ────────────────────────────── -->
+    <div class="col-md-5">
+      <div class="panel">
+        <div class="panel-head">
+          <i class="bi bi-person-lines-fill" style="color:var(--text-2);font-size:.9rem;"></i>
+          <span class="panel-head-title">Account Info</span>
+        </div>
+        <div class="panel-body pt-1 pb-1">
+
+          <div class="info-row">
+            <span class="info-label">Email</span>
+            <span class="info-val" style="word-break:break-all;font-size:.84rem;">{{ current_user.email }}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">Username</span>
+            <span class="info-val">@{{ current_user.username }}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">Status</span>
+            <span class="info-val">
+              {% if current_user.is_verified %}
+                <span style="color:var(--success);font-weight:600;font-size:.84rem;">
+                  <i class="bi bi-patch-check-fill me-1"></i>Verified
+                </span>
+              {% else %}
+                <span style="color:var(--warning);font-weight:600;font-size:.84rem;">
+                  <i class="bi bi-exclamation-circle-fill me-1"></i>Unverified
+                </span>
+              {% endif %}
+            </span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">Member since</span>
+            <span class="info-val">{{ current_user.created_at.strftime('%d %b %Y') }}</span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /row -->
+
+  <!-- ── Danger zone ────────────────────────────────────────── -->
+  <div class="panel danger-zone mt-3">
+    <div class="panel-head">
+      <i class="bi bi-shield-exclamation" style="font-size:.9rem;color:var(--danger);"></i>
+      <span class="panel-head-title">Account Actions</span>
+    </div>
+    <div class="panel-body">
+      <p style="font-size:.84rem;color:var(--text-2);margin-bottom:.75rem;">
+        Sign out ends your current session on this device.
+      </p>
+      <a
+        href="{{ url_for('auth.logout') }}"
+        class="btn-danger-outline"
+        data-logout-trigger
+      >
+        <i class="bi bi-box-arrow-right"></i>Sign Out
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

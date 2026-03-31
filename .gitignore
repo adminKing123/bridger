@@ -1,0 +1,37 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env.local
+.env.production
+
+# Secrets — never commit
+.env
+
+# Database
+*.sqlite3
+*.db
+instance/
+
+# Distribution / build
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

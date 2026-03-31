@@ -1,0 +1,230 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Sign Up â€” Bridger{% endblock %}
+
+{% block navbar %}
+<header class="auth-topbar">
+  <a href="{{ url_for('profile.index') }}" class="auth-brand">
+    <i class="bi bi-activity"></i>Bridger
+  </a>
+</header>
+{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+  <div class="auth-screen">
+    <div class="auth-card" style="max-width:460px;">
+
+      <!-- â”€â”€ Single form â€” all steps live here â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+      <form
+        method="POST"
+        action="{{ url_for('auth.signup') }}"
+        novalidate
+        autocomplete="on"
+        data-loadable
+        data-step-form
+      >
+        {{ form.hidden_tag() }}
+
+        <!-- Step track indicator -->
+        <div class="step-track">
+          <div class="step-dot active" data-dot="1">1</div>
+          <div class="step-connector" data-connector="1"></div>
+          <div class="step-dot" data-dot="2">2</div>
+          <div class="step-connector" data-connector="2"></div>
+          <div class="step-dot" data-dot="3">3</div>
+        </div>
+
+        <!-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 1 â€” Account details â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <div class="step-panel active" data-panel="1">
+          <div class="step-panel-head">
+            <h1 class="auth-title">Create account</h1>
+            <p class="auth-subtitle">Choose a username and enter your email address</p>
+          </div>
+
+          <!-- Username -->
+          <div class="mb-3">
+            {{ form.username.label(class="form-label") }}
+            {{ form.username(
+              class="form-control" + (" is-invalid" if form.username.errors else ""),
+              id="username",
+              placeholder="e.g. john_doe",
+              autocomplete="username"
+            ) }}
+            {% for e in form.username.errors %}
+              <div class="invalid-feedback">
+                <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+              </div>
+            {% endfor %}
+          </div>
+
+          <!-- Email -->
+          <div class="mb-4">
+            {{ form.email.label(class="form-label") }}
+            {{ form.email(
+              class="form-control" + (" is-invalid" if form.email.errors else ""),
+              id="email",
+              placeholder="you@example.com",
+              autocomplete="email"
+            ) }}
+            {% for e in form.email.errors %}
+              <div class="invalid-feedback">
+                <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+              </div>
+            {% endfor %}
+          </div>
+
+          <button type="button" class="btn-auth btn-ind" data-next-step>
+            Continue <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+
+          <div class="auth-sep"><span>already have an account?</span></div>
+          <p class="auth-foot mb-0">
+            <a href="{{ url_for('auth.login') }}">Sign in instead</a>
+          </p>
+        </div>
+
+        <!-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 2 â€” Personal details â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <div class="step-panel" data-panel="2">
+          <div class="step-panel-head">
+            <h1 class="auth-title">About you</h1>
+            <p class="auth-subtitle">Tell us a bit about yourself</p>
+          </div>
+
+          <!-- First + Last name side by side -->
+          <div class="d-flex gap-2 mb-4">
+            <div style="flex:1;min-width:0;">
+              {{ form.first_name.label(class="form-label") }}
+              {{ form.first_name(
+                class="form-control" + (" is-invalid" if form.first_name.errors else ""),
+                id="first_name",
+                placeholder="John",
+                autocomplete="given-name"
+              ) }}
+              {% for e in form.first_name.errors %}
+                <div class="invalid-feedback">
+                  <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+                </div>
+              {% endfor %}
+            </div>
+            <div style="flex:1;min-width:0;">
+              {{ form.last_name.label(class="form-label") }}
+              {{ form.last_name(
+                class="form-control" + (" is-invalid" if form.last_name.errors else ""),
+                id="last_name",
+                placeholder="Doe",
+                autocomplete="family-name"
+              ) }}
+              {% for e in form.last_name.errors %}
+                <div class="invalid-feedback">
+                  <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="form-text mb-4" style="margin-top:-0.75rem;">
+            Last name is optional. You can update these anytime from your profile.
+          </div>
+
+          <div class="step-nav">
+            <button type="button" class="btn-step-back" data-prev-step>
+              <i class="bi bi-arrow-left"></i> Back
+            </button>
+            <button type="button" class="btn-auth btn-ind" data-next-step>
+              Continue <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 3 â€” Password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <div class="step-panel" data-panel="3">
+          <div class="step-panel-head">
+            <h1 class="auth-title">Set your password</h1>
+            <p class="auth-subtitle">Choose a strong password to secure your account</p>
+          </div>
+
+          <!-- Password + strength bar -->
+          <div class="mb-3">
+            {{ form.password.label(class="form-label") }}
+            <div class="pw-group">
+              {{ form.password(
+                class="form-control" + (" is-invalid" if form.password.errors else ""),
+                id="pw1",
+                placeholder="Minimum 8 characters",
+                autocomplete="new-password",
+                data_strength_for="pwstrength"
+              ) }}
+              <button type="button" class="pw-toggle" data-toggle-pw="pw1" aria-label="Toggle password">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+            {% for e in form.password.errors %}
+              <div class="invalid-feedback">
+                <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+              </div>
+            {% endfor %}
+            <div class="pw-strength-wrap" id="pwstrength-wrap" style="display:none;">
+              <div class="pw-strength-track">
+                <div class="pw-strength-fill" id="pwstrength-fill"></div>
+              </div>
+              <span class="pw-strength-label" id="pwstrength-label"></span>
+            </div>
+          </div>
+
+          <!-- Confirm password + match hint -->
+          <div class="mb-4">
+            {{ form.confirm_password.label(class="form-label") }}
+            <div class="pw-group">
+              {{ form.confirm_password(
+                class="form-control" + (" is-invalid" if form.confirm_password.errors else ""),
+                id="pw2",
+                placeholder="Re-enter your password",
+                autocomplete="new-password",
+                data_match_source="pw1",
+                data_match_hint="pw-match"
+              ) }}
+              <button type="button" class="pw-toggle" data-toggle-pw="pw2" aria-label="Toggle password">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+            {% for e in form.confirm_password.errors %}
+              <div class="invalid-feedback">
+                <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+              </div>
+            {% endfor %}
+            <div class="pw-match-hint" id="pw-match"></div>
+          </div>
+
+          <div class="step-nav">
+            <button type="button" class="btn-step-back" data-prev-step>
+              <i class="bi bi-arrow-left"></i> Back
+            </button>
+            <button
+              type="submit"
+              class="btn-auth btn-ind"
+              data-submit-btn
+              data-loading-text="Creating accountâ€¦"
+            >
+              <i class="bi bi-check-lg me-1"></i>Create Account
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  /* Show strength bar only when user starts typing */
+  var pw1  = document.getElementById('pw1');
+  var wrap = document.getElementById('pwstrength-wrap');
+  if (pw1 && wrap) {
+    pw1.addEventListener('input', function () {
+      wrap.style.display = pw1.value ? 'block' : 'none';
+    });
+  }
+</script>
+{% endblock %}
