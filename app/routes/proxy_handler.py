@@ -21,12 +21,15 @@ status='stopped' → 503 Service Unavailable is returned immediately
 """
 
 import logging
+import time
 
 import requests as http
 from flask import Blueprint, Response, abort, request
 from requests.exceptions import ConnectionError as ReqConnError, Timeout as ReqTimeout
 
+from app import db
 from app.models.proxy import ProxyConfig
+from app.models.proxy_log import ProxyLog
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +47,35 @@ _HOP_BY_HOP_RESPONSE = frozenset({
     "content-encoding", "transfer-encoding", "connection",
     "keep-alive", "proxy-connection",
 })
+
+
+# ── Logging helper ────────────────────────────────────────────────────────────
+
+def _client_ip() -> str:
+    """Return the real client IP, respecting X-Forwarded-For if present."""
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        # Take the first address (the originating client)
+        return forwarded_for.split(",")[0].strip()
+    return request.remote_addr or "unknown"
+
+
+def _write_log(proxy: ProxyConfig, status_code: int | None, duration_ms: int | None) -> None:
+    """Persist a ProxyLog row. Silently swallows DB errors to never break the proxy."""
+    try:
+        entry = ProxyLog(
+            proxy_id    = proxy.id,
+            method      = request.method,
+            path        = request.full_path.rstrip("?"),
+            status_code = status_code,
+            client_ip   = _client_ip(),
+            duration_ms = duration_ms,
+        )
+        db.session.add(entry)
+        db.session.commit()
+    except Exception:  # noqa: BLE001
+        db.session.rollback()
+        logger.exception("Failed to write proxy log for proxy %s", proxy.slug)
 
 
 # ── Core forwarding logic ──────────────────────────────────────────────────────
@@ -96,7 +128,8 @@ def _forward(proxy: ProxyConfig, path: str) -> Response:
     if proxy.skip_ngrok_warning:
         headers["ngrok-skip-browser-warning"] = "true"
 
-    # Forward the request upstream
+    # Forward the request upstream — track wall time for the log
+    t_start = time.monotonic()
     try:
         upstream = http.request(
             method=request.method,
@@ -124,6 +157,9 @@ def _forward(proxy: ProxyConfig, path: str) -> Response:
             content_type="text/html",
         )
 
+    # Record elapsed time before building the response
+    duration = int((time.monotonic() - t_start) * 1000)
+
     # Build the Flask response from the upstream reply
     response = Response(upstream.content, status=upstream.status_code)
     for name, value in upstream.headers.items():
@@ -136,6 +172,7 @@ def _forward(proxy: ProxyConfig, path: str) -> Response:
         response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["Access-Control-Allow-Methods"] = proxy.allowed_methods
 
+    _write_log(proxy, upstream.status_code, duration)
     return response
 
 
@@ -148,10 +185,12 @@ _PROXY_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
     "/proxy/<slug>",
     defaults={"path": ""},
     methods=_PROXY_METHODS,
+    strict_slashes=False,
 )
 @proxy_handler_bp.route(
     "/proxy/<slug>/<path:path>",
     methods=_PROXY_METHODS,
+    strict_slashes=False,
 )
 def endpoint_proxy(slug: str, path: str) -> Response:
     """Handle endpoint-mode proxy requests at /proxy/<slug>/[path]."""
@@ -168,8 +207,9 @@ def endpoint_proxy(slug: str, path: str) -> Response:
 
     # Block methods not enabled for this proxy
     if request.method not in proxy.allowed_methods_list():
+        _write_log(proxy, 405, None)
         return Response(
-            f"<h1 style='font-family:sans-serif'>405 — Method Not Allowed</h1>"
+            f"<h1 style='font-family:sans-serif'>405 \u2014 Method Not Allowed</h1>"
             f"<p style='font-family:sans-serif'>This proxy does not allow {request.method} requests.</p>",
             status=405,
             content_type="text/html",
