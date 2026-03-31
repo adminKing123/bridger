@@ -21,14 +21,14 @@ class Config:
     )
 
     # ── Database ──────────────────────────────────────────────────────────────
-    # SQLAlchemy 2.x requires 'postgresql+psycopg2://' — rewrite legacy scheme
+    # SQLAlchemy with pg8000 (pure-Python driver, no compilation needed)
     SQLALCHEMY_DATABASE_URI: str = os.environ.get("DATABASE_URL", "").replace(
-        "postgresql://", "postgresql+psycopg2://", 1
+        "postgresql://", "postgresql+pg8000://", 1
     )
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
     # Supabase (and most managed Postgres) requires SSL
     SQLALCHEMY_ENGINE_OPTIONS: dict = {
-        "connect_args": {"sslmode": "require"},
+        "connect_args": {"ssl_context": True},
     }
 
     # ── Email (SMTP) ──────────────────────────────────────────────────────────
