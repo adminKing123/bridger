@@ -50,14 +50,88 @@
 
   <div class="row g-3">
 
-    <!-- ── Left: Edit profile ─────────────────────────────── -->
+    <!-- ── Left: Profile details (view + edit) ───────────────── -->
+    <div class="col-md-5">
+      <div class="panel">
+        <div class="panel-head">
+          <i class="bi bi-person-lines-fill" style="color:var(--text-2);font-size:.9rem;"></i>
+          <span class="panel-head-title">Account Info</span>
+        </div>
+        <div class="panel-body p-0">
+
+          <div class="info-tile">
+            <div class="info-tile-icon" style="background:var(--primary-light);color:var(--primary);">
+              <i class="bi bi-envelope-fill"></i>
+            </div>
+            <div class="info-tile-body">
+              <span class="info-tile-label">Email address</span>
+              <span class="info-tile-val" style="word-break:break-all;">{{ current_user.email }}</span>
+            </div>
+          </div>
+
+          <div class="info-tile">
+            <div class="info-tile-icon" style="background:#ede9fe;color:#7c3aed;">
+              <i class="bi bi-at"></i>
+            </div>
+            <div class="info-tile-body">
+              <span class="info-tile-label">Username</span>
+              <span class="info-tile-val">{{ current_user.username }}</span>
+            </div>
+          </div>
+
+          <div class="info-tile">
+            <div class="info-tile-icon" style="background:{% if current_user.is_verified %}#dcfce7;color:#16a34a;{% else %}#fef9c3;color:#a16207;{% endif %}">
+              <i class="bi bi-{% if current_user.is_verified %}patch-check-fill{% else %}exclamation-circle{% endif %}"></i>
+            </div>
+            <div class="info-tile-body">
+              <span class="info-tile-label">Account status</span>
+              <span class="info-tile-val" style="font-weight:600;color:{% if current_user.is_verified %}var(--success){% else %}var(--warning){% endif %};">{% if current_user.is_verified %}Verified{% else %}Unverified{% endif %}</span>
+            </div>
+          </div>
+
+          <div class="info-tile" style="border-bottom:none;">
+            <div class="info-tile-icon" style="background:#e0f2fe;color:#0369a1;">
+              <i class="bi bi-calendar3"></i>
+            </div>
+            <div class="info-tile-body">
+              <span class="info-tile-label">Member since</span>
+              <span class="info-tile-val">{{ current_user.created_at.strftime('%d %b %Y') }}</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Right: Account info ────────────────────────────── -->
     <div class="col-md-7">
       <div class="panel">
         <div class="panel-head">
-          <i class="bi bi-pencil" style="color:var(--primary);font-size:.9rem;"></i>
-          <span class="panel-head-title">Edit Profile</span>
+          <i class="bi bi-person" style="color:var(--primary);font-size:.9rem;"></i>
+          <span class="panel-head-title">Profile Details</span>
+          <button type="button" class="btn-edit-profile ms-auto" id="editProfileBtn">
+            <i class="bi bi-pencil-fill"></i>Edit
+          </button>
         </div>
-        <div class="panel-body">
+
+        <!-- ── View mode (default) ── -->
+        <div id="profileView" class="panel-body">
+          <div class="profile-view-field">
+            <span class="profile-view-label">Username</span>
+            <span class="profile-view-val">{{ current_user.username }}</span>
+          </div>
+          <div class="profile-view-field">
+            <span class="profile-view-label">First name</span>
+            <span class="profile-view-val">{{ current_user.first_name or '—' }}</span>
+          </div>
+          <div class="profile-view-field" style="border-bottom:none;">
+            <span class="profile-view-label">Last name</span>
+            <span class="profile-view-val">{{ current_user.last_name or '—' }}</span>
+          </div>
+        </div>
+
+        <!-- ── Edit form (hidden by default; auto-opens on server errors) ── -->
+        <div id="profileEditForm" class="panel-body" style="display:none;">
           <form
             method="POST"
             action="{{ url_for('profile.profile') }}"
@@ -111,7 +185,14 @@
               </div>
             </div>
 
-            <div class="d-flex gap-2 mt-4">
+            <div class="profile-form-actions mt-4">
+              <button
+                type="button"
+                class="btn-profile-discard"
+                id="discardProfileBtn"
+              >
+                Discard
+              </button>
               <button
                 type="submit"
                 class="btn-save"
@@ -120,79 +201,15 @@
               >
                 <i class="bi bi-check-lg"></i>Save Changes
               </button>
-              <a href="{{ url_for('profile.profile') }}" class="btn-cancel">
-                Cancel
-              </a>
             </div>
           </form>
         </div>
+
       </div>
     </div>
-
-    <!-- ── Right: Account info ────────────────────────────── -->
-    <div class="col-md-5">
-      <div class="panel">
-        <div class="panel-head">
-          <i class="bi bi-person-lines-fill" style="color:var(--text-2);font-size:.9rem;"></i>
-          <span class="panel-head-title">Account Info</span>
-        </div>
-        <div class="panel-body pt-1 pb-1">
-
-          <div class="info-row">
-            <span class="info-label">Email</span>
-            <span class="info-val" style="word-break:break-all;font-size:.84rem;">{{ current_user.email }}</span>
-          </div>
-
-          <div class="info-row">
-            <span class="info-label">Username</span>
-            <span class="info-val">@{{ current_user.username }}</span>
-          </div>
-
-          <div class="info-row">
-            <span class="info-label">Status</span>
-            <span class="info-val">
-              {% if current_user.is_verified %}
-                <span style="color:var(--success);font-weight:600;font-size:.84rem;">
-                  <i class="bi bi-patch-check-fill me-1"></i>Verified
-                </span>
-              {% else %}
-                <span style="color:var(--warning);font-weight:600;font-size:.84rem;">
-                  <i class="bi bi-exclamation-circle-fill me-1"></i>Unverified
-                </span>
-              {% endif %}
-            </span>
-          </div>
-
-          <div class="info-row">
-            <span class="info-label">Member since</span>
-            <span class="info-val">{{ current_user.created_at.strftime('%d %b %Y') }}</span>
-          </div>
-
-        </div>
-      </div>
-    </div>
+    
 
   </div><!-- /row -->
-
-  <!-- ── Danger zone ────────────────────────────────────────── -->
-  <div class="panel danger-zone mt-3">
-    <div class="panel-head">
-      <i class="bi bi-shield-exclamation" style="font-size:.9rem;color:var(--danger);"></i>
-      <span class="panel-head-title">Account Actions</span>
-    </div>
-    <div class="panel-body">
-      <p style="font-size:.84rem;color:var(--text-2);margin-bottom:.75rem;">
-        Sign out ends your current session on this device.
-      </p>
-      <a
-        href="{{ url_for('auth.logout') }}"
-        class="btn-danger-outline"
-        data-logout-trigger
-      >
-        <i class="bi bi-box-arrow-right"></i>Sign Out
-      </a>
-    </div>
-  </div>
 
 </div>
 {% endblock %}
