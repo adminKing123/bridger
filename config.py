@@ -21,15 +21,11 @@ class Config:
     )
 
     # ── Database ──────────────────────────────────────────────────────────────
-    # SQLAlchemy with pg8000 (pure-Python driver, no compilation needed)
-    SQLALCHEMY_DATABASE_URI: str = os.environ.get("DATABASE_URL", "").replace(
-        "postgresql://", "postgresql+pg8000://", 1
+    SQLALCHEMY_DATABASE_URI: str = os.environ.get(
+        "DATABASE_URL",
+        "sqlite:///db.sqlite3",
     )
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
-    # Supabase (and most managed Postgres) requires SSL
-    SQLALCHEMY_ENGINE_OPTIONS: dict = {
-        "connect_args": {"ssl_context": True},
-    }
 
     # ── Email (SMTP) ──────────────────────────────────────────────────────────
     SMTP_HOST: str = os.environ.get("SMTP_HOST", "smtp.gmail.com")
