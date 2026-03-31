@@ -2,8 +2,12 @@
 
 ## Project Overview
 
-A Flask web application with full user authentication: registration, email OTP
-verification, login, forgot password (OTP reset), and a protected profile page.
+A Flask web application with full user authentication (registration, email OTP
+verification, login, password reset) and a suite of developer tools — starting
+with an **HTTP Proxy** service for forwarding requests and bypassing CORS.
+
+> **Service documentation**
+> - HTTP Proxy service → see [proxy-service.md](proxy-service.md)
 
 ---
 
@@ -20,6 +24,7 @@ verification, login, forgot password (OTP reset), and a protected profile page.
 | Password hashing | Flask-Bcrypt |
 | Forms / CSRF | Flask-WTF + WTForms |
 | Email delivery | Python `smtplib` over SMTP/TLS |
+| HTTP proxying | `requests` library |
 | Env management | python-dotenv |
 
 ---
@@ -32,30 +37,43 @@ Bridger/
 │   ├── __init__.py            # App factory (extensions, blueprints)
 │   ├── models/
 │   │   ├── __init__.py
-│   │   └── user.py            # User + OTP SQLAlchemy models
+│   │   ├── user.py            # User + OTP SQLAlchemy models
+│   │   ├── proxy.py           # ProxyConfig model
+│   │   └── proxy_log.py       # ProxyLog model (per-request audit log)
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   ├── auth.py            # signup, login, logout, verify-email,
 │   │   │                      #   forgot-password, reset-password
-│   │   └── profile.py         # protected /profile
+│   │   ├── profile.py         # protected /profile + landing index
+│   │   ├── dashboard.py       # protected /dashboard
+│   │   ├── proxy_manager.py   # CRUD + lifecycle for proxy configs
+│   │   └── proxy_handler.py   # Live request forwarding + subdomain hook
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── email_service.py   # SMTP email sender + template helpers
 │   │   └── otp_service.py     # OTP generation, storage, verification
 │   ├── forms/
 │   │   ├── __init__.py
-│   │   └── auth_forms.py      # WTForms: Signup, Login, Verify,
-│   │                          #   ForgotPassword, ResetPassword, UpdateProfile
+│   │   ├── auth_forms.py      # WTForms: Signup, Login, Verify,
+│   │   │                      #   ForgotPassword, ResetPassword, UpdateProfile
+│   │   └── proxy_forms.py     # ProxyCreateForm, ProxyEditForm
 │   ├── templates/
-│   │   ├── base.html          # Bootstrap 5 shell
+│   │   ├── base.html          # Bootstrap 5 shell + navbar
 │   │   ├── auth/
 │   │   │   ├── login.html
 │   │   │   ├── signup.html
 │   │   │   ├── verify_email.html
 │   │   │   ├── forgot_password.html
 │   │   │   └── reset_password.html
-│   │   └── profile/
-│   │       └── profile.html
+│   │   ├── dashboard/
+│   │   │   └── dashboard.html
+│   │   ├── profile/
+│   │   │   └── profile.html
+│   │   └── proxy/
+│   │       ├── list.html      # Paginated proxy list
+│   │       ├── create.html    # New proxy form
+│   │       ├── detail.html    # View / inline-edit proxy
+│   │       └── logs.html      # Paginated request log table
 │   └── static/
 │       ├── css/main.css
 │       └── js/main.js
@@ -64,6 +82,7 @@ Bridger/
 ├── .env                       # Secrets (not committed)
 ├── .gitignore
 ├── requirements.txt
+├── proxy-service.md           # HTTP Proxy service documentation
 └── plan.md                    # ← This file
 ```
 
@@ -78,6 +97,8 @@ Bridger/
 | 3 | Login | Email + password; blocks unverified accounts |
 | 4 | Forgot Password | Email entered → OTP sent; enter OTP + new password |
 | 5 | Protected Profile | View info + update username; redirects to login if not authed |
+| 6 | Dashboard | Authenticated landing page with account stat cards |
+| 7 | HTTP Proxy Service | Per-user proxy configs; endpoint & subdomain delivery modes; CORS bypass; per-request logging with client IP — see [proxy-service.md](proxy-service.md) |
 
 ---
 
@@ -140,6 +161,12 @@ POST /auth/reset-password  (OTP + new password entered)
 | is_used | BOOLEAN | default False |
 | created_at | DATETIME | UTC |
 
+### `proxy_configs`
+See [proxy-service.md → Data Model](proxy-service.md#data-model).
+
+### `proxy_logs`
+See [proxy-service.md → Data Model](proxy-service.md#data-model).
+
 ---
 
 ## Route Map
@@ -153,7 +180,18 @@ POST /auth/reset-password  (OTP + new password entered)
 | GET | `/auth/logout` | Yes | Logout |
 | GET/POST | `/auth/forgot-password` | No | Request password reset |
 | GET/POST | `/auth/reset-password` | No | Submit OTP + new password |
+| GET | `/dashboard` | **Yes** | Dashboard home |
 | GET/POST | `/profile` | **Yes** | View/edit profile |
+| GET | `/proxies/` | **Yes** | List proxies (paginated) |
+| GET/POST | `/proxies/new` | **Yes** | Create proxy |
+| GET | `/proxies/<id>` | **Yes** | Proxy detail / inline edit |
+| POST | `/proxies/<id>/edit` | **Yes** | Save proxy edits |
+| POST | `/proxies/<id>/delete` | **Yes** | Delete proxy |
+| POST | `/proxies/<id>/start` | **Yes** | Start proxy |
+| POST | `/proxies/<id>/stop` | **Yes** | Stop proxy |
+| GET | `/proxies/<id>/logs` | **Yes** | Paginated request log |
+| ANY | `/proxy/<slug>/[path]` | No | Endpoint-mode forwarding |
+| ANY | `<slug>.localhost/[path]` | No | Subdomain-mode forwarding |
 
 ---
 
@@ -207,5 +245,9 @@ App runs at: http://localhost:5000
 - [x] Profile route (protected)
 - [x] Bootstrap 5 templates (all pages)
 - [x] Custom CSS + JS
+- [x] Dashboard
+- [x] HTTP Proxy service (endpoint + subdomain modes)
+- [x] Proxy request logging (DB-persisted, client IP, timing)
+- [x] Proxy logs UI (paginated table + stats strip)
 - [ ] Unit tests
 - [ ] Deployment config (Gunicorn / Docker)
