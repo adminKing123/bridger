@@ -54,9 +54,11 @@ def create_app(config_class=DevelopmentConfig) -> Flask:
     # ── Register blueprints ───────────────────────────────────────────────────
     from app.routes.auth import auth_bp
     from app.routes.profile import profile_bp
+    from app.routes.dashboard import dashboard_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(profile_bp)
+    app.register_blueprint(dashboard_bp)
 
     # ── Create database tables ────────────────────────────────────────────────
     with app.app_context():

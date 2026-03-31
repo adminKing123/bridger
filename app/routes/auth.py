@@ -68,7 +68,7 @@ def _is_safe_redirect_url(target: str) -> bool:
 def signup():
     """Register a new user account and send an email verification OTP."""
     if current_user.is_authenticated:
-        return redirect(url_for("profile.profile"))
+        return redirect(url_for("dashboard.dashboard"))
 
     form = SignupForm()
 
@@ -173,7 +173,7 @@ def resend_otp():
 def login():
     """Authenticate an existing, verified user and start a session."""
     if current_user.is_authenticated:
-        return redirect(url_for("profile.profile"))
+        return redirect(url_for("dashboard.dashboard"))
 
     form = LoginForm()
 
@@ -196,7 +196,7 @@ def login():
             next_page = request.args.get("next")
             if next_page and _is_safe_redirect_url(next_page):
                 return redirect(next_page)
-            return redirect(url_for("profile.profile"))
+            return redirect(url_for("dashboard.dashboard"))
 
         flash("Incorrect email or password.", "danger")
 
@@ -223,7 +223,7 @@ def forgot_password():
     A generic flash message is always shown to prevent email enumeration.
     """
     if current_user.is_authenticated:
-        return redirect(url_for("profile.profile"))
+        return redirect(url_for("dashboard.dashboard"))
 
     form = ForgotPasswordForm()
 

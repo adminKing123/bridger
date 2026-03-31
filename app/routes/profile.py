@@ -23,9 +23,9 @@ profile_bp = Blueprint("profile", __name__)
 
 @profile_bp.route("/")
 def index():
-    """Root URL — redirect authenticated users to their profile, others to login."""
+    """Root URL — redirect authenticated users to the dashboard, others to login."""
     if current_user.is_authenticated:
-        return redirect(url_for("profile.profile"))
+        return redirect(url_for("dashboard.dashboard"))
     return redirect(url_for("auth.login"))
 
 

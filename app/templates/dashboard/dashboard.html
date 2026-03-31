@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — Bridger{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:900px;">
+
+  <!-- ── Page header ─────────────────────────────────────── -->
+  <div class="dash-header mb-4">
+    <div>
+      <h1 class="dash-title">
+        Good to see you,
+        <span class="dash-name">
+          {% if current_user.first_name %}{{ current_user.first_name }}
+          {% else %}{{ current_user.username }}{% endif %}
+        </span> 👋
+      </h1>
+      <p class="dash-subtitle">Here's your Bridger dashboard.</p>
+    </div>
+    <a href="{{ url_for('profile.profile') }}" class="btn-dash-profile">
+      <div class="dash-avatar-sm">
+        {% if current_user.first_name %}{{ current_user.first_name[0] | upper }}
+        {% else %}{{ current_user.username[0] | upper }}{% endif %}
+      </div>
+      <span>{{ current_user.username }}</span>
+      <i class="bi bi-chevron-right" style="font-size:.7rem;opacity:.6;"></i>
+    </a>
+  </div>
+
+  <!-- ── Stat cards row ──────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon" style="background:#ede9fe;color:#7c3aed;">
+          <i class="bi bi-person-check-fill"></i>
+        </div>
+        <div class="dash-stat-body">
+          <span class="dash-stat-label">Account</span>
+          <span class="dash-stat-val">
+            {% if current_user.is_verified %}Verified{% else %}Unverified{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon" style="background:#dcfce7;color:#16a34a;">
+          <i class="bi bi-calendar3"></i>
+        </div>
+        <div class="dash-stat-body">
+          <span class="dash-stat-label">Member since</span>
+          <span class="dash-stat-val">{{ current_user.created_at.strftime('%b %Y') }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon" style="background:#e0f2fe;color:#0369a1;">
+          <i class="bi bi-envelope-fill"></i>
+        </div>
+        <div class="dash-stat-body">
+          <span class="dash-stat-label">Email</span>
+          <span class="dash-stat-val" style="font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;">{{ current_user.email }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="dash-stat-card">
+        <div class="dash-stat-icon" style="background:#fef9c3;color:#a16207;">
+          <i class="bi bi-activity"></i>
+        </div>
+        <div class="dash-stat-body">
+          <span class="dash-stat-label">Status</span>
+          <span class="dash-stat-val">Active</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Coming soon panel ───────────────────────────────── -->
+  <div class="dash-empty-panel">
+    <div class="dash-empty-icon">
+      <i class="bi bi-grid-1x2"></i>
+    </div>
+    <h2 class="dash-empty-title">Dashboard content coming soon</h2>
+    <p class="dash-empty-body">
+      This is a protected area. Your features and widgets will live here.
+    </p>
+    <a href="{{ url_for('profile.profile') }}" class="btn-auth btn-ind" style="display:inline-flex;text-decoration:none;font-size:.875rem;">
+      <i class="bi bi-person-circle"></i>View Profile
+    </a>
+  </div>
+
+</div>
+{% endblock %}
