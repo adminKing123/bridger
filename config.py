@@ -10,9 +10,6 @@ from dotenv import load_dotenv
 # Load .env before any other config access
 load_dotenv()
 
-# Absolute path to the project root directory
-_BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-
 
 class Config:
     """Base configuration shared across all environments."""
@@ -24,11 +21,15 @@ class Config:
     )
 
     # ── Database ──────────────────────────────────────────────────────────────
-    SQLALCHEMY_DATABASE_URI: str = os.environ.get(
-        "DATABASE_URL",
-        f"sqlite:///{os.path.join(_BASE_DIR, 'data.sqlite3')}",
+    # SQLAlchemy 2.x requires 'postgresql+psycopg2://' — rewrite legacy scheme
+    SQLALCHEMY_DATABASE_URI: str = os.environ.get("DATABASE_URL", "").replace(
+        "postgresql://", "postgresql+psycopg2://", 1
     )
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
+    # Supabase (and most managed Postgres) requires SSL
+    SQLALCHEMY_ENGINE_OPTIONS: dict = {
+        "connect_args": {"sslmode": "require"},
+    }
 
     # ── Email (SMTP) ──────────────────────────────────────────────────────────
     SMTP_HOST: str = os.environ.get("SMTP_HOST", "smtp.gmail.com")
