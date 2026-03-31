@@ -441,6 +441,36 @@
     });
   }
 
+  /* ── Clear-logs confirmation modal ──────────────────────────────────────── */
+  function initClearLogs() {
+    var trigger   = document.getElementById('clearLogsBtn');
+    var backdrop  = document.getElementById('clearLogsModal');
+    var cancelBtn = document.getElementById('clearLogsCancel');
+    if (!trigger || !backdrop) return;
+
+    function openModal() {
+      backdrop.classList.add('open');
+      backdrop.removeAttribute('aria-hidden');
+      if (cancelBtn) cancelBtn.focus();
+    }
+
+    function closeModal() {
+      backdrop.classList.remove('open');
+      backdrop.setAttribute('aria-hidden', 'true');
+    }
+
+    trigger.addEventListener('click', openModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+    backdrop.addEventListener('click', function (e) {
+      if (e.target === backdrop) closeModal();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && backdrop.classList.contains('open')) closeModal();
+    });
+  }
+
   /* ── Boot ────────────────────────────────────────────────────────────────── */
   document.addEventListener('DOMContentLoaded', function () {
     initPasswordToggles();
@@ -453,5 +483,6 @@
     initLogoutModal();
     initProfileEdit();
     initProxyCopy();
+    initClearLogs();
   });
 })();

@@ -196,3 +196,15 @@ def logs_proxy(proxy_id: int):
         .paginate(page=page, per_page=30, error_out=False)
     )
     return render_template("proxy/logs.html", proxy=proxy, logs=logs)
+
+
+@proxy_manager_bp.route("/<int:proxy_id>/logs/clear", methods=["POST"])
+@login_required
+def clear_logs(proxy_id: int):
+    """Delete all log entries for a proxy owned by the current user."""
+    proxy = _own_proxy_or_404(proxy_id)
+    deleted = ProxyLog.query.filter_by(proxy_id=proxy.id).delete()
+    db.session.commit()
+    logger.info("Cleared %d log entries for proxy slug=%s", deleted, proxy.slug)
+    flash(f"All logs cleared for '{proxy.name}'.", "success")
+    return redirect(url_for("proxy_manager.logs_proxy", proxy_id=proxy.id))
