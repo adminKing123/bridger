@@ -46,12 +46,13 @@ def _own_proxy_or_404(proxy_id: int) -> ProxyConfig:
 @proxy_manager_bp.route("/")
 @login_required
 def list_proxies():
-    """Display all proxy configurations belonging to the current user."""
+    """Display all proxy configurations belonging to the current user (paginated)."""
+    page = request.args.get("page", 1, type=int)
     proxies = (
         ProxyConfig.query
         .filter_by(user_id=current_user.id)
         .order_by(ProxyConfig.created_at.desc())
-        .all()
+        .paginate(page=page, per_page=30, error_out=False)
     )
     return render_template("proxy/list.html", proxies=proxies)
 
@@ -192,6 +193,6 @@ def logs_proxy(proxy_id: int):
         ProxyLog.query
         .filter_by(proxy_id=proxy.id)
         .order_by(ProxyLog.created_at.desc())
-        .paginate(page=page, per_page=50, error_out=False)
+        .paginate(page=page, per_page=30, error_out=False)
     )
     return render_template("proxy/logs.html", proxy=proxy, logs=logs)
