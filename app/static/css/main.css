@@ -95,6 +95,23 @@ body {
   transition: background var(--transition);
 }
 .app-navbar .btn-nav-cta:hover { background: var(--primary-dark) !important; }
+.app-navbar .dropdown-menu {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius);
+  min-width: 11rem;
+  padding: .35rem;
+}
+.app-navbar .dropdown-item {
+  font-size: .875rem;
+  font-weight: 500;
+  color: var(--text-2);
+  border-radius: var(--radius-sm);
+  padding: .4rem .7rem;
+}
+.app-navbar .dropdown-item:hover { background: var(--bg); color: var(--text); }
+.app-navbar .dropdown-divider { border-color: var(--border); margin: .3rem 0; }
 
 /* ── 4. Auth screen wrapper ─────────────────────────────────── */
 .auth-page {

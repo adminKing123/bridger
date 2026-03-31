@@ -77,35 +77,5 @@
     </div>
   </div>
 
-  <!-- ── Services ──────────────────────────────────────────── -->
-  <div class="row g-3 mb-4">
-    <div class="col-md-4">
-      <a href="{{ url_for('proxy_manager.list_proxies') }}" class="dash-service-card" style="text-decoration:none;">
-        <div class="dash-service-icon" style="background:#e0f2fe;color:#0369a1;">
-          <i class="bi bi-arrow-left-right"></i>
-        </div>
-        <div>
-          <p class="dash-service-name">HTTP Proxy</p>
-          <p class="dash-service-desc">Forward requests &amp; bypass CORS</p>
-        </div>
-        <i class="bi bi-chevron-right ms-auto" style="color:var(--text-3);font-size:.8rem;"></i>
-      </a>
-    </div>
-  </div>
-
-  <!-- ── Coming soon panel ───────────────────────────────── -->
-  <div class="dash-empty-panel">
-    <div class="dash-empty-icon">
-      <i class="bi bi-grid-1x2"></i>
-    </div>
-    <h2 class="dash-empty-title">Dashboard content coming soon</h2>
-    <p class="dash-empty-body">
-      This is a protected area. Your features and widgets will live here.
-    </p>
-    <a href="{{ url_for('profile.profile') }}" class="btn-auth btn-ind" style="display:inline-flex;text-decoration:none;font-size:.875rem;">
-      <i class="bi bi-person-circle"></i>View Profile
-    </a>
-  </div>
-
 </div>
 {% endblock %}
