@@ -1,6 +1,6 @@
 ﻿{% extends 'base.html' %}
 
-{% block title %}{{ cfg.name }} â€” Webex â€” Bridger{% endblock %}
+{% block title %}{{ cfg.name }} — Webex — Bridger{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/webex.css') }}" />
@@ -30,7 +30,7 @@
           <p class="webex-hero-sub">
             {% if cfg.webex_display_name %}
               {{ cfg.webex_display_name }}
-              {% if cfg.webex_email %}&nbsp;Â·&nbsp;{{ cfg.webex_email }}{% endif %}
+              {% if cfg.webex_email %}&nbsp;&middot;&nbsp;{{ cfg.webex_email }}{% endif %}
             {% else %}
               Token not yet verified
             {% endif %}
@@ -60,7 +60,7 @@
           type="submit"
           class="btn-webex-verify"
           data-submit-btn
-          data-loading-text="Verifyingâ€¦"
+          data-loading-text="Verifying&hellip;"
         >
           <i class="bi bi-shield-check"></i>Verify Token
         </button>
@@ -93,17 +93,17 @@
 
             <div class="webex-field">
               <span class="webex-field-label">Email</span>
-              <span class="webex-field-val">{{ cfg.webex_email or 'â€”' }}</span>
+              <span class="webex-field-val">{{ cfg.webex_email or '—' }}</span>
             </div>
 
             <div class="webex-field">
               <span class="webex-field-label">Person ID</span>
-              <span class="webex-field-val mono">{{ cfg.webex_person_id or 'â€”' }}</span>
+              <span class="webex-field-val mono">{{ cfg.webex_person_id or '—' }}</span>
             </div>
 
             <div class="webex-field">
               <span class="webex-field-label">Organisation ID</span>
-              <span class="webex-field-val mono">{{ cfg.webex_org_id or 'â€”' }}</span>
+              <span class="webex-field-val mono">{{ cfg.webex_org_id or '—' }}</span>
             </div>
 
           {% else %}
@@ -187,7 +187,7 @@
               {% endfor %}
             </div>
 
-            <!-- Access token (optional on edit â€” blank = keep current) -->
+            <!-- Access token (optional on edit — blank = keep current) -->
             <div class="mb-3">
               {{ form.access_token.label(class="form-label") }}
               <div class="webex-token-input-wrap" id="webexTokenWrap">
@@ -216,7 +216,7 @@
                 type="submit"
                 class="btn-save"
                 data-submit-btn
-                data-loading-text="Savingâ€¦"
+                data-loading-text="Saving&hellip;"
               >
                 <i class="bi bi-check-lg"></i>Save Changes
               </button>
@@ -255,7 +255,7 @@
       <i class="bi bi-broadcast" style="color:#00a899;font-size:.9rem;"></i>
       <span class="panel-head-title">Webhooks</span>
       <span class="proxy-log-count ms-auto">
-        {{ webhooks.total }} Bridger &nbsp;Â·&nbsp; {{ external_webhooks|length }} external
+        {{ webhooks.total }} Bridger &nbsp;&middot;&nbsp; {{ external_webhooks|length }} external
       </span>
       <a href="{{ url_for('webex.create_webhook', config_id=cfg.id) }}"
          class="btn-webex-action view"
@@ -373,8 +373,8 @@
                       {% endif %}
                     </td>
                     <td><span class="webex-source-badge external"><i class="bi bi-box-arrow-up-right"></i> External</span></td>
-                    <td style="font-size:.875rem;color:var(--text-3);">â€”</td>
-                    <td class="proxy-log-time">{{ ewh.created[:10] if ewh.created else 'â€”' }}</td>
+                    <td style="font-size:.875rem;color:var(--text-3);">—</td>
+                    <td class="proxy-log-time">{{ ewh.created[:10] if ewh.created else '—' }}</td>
                     <td>
                       <button type="button" class="btn-webex-action"
                               style="font-size:.75rem;padding:.28rem .65rem;background:var(--danger-light);color:var(--danger);"
@@ -557,8 +557,8 @@
                         <span class="proxy-status-badge stopped">{{ ewh.status | title }}</span>
                       {% endif %}
                     </td>
-                    <td style="font-size:.8rem;color:var(--text-3);">{{ ewh.filter or 'â€”' }}</td>
-                    <td class="proxy-log-time">{{ ewh.created[:10] if ewh.created else 'â€”' }}</td>
+                    <td style="font-size:.8rem;color:var(--text-3);">{{ ewh.filter or '—' }}</td>
+                    <td class="proxy-log-time">{{ ewh.created[:10] if ewh.created else '—' }}</td>
                     <td>
                       <button type="button" class="btn-webex-action"
                               style="font-size:.75rem;padding:.28rem .65rem;background:var(--danger-light);color:var(--danger);"
@@ -613,7 +613,7 @@
       <button type="button" class="br-modal-cancel" id="deleteWhCancel">Cancel</button>
       <form id="deleteWhForm" method="POST" style="flex:1;" data-loadable>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="br-modal-confirm" data-submit-btn data-loading-text="Removingâ€¦">
+        <button type="submit" class="br-modal-confirm" data-submit-btn data-loading-text="Removing&hellip;">
           Yes, Remove
         </button>
       </form>
@@ -636,7 +636,7 @@
       <button type="button" class="br-modal-cancel" id="deleteExtCancel">Cancel</button>
       <form id="deleteExtForm" method="POST" style="flex:1;" data-loadable>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="br-modal-confirm" data-submit-btn data-loading-text="Removingâ€¦">
+        <button type="submit" class="br-modal-confirm" data-submit-btn data-loading-text="Removing&hellip;">
           Yes, Remove
         </button>
       </form>

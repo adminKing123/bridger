@@ -452,7 +452,6 @@ def receive_event(wh_uuid: str):
     always return 200 OK so Webex does not retry delivery.
     """
     # Validate UUID format to prevent DB lookup on garbage input
-    print("HIT*************************HIT*************************HIT")
     try:
         str(_uuid.UUID(wh_uuid))
     except ValueError:
@@ -464,8 +463,6 @@ def receive_event(wh_uuid: str):
         return ("", 200)
 
     raw_body = request.get_data()
-
-    print(raw_body)
 
     # ── Signature verification ─────────────────────────────────────────────
     sig_valid: bool | None = None
@@ -501,25 +498,36 @@ def receive_event(wh_uuid: str):
             wh.config.access_token, resource_type, resource_id
         )
 
-    # Sender — email is in the webhook envelope directly, no extra API call needed
+    # Sender — email is in the webhook envelope directly
     sender_name  = None
     sender_email = data_obj.get("personEmail")
 
-    # Receiver — if the config owner is the sender, the receiver is the other
-    # party (available in the fetched resource object). Otherwise the owner
-    # is the receiver.
+    # Receiver — no extra API call needed:
+    #   • direct rooms: toPersonEmail is in the fetched resource_obj
+    #   • group rooms:  no single receiver; leave blank
     receiver_name  = None
+    receiver_email = None
     owner_email    = wh.config.webex_email
-    if sender_email and owner_email and sender_email.lower() == owner_email.lower():
-        # Owner sent the message — other party is the receiver
-        receiver_email = (
+    room_type      = data_obj.get("roomType")   # "direct" | "group" — in every messages event
+
+    if room_type == "direct":
+        # toPersonEmail is the other side of the 1-to-1 conversation
+        to_email = (
             (resource_obj.get("toPersonEmail") if resource_obj else None)
             or data_obj.get("toPersonEmail")
         )
-    else:
-        # Someone else sent — owner is the receiver
-        receiver_email = owner_email
-        receiver_name  = wh.config.webex_display_name
+        if to_email:
+            receiver_email = to_email
+        else:
+            # Fallback: whichever side isn't the sender
+            if sender_email and sender_email.lower() == (owner_email or "").lower():
+                # Owner sent — receiver unknown without extra call; leave blank
+                receiver_email = None
+            else:
+                # Someone else sent to owner
+                receiver_email = owner_email
+                receiver_name  = wh.config.webex_display_name
+    # group / None — receiver_email stays None (multiple recipients)
 
     # ── Persist log entry ──────────────────────────────────────────────────
     entry = WebexWebhookLog(
