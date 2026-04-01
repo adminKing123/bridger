@@ -413,6 +413,37 @@
 .skel-label    { height: .65rem; width: 75%; }
 .skel-chart    { height: 190px; width: 100%; border-radius: var(--radius); }
 
+/* ── No-services notice ─────────────────────────────────────── */
+.dash-no-services {
+  text-align: center;
+  padding: 3.5rem 2rem;
+  margin-top: 1rem;
+}
+.dash-no-svc-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-size: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+}
+.dash-no-svc-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 .5rem;
+}
+.dash-no-svc-body {
+  font-size: .9rem;
+  color: var(--text-3);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
 /* Inline "try again" link-button */
 .btn-link-inline {
   background: none;

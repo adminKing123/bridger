@@ -50,25 +50,42 @@
             </a>
           </li>
 
-          <!-- Services dropdown -->
+          <!-- Services dropdown (only shown when at least one service is accessible) -->
+          {% set has_proxy = current_user.is_superadmin or current_user.has_service('proxy') %}
+          {% set has_webex = current_user.is_superadmin or current_user.has_service('webex') %}
+          {% if has_proxy or has_webex %}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button"
                data-bs-toggle="dropdown" aria-expanded="false">
               <i class="bi bi-grid-1x2 me-1"></i>Services
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
+              {% if has_proxy %}
               <li>
                 <a class="dropdown-item" href="{{ url_for('proxy_manager.list_proxies') }}">
                   <i class="bi bi-arrow-left-right me-2"></i>HTTP Proxies
                 </a>
               </li>
+              {% endif %}
+              {% if has_webex %}
               <li>
                 <a class="dropdown-item" href="{{ url_for('webex.index') }}">
                   <i class="bi bi-hdd-network me-2"></i>Webex
                 </a>
               </li>
+              {% endif %}
             </ul>
           </li>
+          {% endif %}
+
+          {% if current_user.is_superadmin %}
+          <!-- Admin link (superadmin only) -->
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
+              <i class="bi bi-shield-check me-1"></i>Admin
+            </a>
+          </li>
+          {% endif %}
 
           <!-- Settings dropdown -->
           <li class="nav-item dropdown">

@@ -66,7 +66,37 @@ logger = logging.getLogger(__name__)
 webex_bp = Blueprint("webex", __name__, url_prefix="/webex")
 
 
-# ── Internal helpers ───────────────────────────────────────────────────────────
+# ── Blueprint-level service guard ─────────────────────────────────────────────
+
+@webex_bp.before_request
+def _require_webex_service():
+    """
+    Block access to all Webex management routes for users who have not been
+    granted the Webex service by the administrator.
+    The public receive endpoint is excluded (it carries no session).
+    Unauthenticated requests are left to @login_required on each view.
+    """
+    if request.endpoint == "webex.receive_event":
+        return None
+    if not current_user.is_authenticated:
+        return None
+    if current_user.is_superadmin:
+        return None
+    from app.models.admin import UserServicePermission
+    perm = UserServicePermission.query.filter_by(
+        user_id=current_user.id, service="webex", is_enabled=True
+    ).first()
+    if not perm:
+        flash(
+            "The Webex service has not been enabled for your account. "
+            "Contact the administrator to request access.",
+            "warning",
+        )
+        return redirect(url_for("dashboard.dashboard"))
+    return None
+
+
+# ── Internal helpers ────────────────────────────────────────────────────────────
 
 def _own_config_or_404(config_id: int) -> WebexConfig:
     """Return the WebexConfig owned by current_user, or abort 404."""

@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}Users — Admin{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- ── Page header ───────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="dash-title mb-0"><i class="bi bi-people me-2"></i>Users</h1>
+      <p class="dash-subtitle mb-0">
+        {{ pagination.total }} user{{ 's' if pagination.total != 1 else '' }}
+        {% if q %} matching <strong>{{ q }}</strong>{% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('admin.dashboard') }}" class="btn-discard px-3 py-2 text-decoration-none">
+      <i class="bi bi-arrow-left me-1"></i>Dashboard
+    </a>
+  </div>
+
+  <!-- ── Search + filter ───────────────────────────────── -->
+  <div class="panel mb-3">
+    <form method="get" action="{{ url_for('admin.users') }}" class="adm-search-row">
+      <div class="adm-search-wrap">
+        <i class="bi bi-search adm-search-icon"></i>
+        <input
+          type="text"
+          name="q"
+          value="{{ q }}"
+          class="adm-search-input"
+          placeholder="Search username or email…"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="adm-status-tabs">
+        {% for val, label in [('all','All'), ('active','Active'), ('blocked','Blocked')] %}
+          <a
+            href="{{ url_for('admin.users', q=q, status=val) }}"
+            class="adm-status-tab {% if status_filter == val %}active{% endif %}"
+          >{{ label }}</a>
+        {% endfor %}
+      </div>
+    </form>
+  </div>
+
+  <!-- ── Users table ───────────────────────────────────── -->
+  <div class="panel">
+    {% if pagination.items %}
+    <div class="table-responsive">
+      <table class="adm-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Joined</th>
+            <th>Status</th>
+            <th>Proxy</th>
+            <th>Webex</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in pagination.items %}
+          {% set uid = user.id %}
+          <tr>
+            <!-- User -->
+            <td>
+              <div class="adm-user-cell">
+                <div class="adm-avatar {% if user.is_blocked %}adm-avatar-blocked{% endif %}">
+                  {{ user.first_name[0]|upper if user.first_name else user.username[0]|upper }}
+                </div>
+                <div>
+                  <div class="adm-username">{{ user.username }}</div>
+                  {% if not user.is_verified %}
+                    <div class="adm-unverified-note">unverified</div>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+
+            <!-- Email -->
+            <td class="adm-muted">{{ user.email }}</td>
+
+            <!-- Joined -->
+            <td class="adm-muted">{{ user.created_at.strftime('%b %d, %Y') }}</td>
+
+            <!-- Status -->
+            <td>
+              {% if user.is_blocked %}
+                <span class="adm-badge adm-badge-blocked">Blocked</span>
+              {% elif user.is_verified %}
+                <span class="adm-badge adm-badge-active">Active</span>
+              {% else %}
+                <span class="adm-badge adm-badge-pending">Unverified</span>
+              {% endif %}
+            </td>
+
+            <!-- Proxy service -->
+            <td>
+              {% if perm_map.get(uid, {}).get('proxy', False) %}
+                <span class="adm-svc-chip adm-svc-on"><i class="bi bi-check-lg"></i> On</span>
+              {% else %}
+                <span class="adm-svc-chip adm-svc-off"><i class="bi bi-x-lg"></i> Off</span>
+              {% endif %}
+            </td>
+
+            <!-- Webex service -->
+            <td>
+              {% if perm_map.get(uid, {}).get('webex', False) %}
+                <span class="adm-svc-chip adm-svc-on"><i class="bi bi-check-lg"></i> On</span>
+              {% else %}
+                <span class="adm-svc-chip adm-svc-off"><i class="bi bi-x-lg"></i> Off</span>
+              {% endif %}
+            </td>
+
+            <!-- Actions -->
+            <td>
+              <div class="adm-action-row">
+                <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="adm-btn-icon" title="Edit">
+                  <i class="bi bi-pencil-square"></i>
+                </a>
+
+                <form method="post"
+                      action="{{ url_for('admin.toggle_block', user_id=user.id) }}"
+                      class="d-inline">
+                  {{ csrf_token() | safe if csrf_token is defined else '' }}
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="next" value="{{ request.url }}">
+                  {% if user.is_blocked %}
+                    <button type="submit" class="adm-btn-icon adm-btn-unblock" title="Unblock">
+                      <i class="bi bi-lock-fill"></i>
+                    </button>
+                  {% else %}
+                    <button type="submit" class="adm-btn-icon adm-btn-block" title="Block">
+                      <i class="bi bi-lock"></i>
+                    </button>
+                  {% endif %}
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Pagination ──────────────────────────────────── -->
+    {% if pagination.pages > 1 %}
+    <div class="adm-pagination">
+      {% if pagination.has_prev %}
+        <a href="{{ url_for('admin.users', q=q, status=status_filter, page=pagination.prev_num) }}"
+           class="adm-page-btn">
+          <i class="bi bi-chevron-left"></i> Prev
+        </a>
+      {% else %}
+        <span class="adm-page-btn disabled"><i class="bi bi-chevron-left"></i> Prev</span>
+      {% endif %}
+
+      <span class="adm-page-info">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+
+      {% if pagination.has_next %}
+        <a href="{{ url_for('admin.users', q=q, status=status_filter, page=pagination.next_num) }}"
+           class="adm-page-btn">
+          Next <i class="bi bi-chevron-right"></i>
+        </a>
+      {% else %}
+        <span class="adm-page-btn disabled">Next <i class="bi bi-chevron-right"></i></span>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="dash-empty-panel py-5">
+      <div class="dash-empty-icon"><i class="bi bi-people"></i></div>
+      <p class="dash-empty-title">No users found</p>
+      <p class="dash-empty-body">
+        {% if q %}Try a different search term.{% else %}No users have signed up yet.{% endif %}
+      </p>
+    </div>
+    {% endif %}
+  </div><!-- /.panel -->
+
+</div><!-- /.container -->
+{% endblock %}

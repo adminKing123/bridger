@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard — Bridger{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- ── Page header ───────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="dash-title mb-0"><i class="bi bi-shield-check me-2"></i>Admin Dashboard</h1>
+      <p class="dash-subtitle mb-0">Platform overview</p>
+    </div>
+    <a href="{{ url_for('admin.users') }}" class="btn-save px-4 py-2 text-decoration-none">
+      <i class="bi bi-people me-1"></i>Manage Users
+    </a>
+  </div>
+
+  <!-- ── KPI cards ─────────────────────────────────────── -->
+  <div class="adm-kpi-grid mb-5">
+
+    <div class="adm-kpi-card">
+      <div class="adm-kpi-icon" style="background:var(--primary-light);color:var(--primary)">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div class="adm-kpi-body">
+        <div class="adm-kpi-val">{{ total_users }}</div>
+        <div class="adm-kpi-label">Total Users</div>
+      </div>
+    </div>
+
+    <div class="adm-kpi-card">
+      <div class="adm-kpi-icon" style="background:var(--success-bg);color:var(--success)">
+        <i class="bi bi-patch-check-fill"></i>
+      </div>
+      <div class="adm-kpi-body">
+        <div class="adm-kpi-val">{{ verified_users }}</div>
+        <div class="adm-kpi-label">Verified</div>
+      </div>
+    </div>
+
+    <div class="adm-kpi-card">
+      <div class="adm-kpi-icon" style="background:var(--danger-bg);color:var(--danger)">
+        <i class="bi bi-slash-circle-fill"></i>
+      </div>
+      <div class="adm-kpi-body">
+        <div class="adm-kpi-val">{{ blocked_users }}</div>
+        <div class="adm-kpi-label">Blocked</div>
+      </div>
+    </div>
+
+    <div class="adm-kpi-card">
+      <div class="adm-kpi-icon" style="background:var(--info-bg);color:var(--info)">
+        <i class="bi bi-arrow-left-right"></i>
+      </div>
+      <div class="adm-kpi-body">
+        <div class="adm-kpi-val">{{ proxy_users }}</div>
+        <div class="adm-kpi-label">Proxy Access</div>
+      </div>
+    </div>
+
+    <div class="adm-kpi-card">
+      <div class="adm-kpi-icon" style="background:var(--warning-bg);color:var(--warning)">
+        <i class="bi bi-hdd-network"></i>
+      </div>
+      <div class="adm-kpi-body">
+        <div class="adm-kpi-val">{{ webex_users }}</div>
+        <div class="adm-kpi-label">Webex Access</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Recent sign-ups ───────────────────────────────── -->
+  <div class="panel">
+    <div class="adm-panel-header">
+      <h2 class="adm-panel-title"><i class="bi bi-clock-history me-2"></i>Recent Sign-ups</h2>
+      <a href="{{ url_for('admin.users') }}" class="adm-view-all">View all <i class="bi bi-arrow-right"></i></a>
+    </div>
+
+    {% if recent_users %}
+    <div class="table-responsive">
+      <table class="adm-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Joined</th>
+            <th>Status</th>
+            <th>Services</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in recent_users %}
+          <tr>
+            <td>
+              <div class="adm-user-cell">
+                <div class="adm-avatar">{{ user.first_name[0]|upper if user.first_name else user.username[0]|upper }}</div>
+                <span class="adm-username">{{ user.username }}</span>
+              </div>
+            </td>
+            <td class="adm-muted">{{ user.email }}</td>
+            <td class="adm-muted">{{ user.created_at.strftime('%b %d, %Y') }}</td>
+            <td>
+              {% if user.is_blocked %}
+                <span class="adm-badge adm-badge-blocked">Blocked</span>
+              {% elif user.is_verified %}
+                <span class="adm-badge adm-badge-active">Active</span>
+              {% else %}
+                <span class="adm-badge adm-badge-pending">Unverified</span>
+              {% endif %}
+            </td>
+            <td>
+              {% for svc in services %}
+                {% if user.has_service(svc) %}
+                  <span class="adm-svc-chip adm-svc-on">{{ svc }}</span>
+                {% else %}
+                  <span class="adm-svc-chip adm-svc-off">{{ svc }}</span>
+                {% endif %}
+              {% endfor %}
+            </td>
+            <td>
+              <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="adm-btn-link">
+                <i class="bi bi-pencil-square"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="dash-empty-panel py-4">
+      <div class="dash-empty-icon"><i class="bi bi-people"></i></div>
+      <p class="dash-empty-title">No users yet</p>
+    </div>
+    {% endif %}
+  </div><!-- /.panel -->
+
+</div><!-- /.container -->
+{% endblock %}

@@ -38,8 +38,30 @@ class User(UserMixin, db.Model):
         nullable=False,
     )
 
+    is_superadmin: bool = db.Column(db.Boolean, default=False, nullable=False)
+    is_blocked: bool = db.Column(db.Boolean, default=False, nullable=False)
+
     # One-to-many relationship with OTP records
     otps = db.relationship("OTP", back_populates="user", cascade="all, delete-orphan")
+
+    # Service permissions (populated by admin)
+    service_permissions = db.relationship(
+        "UserServicePermission",
+        foreign_keys="[UserServicePermission.user_id]",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
+
+    def has_service(self, service: str) -> bool:
+        """Return True if this user has the named service enabled (or is superadmin)."""
+        if self.is_superadmin:
+            return True
+        from app.models.admin import UserServicePermission  # local import avoids circular
+        perm = UserServicePermission.query.filter_by(
+            user_id=self.id, service=service, is_enabled=True
+        ).first()
+        return perm is not None
 
     def __repr__(self) -> str:
         return f"<User id={self.id} username={self.username!r}>"

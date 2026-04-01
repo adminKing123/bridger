@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block title %}{{ user.username }} — Admin{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- ── Breadcrumb ────────────────────────────────────── -->
+  <nav class="adm-breadcrumb mb-4">
+    <a href="{{ url_for('admin.dashboard') }}"><i class="bi bi-shield-check me-1"></i>Admin</a>
+    <i class="bi bi-chevron-right mx-1"></i>
+    <a href="{{ url_for('admin.users') }}">Users</a>
+    <i class="bi bi-chevron-right mx-1"></i>
+    <span>{{ user.username }}</span>
+  </nav>
+
+  <div class="row g-4">
+
+    <!-- ── Left column: User info + block ─────────────── -->
+    <div class="col-lg-5">
+
+      <!-- Profile panel -->
+      <div class="panel mb-4">
+        <div class="adm-detail-header">
+          <div class="adm-avatar adm-avatar-lg {% if user.is_blocked %}adm-avatar-blocked{% endif %}">
+            {{ user.first_name[0]|upper if user.first_name else user.username[0]|upper }}
+          </div>
+          <div>
+            <div class="adm-username adm-username-lg">{{ user.username }}</div>
+            <div class="adm-muted">{{ user.email }}</div>
+          </div>
+        </div>
+
+        <hr class="adm-divider" />
+
+        <div class="adm-info-grid">
+          <div class="adm-info-row">
+            <span class="adm-info-label">Full name</span>
+            <span class="adm-info-val">
+              {{ user.first_name or '' }}{{ ' ' + user.last_name if user.last_name else '' or '—' }}
+            </span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Joined</span>
+            <span class="adm-info-val">{{ user.created_at.strftime('%B %d, %Y') }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Email verified</span>
+            <span class="adm-info-val">
+              {% if user.is_verified %}
+                <span class="adm-badge adm-badge-active"><i class="bi bi-check-lg me-1"></i>Yes</span>
+              {% else %}
+                <span class="adm-badge adm-badge-pending"><i class="bi bi-x-lg me-1"></i>No</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Account status</span>
+            <span class="adm-info-val">
+              {% if user.is_blocked %}
+                <span class="adm-badge adm-badge-blocked"><i class="bi bi-slash-circle me-1"></i>Blocked</span>
+              {% else %}
+                <span class="adm-badge adm-badge-active"><i class="bi bi-check-circle me-1"></i>Active</span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div><!-- /.panel -->
+
+      <!-- Block / Unblock panel -->
+      <div class="panel panel-danger-zone">
+        <h3 class="adm-sub-title">Account Access</h3>
+        <p class="adm-sub-desc">
+          {% if user.is_blocked %}
+            This account is currently blocked. The user cannot sign in.
+            Unblocking will restore their access immediately.
+          {% else %}
+            Blocking this account will immediately sign the user out and prevent
+            them from signing in until unblocked.
+          {% endif %}
+        </p>
+        <form method="post" action="{{ url_for('admin.toggle_block', user_id=user.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="{{ url_for('admin.user_detail', user_id=user.id) }}">
+          {% if user.is_blocked %}
+            <button type="submit" class="btn-save">
+              <i class="bi bi-unlock me-1"></i>Unblock User
+            </button>
+          {% else %}
+            <button type="submit" class="btn-danger-outline">
+              <i class="bi bi-slash-circle me-1"></i>Block User
+            </button>
+          {% endif %}
+        </form>
+      </div><!-- /.panel -->
+
+    </div><!-- col-lg-5 -->
+
+    <!-- ── Right column: Service permissions ──────────── -->
+    <div class="col-lg-7">
+      <div class="panel">
+        <h3 class="adm-sub-title"><i class="bi bi-grid-1x2 me-2"></i>Service Permissions</h3>
+        <p class="adm-sub-desc">
+          Control which Bridger services this user can access.
+          Changes take effect immediately — no sign-out required.
+        </p>
+
+        <form method="post" action="{{ url_for('admin.update_services', user_id=user.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="adm-svc-list">
+
+            <!-- Proxy service -->
+            <label class="adm-svc-row">
+              <div class="adm-svc-info">
+                <div class="adm-svc-icon" style="background:var(--info-bg);color:var(--info)">
+                  <i class="bi bi-arrow-left-right"></i>
+                </div>
+                <div>
+                  <div class="adm-svc-name">HTTP Proxy</div>
+                  <div class="adm-svc-desc">Forward requests, bypass CORS, get per-request logs</div>
+                </div>
+              </div>
+              <div class="adm-toggle-wrap">
+                <input
+                  type="checkbox"
+                  name="proxy"
+                  class="adm-toggle-input"
+                  id="svc-proxy"
+                  {% if perms.get('proxy') and perms['proxy'].is_enabled %}checked{% endif %}
+                />
+                <label class="adm-toggle" for="svc-proxy"></label>
+              </div>
+            </label>
+
+            <!-- Webex service -->
+            <label class="adm-svc-row">
+              <div class="adm-svc-info">
+                <div class="adm-svc-icon" style="background:var(--warning-bg);color:var(--warning)">
+                  <i class="bi bi-hdd-network"></i>
+                </div>
+                <div>
+                  <div class="adm-svc-name">Webex Integration</div>
+                  <div class="adm-svc-desc">Connect Webex accounts, manage webhooks, browse spaces</div>
+                </div>
+              </div>
+              <div class="adm-toggle-wrap">
+                <input
+                  type="checkbox"
+                  name="webex"
+                  class="adm-toggle-input"
+                  id="svc-webex"
+                  {% if perms.get('webex') and perms['webex'].is_enabled %}checked{% endif %}
+                />
+                <label class="adm-toggle" for="svc-webex"></label>
+              </div>
+            </label>
+
+          </div><!-- /.adm-svc-list -->
+
+          <div class="m-4 d-flex gap-2">
+            <button type="submit" class="btn-save">
+              <i class="bi bi-floppy me-1"></i>Save Permissions
+            </button>
+            <a href="{{ url_for('admin.users') }}" class="btn-discard text-decoration-none">
+              Back to list
+            </a>
+          </div>
+        </form>
+      </div><!-- /.panel -->
+    </div><!-- col-lg-7 -->
+
+  </div><!-- row -->
+</div><!-- .container -->
+{% endblock %}

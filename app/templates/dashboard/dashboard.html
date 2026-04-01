@@ -89,20 +89,41 @@
   <!-- ══════════════════════════════════════════════════════════
        SERVICE PICKER
        ══════════════════════════════════════════════════════════ -->
+  {% set has_proxy = current_user.is_superadmin or current_user.has_service('proxy') %}
+  {% set has_webex = current_user.is_superadmin or current_user.has_service('webex') %}
+  {% set service_count = (1 if has_proxy else 0) + (1 if has_webex else 0) %}
+
+  {% if service_count == 0 %}
+  <!-- No services granted — contact admin notice -->
+  <div class="dash-no-services panel">
+    <div class="dash-no-svc-icon"><i class="bi bi-lock"></i></div>
+    <h3 class="dash-no-svc-title">No services enabled</h3>
+    <p class="dash-no-svc-body">
+      Your account doesn’t have access to any services yet.<br>
+      Please contact your administrator to request access.
+    </p>
+    <a href="{{ url_for('profile.profile') }}" class="btn-discard text-decoration-none">
+      <i class="bi bi-person me-1"></i>View Profile
+    </a>
+  </div>
+
+  {% else %}
   <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
     <h2 class="dash-section-title mb-0">Services</h2>
 
-    <!-- Dropdown selector -->
+    <!-- Dropdown selector (always shown when user has at least one service) -->
     <div class="dash-service-picker" id="servicePickerWrap">
       <button class="dash-picker-btn" id="servicePickerBtn" type="button"
               aria-haspopup="listbox" aria-expanded="false">
         <span class="dash-picker-icon" id="servicePickerIcon">
-          <i class="bi bi-arrow-left-right"></i>
+          {% if has_proxy %}<i class="bi bi-arrow-left-right"></i>
+          {% else %}<i class="bi bi-chat-dots"></i>{% endif %}
         </span>
-        <span id="servicePickerLabel">HTTP Proxy</span>
+        <span id="servicePickerLabel">{% if has_proxy %}HTTP Proxy{% else %}Webex Integration{% endif %}</span>
         <i class="bi bi-chevron-down dash-picker-chevron" id="servicePickerChevron"></i>
       </button>
       <ul class="dash-picker-menu" id="servicePickerMenu" role="listbox">
+        {% if has_proxy %}
         <li class="dash-picker-item active" role="option"
             data-service="proxy"
             data-label="HTTP Proxy"
@@ -117,7 +138,10 @@
           </div>
           <i class="bi bi-check2 dash-picker-check"></i>
         </li>
-        <li class="dash-picker-item" role="option"
+        {% endif %}
+        {% if has_webex %}
+        {# first item active when proxy not available #}
+        <li class="dash-picker-item {% if not has_proxy %}active{% endif %}" role="option"
             data-service="webex"
             data-label="Webex Integration"
             data-icon="bi-chat-dots"
@@ -131,29 +155,19 @@
           </div>
           <i class="bi bi-check2 dash-picker-check"></i>
         </li>
-        <li class="dash-picker-item" role="option"
-            data-service="coming"
-            data-label="More Services"
-            data-icon="bi-grid-1x2"
-            data-icon-bg="var(--bg)" data-icon-color="var(--text-3)">
-          <span class="dash-picker-item-icon" style="background:var(--bg);color:var(--text-3);">
-            <i class="bi bi-grid-1x2"></i>
-          </span>
-          <div>
-            <p class="dash-picker-item-name">More Services</p>
-            <p class="dash-picker-item-desc">Coming soon to Bridger</p>
-          </div>
-          <i class="bi bi-check2 dash-picker-check"></i>
-        </li>
+        {% endif %}
       </ul>
     </div>
   </div>
+  {% endif %}
 
   <!-- ══════════════════════════════════════════════════════════
        SERVICE PANELS (only one visible at a time)
        ══════════════════════════════════════════════════════════ -->
+  {% if service_count > 0 %}
 
   <!-- ── HTTP Proxy panel ─────────────────────────────────── -->
+  {% if has_proxy %}
   <div id="panel-proxy" class="dash-panel-section">
 
     <!-- Section sub-header -->
@@ -209,9 +223,12 @@
 
   </div>
   <!-- ── END HTTP Proxy panel ─────────────────────────────── -->
+  {% endif %}
 
   <!-- ── Webex Integration panel ─────────────────────────── -->
-  <div id="panel-webex" class="dash-panel-section" style="display:none;">
+  {% if has_webex %}
+  {# if proxy is also available this panel starts hidden; if webex is the only service it is visible immediately #}
+  <div id="panel-webex" class="dash-panel-section"{% if has_proxy %} style="display:none;"{% endif %}>
 
     <div class="dash-section-head mb-3">
       <div class="dash-section-icon" style="background:#ccfbf1;color:#0d9488;">
@@ -259,48 +276,18 @@
 
   </div>
   <!-- ── END Webex Integration panel ──────────────────────── -->
+  {% endif %}
 
-  <!-- ── Coming Soon panel ────────────────────────────────── -->
-  <div id="panel-coming" class="dash-panel-section" style="display:none;">
-    <div class="dash-section-head mb-3">
-      <div class="dash-section-icon" style="background:var(--bg);color:var(--text-3);">
-        <i class="bi bi-grid-1x2"></i>
-      </div>
-      <div>
-        <p class="dash-section-title" style="margin:0;color:var(--text-2);">More Services</p>
-        <p class="dash-section-desc">Coming soon to Bridger</p>
-      </div>
-    </div>
-    <div class="row g-3">
-      <div class="col-sm-6 col-lg-4">
-        <div class="dash-coming-card">
-          <div class="dash-coming-icon" style="background:#fce7f3;color:#db2777;"><i class="bi bi-shield-lock"></i></div>
-          <div><p class="dash-coming-name">Auth Gateway</p><p class="dash-coming-desc">API key &amp; JWT validation layer</p></div>
-          <span class="dash-coming-badge">Soon</span>
-        </div>
-      </div>
-      <div class="col-sm-6 col-lg-4">
-        <div class="dash-coming-card">
-          <div class="dash-coming-icon" style="background:#f0fdf4;color:#16a34a;"><i class="bi bi-speedometer2"></i></div>
-          <div><p class="dash-coming-name">Rate Limiter</p><p class="dash-coming-desc">Throttle &amp; quota management</p></div>
-          <span class="dash-coming-badge">Soon</span>
-        </div>
-      </div>
-      <div class="col-sm-6 col-lg-4">
-        <div class="dash-coming-card">
-          <div class="dash-coming-icon" style="background:#fff7ed;color:#ea580c;"><i class="bi bi-broadcast"></i></div>
-          <div><p class="dash-coming-name">WebSocket Proxy</p><p class="dash-coming-desc">Persistent connection forwarding</p></div>
-          <span class="dash-coming-badge">Soon</span>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- ── END coming soon panel ────────────────────────────── -->
+  {% endif %}{# end service_count > 0 #}
 
-</div>
+</div><!-- /.container -->
 {% endblock %}
 
 {% block extra_scripts %}
+{% set has_proxy = current_user.is_superadmin or current_user.has_service('proxy') %}
+{% set has_webex = current_user.is_superadmin or current_user.has_service('webex') %}
+{% set service_count = (1 if has_proxy else 0) + (1 if has_webex else 0) %}
+{% if service_count > 0 %}
 <script>
 (function () {
   'use strict';
@@ -322,7 +309,9 @@
   };
 
   /* ── Service picker ───────────────────────────────────────── */
-  var currentService = 'proxy';
+  var HAS_PROXY = {{ 'true' if has_proxy else 'false' }};
+  var HAS_WEBEX = {{ 'true' if has_webex else 'false' }};
+  var currentService = HAS_PROXY ? 'proxy' : 'webex';
   var URL_PROXY_LIST   = '{{ url_for("proxy_manager.list_proxies") }}';
   var URL_PROXY_CREATE = '{{ url_for("proxy_manager.create_proxy") }}';
   var pickerBtn    = document.getElementById('servicePickerBtn');
@@ -416,7 +405,8 @@
       .catch(function () { showProxyState('error'); });
   }
 
-  document.getElementById('proxyRetryBtn').addEventListener('click', function () {
+  var proxyRetryBtn = document.getElementById('proxyRetryBtn');
+  if (proxyRetryBtn) proxyRetryBtn.addEventListener('click', function () {
     proxyLoaded = false;
     loadProxyStats();
   });
@@ -614,7 +604,8 @@
       .catch(function () { showWebexState('error'); });
   }
 
-  document.getElementById('webexRetryBtn').addEventListener('click', function () {
+  var webexRetryBtn = document.getElementById('webexRetryBtn');
+  if (webexRetryBtn) webexRetryBtn.addEventListener('click', function () {
     webexLoaded = false;
     loadWebexStats();
   });
@@ -764,9 +755,14 @@
 
   /* ── Init ─────────────────────────────────────────────────── */
   document.addEventListener('DOMContentLoaded', function () {
-    loadProxyStats(); /* auto-load the default service */
+    if (HAS_PROXY) {
+      loadProxyStats(); /* auto-load the default service */
+    } else if (HAS_WEBEX) {
+      loadWebexStats();
+    }
   });
 
 })();
 </script>
+{% endif %}{# end service_count > 0 #}
 {% endblock %}

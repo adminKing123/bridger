@@ -58,6 +58,7 @@ def create_app(config_class=DevelopmentConfig) -> Flask:
     from app.routes.proxy_manager import proxy_manager_bp
     from app.routes.proxy_handler import proxy_handler_bp, handle_subdomain_proxy
     from app.routes.webex import webex_bp
+    from app.routes.admin import admin_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(profile_bp)
@@ -65,9 +66,27 @@ def create_app(config_class=DevelopmentConfig) -> Flask:
     app.register_blueprint(proxy_manager_bp)
     app.register_blueprint(proxy_handler_bp)
     app.register_blueprint(webex_bp)
+    app.register_blueprint(admin_bp)
 
     # Intercept subdomain-mode proxy requests before normal routing
     app.before_request(handle_subdomain_proxy)
+
+    # ── Force-logout blocked users on every request ───────────────────────────
+    @app.before_request
+    def _check_blocked_user():
+        from flask import flash, redirect, url_for
+        from flask_login import current_user, logout_user
+        if (
+            current_user.is_authenticated
+            and not current_user.is_superadmin
+            and current_user.is_blocked
+        ):
+            logout_user()
+            flash(
+                "Your account has been blocked. Please contact the administrator.",
+                "danger",
+            )
+            return redirect(url_for("auth.login"))
 
     # ── Create database tables ────────────────────────────────────────────────
     with app.app_context():

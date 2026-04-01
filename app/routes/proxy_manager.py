@@ -31,7 +31,31 @@ logger = logging.getLogger(__name__)
 proxy_manager_bp = Blueprint("proxy_manager", __name__, url_prefix="/proxies")
 
 
-# ── Internal helper ────────────────────────────────────────────────────────────
+# ── Blueprint-level service guard ─────────────────────────────────────────────
+
+@proxy_manager_bp.before_request
+def _require_proxy_service():
+    """
+    Block access to proxy management for users whose proxy service has been
+    revoked by an administrator.  Unauthenticated requests are handled by
+    @login_required on each view.
+    """
+    if not current_user.is_authenticated:
+        return None
+    if current_user.is_superadmin:
+        return None
+    from app.models.admin import UserServicePermission
+    perm = UserServicePermission.query.filter_by(
+        user_id=current_user.id, service="proxy", is_enabled=True
+    ).first()
+    if not perm:
+        flash(
+            "The HTTP Proxy service has not been enabled for your account. "
+            "Contact the administrator to request access.",
+            "warning",
+        )
+        return redirect(url_for("dashboard.dashboard"))
+    return None
 
 def _own_proxy_or_404(proxy_id: int) -> ProxyConfig:
     """Return the ProxyConfig owned by current_user, or abort with 404."""

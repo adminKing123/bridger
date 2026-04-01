@@ -14,6 +14,7 @@ Routes:
 """
 
 import logging
+from datetime import datetime, timezone
 from urllib.parse import urlparse, urljoin
 
 from flask import (
@@ -29,6 +30,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 
 from app import db, bcrypt
 from app.models.user import User, OTP
+from app.models.admin import UserServicePermission
 from app.forms.auth_forms import (
     SignupForm,
     LoginForm,
@@ -82,6 +84,16 @@ def signup():
             last_name=form.last_name.data.strip() if form.last_name.data else None,
         )
         db.session.add(user)
+        db.session.flush()  # populate user.id before commit
+
+        # Grant proxy service to all new users by default
+        db.session.add(UserServicePermission(
+            user_id=user.id,
+            service="proxy",
+            is_enabled=True,
+            granted_at=datetime.now(timezone.utc),
+            granted_by_id=None,
+        ))
         db.session.commit()
         logger.info("New user registered: %s", user.email)
 
@@ -189,6 +201,14 @@ def login():
                     "warning",
                 )
                 return redirect(url_for("auth.verify_email"))
+
+            if user.is_blocked:
+                flash(
+                    "Your account has been blocked. "
+                    "Please contact the administrator.",
+                    "danger",
+                )
+                return render_template("auth/login.html", form=form)
 
             login_user(user, remember=form.remember_me.data)
             logger.info("User logged in: %s", user.email)
