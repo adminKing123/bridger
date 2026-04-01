@@ -164,6 +164,14 @@
                         {% if entry.receiver_email %}
                           <span class="webex-log-person-email">{{ entry.receiver_email }}</span>
                         {% endif %}
+                        {% if entry.receiver_email and entry.receiver_email != cfg.webex_email %}
+                          <button class="webex-person-info-btn"
+                                  data-email="{{ entry.receiver_email }}"
+                                  data-cfg="{{ cfg.id }}"
+                                  title="Load receiver details">
+                            <i class="bi bi-person-lines-fill"></i>
+                          </button>
+                        {% endif %}
                       </div>
                     {% else %}—{% endif %}
                   </td>
