@@ -43,6 +43,7 @@ Bridger/
 ├── .env                          # Secrets — never committed
 ├── plan.md                       # Product plan
 ├── proxy-service.md              # HTTP Proxy service docs
+├── webex-service.md              # Webex Integration service docs
 ├── code-structure.md             # ← this file
 │
 └── app/
@@ -51,24 +52,31 @@ Bridger/
     ├── models/
     │   ├── user.py               # User, OTP models
     │   ├── proxy.py              # ProxyConfig model + slug generator
-    │   └── proxy_log.py          # ProxyLog model (per-request audit)
+    │   ├── proxy_log.py          # ProxyLog model (per-request audit)
+    │   ├── webex_config.py       # WebexConfig model
+    │   ├── webex_webhook.py      # WebexWebhook model
+    │   └── webex_webhook_log.py  # WebexWebhookLog model (enriched events)
     │
     ├── forms/
     │   ├── auth_forms.py         # SignupForm, LoginForm, VerifyEmailForm,
     │   │                         #   ForgotPasswordForm, ResetPasswordForm,
     │   │                         #   UpdateProfileForm
-    │   └── proxy_forms.py        # ProxyCreateForm, ProxyEditForm
+    │   ├── proxy_forms.py        # ProxyCreateForm, ProxyEditForm
+    │   ├── webex_forms.py        # WebexCreateForm, WebexEditForm
+    │   └── webex_webhook_forms.py # WebhookCreateForm
     │
     ├── routes/
     │   ├── auth.py               # /auth/* — all auth flows
     │   ├── profile.py            # /profile  +  / (landing redirect)
     │   ├── dashboard.py          # /dashboard
     │   ├── proxy_manager.py      # /proxies/* — CRUD + lifecycle
-    │   └── proxy_handler.py      # /proxy/<slug>/* + subdomain hook
+    │   ├── proxy_handler.py      # /proxy/<slug>/* + subdomain hook
+    │   └── webex.py              # /webex/* — configs, webhooks, event receive
     │
     ├── services/
     │   ├── email_service.py      # SMTP sender + OTP email helpers
-    │   └── otp_service.py        # OTP creation + verification
+    │   ├── otp_service.py        # OTP creation + verification
+    │   └── webex_service.py      # Webex API calls (token verify, webhooks, rooms, messages)
     │
     ├── templates/
     │   ├── base.html             # Shell: head, navbar, toasts, logout modal
@@ -82,11 +90,20 @@ Bridger/
     │   │   └── dashboard.html
     │   ├── profile/
     │   │   └── profile.html
-    │   └── proxy/
-    │       ├── list.html
-    │       ├── create.html
-    │       ├── detail.html
-    │       └── logs.html
+    │   ├── proxy/
+    │   │   ├── list.html
+    │   │   ├── create.html
+    │   │   ├── detail.html
+    │   │   └── logs.html
+    │   └── webex/
+    │       ├── index.html            # Placeholder (unused)
+    │       ├── list.html             # Configs list (paginated)
+    │       ├── create.html           # New config form
+    │       ├── detail.html           # Config detail + webhooks + Spaces button
+    │       ├── webhook_create.html   # Webhook form + room picker modal
+    │       ├── webhook_logs.html     # Event log table (expand rows, room-type badge)
+    │       ├── spaces.html           # AJAX-paginated spaces browser
+    │       └── room_messages.html    # Cursor-based message viewer
     │
     └── static/
         ├── css/
@@ -94,13 +111,15 @@ Bridger/
         │   ├── auth.css          # Auth pages only
         │   ├── dashboard.css     # Dashboard page only
         │   ├── profile.css       # Profile page only
-        │   ├── proxy.css         # All proxy pages
+        │   ├── proxy.css         # All proxy pages + shared pagination classes
+        │   ├── webex.css         # All Webex pages
         │   └── main.css          # Legacy source — NOT loaded by any template
         └── js/
             ├── base.js           # Every-page JS behaviours
             ├── auth.js           # Auth pages only
             ├── profile.js        # Profile page only
             ├── proxy.js          # All proxy pages
+            ├── webex.js          # All Webex pages
             └── main.js           # Legacy source — NOT loaded by any template
 ```
 
@@ -198,6 +217,7 @@ from app import db, bcrypt
 | `dashboard_bp` | `/dashboard` | `routes/dashboard.py` | Yes |
 | `proxy_manager_bp` | `/proxies` | `routes/proxy_manager.py` | Yes |
 | `proxy_handler_bp` | `/proxy` | `routes/proxy_handler.py` | No (public forwarding) |
+| `webex_bp` | `/webex` | `routes/webex.py` | Yes (except `receive/<uuid>`) |
 
 ### Models
 
@@ -235,6 +255,38 @@ client_ip · duration_ms · created_at
 One row per forwarded request. Log writes are non-fatal (wrapped in
 try/except with rollback).
 
+#### `WebexConfig` (`webex_configs` table)
+```
+id · user_id(FK) · name · access_token
+webex_person_id · webex_display_name · webex_email · webex_org_id
+is_verified · last_verified_at · created_at · updated_at
+ └─ webhooks → WebexWebhook[] (cascade delete)
+```
+Properties: `initials` (2-letter avatar fallback), `masked_token` (`●●●●<last4>`), `display_email`.
+
+#### `WebexWebhook` (`webex_webhooks` table)
+```
+id · config_id(FK) · uuid · name
+resource · event · filter_str · target_url · uses_bridger_target
+secret · webex_webhook_id · webex_status · partner_email
+created_at · updated_at
+ └─ logs → WebexWebhookLog[] (cascade delete)
+```
+The `uuid` is generated with `uuid.uuid4()` and forms the unique receive URL path.
+`partner_email` is lazily populated on the first event received for a direct room.
+
+#### `WebexWebhookLog` (`webex_webhook_logs` table)
+```
+id · webhook_id(FK) · received_at · client_ip
+webex_event_id · resource · event_type · actor_id · org_id · app_id · owned_by
+data_json · raw_payload
+message_text · message_markdown · message_html · message_files
+resource_json · sender_name · sender_email · receiver_name · receiver_email
+room_type · signature_valid
+```
+One row per received Webex event, enriched with the resolved resource object
+via a follow-up Webex API call immediately after event receipt.
+
 ### Forms
 
 All forms inherit from `FlaskForm` (Flask-WTF), which auto-injects a CSRF token.
@@ -259,6 +311,14 @@ All forms inherit from `FlaskForm` (Flask-WTF), which auto-injects a CSRF token.
 
 `MultiCheckboxField` is a custom WTForms field that renders `SelectMultipleField`
 as individual checkboxes with `ListWidget`.
+
+#### Webex forms (`forms/webex_forms.py` + `forms/webex_webhook_forms.py`)
+
+| Form | Fields | Notes |
+|------|--------|-------|
+| `WebexCreateForm` | name, access_token | Token verified against Webex on submit |
+| `WebexEditForm` | name, access_token | Token optional — blank = keep existing |
+| `WebhookCreateForm` | name, resource, event, filter_str, target_url | Room picker modal populates filter_str; multi-room creates one webhook per room |
 
 ### Services
 
@@ -288,6 +348,31 @@ send_verification_otp_email(email, username, otp_code) → bool
 send_password_reset_otp_email(email, username, otp_code) → bool
   └─ both call send_email with pre-built HTML bodies
 ```
+
+#### `webex_service.py`
+All functions call the Webex REST API (`https://webexapis.com/v1`) with an
+8-second timeout. None raises — all return `None`/`False`/`[]` on error.
+
+```
+verify_token(access_token)                                    → dict|None
+create_webhook(token, name, target_url, resource,
+               event, filter_str, secret)                     → dict|None
+delete_webhook(token, webhook_id)                             → bool
+fetch_rooms(token, max_results=200)                           → list[dict]
+fetch_all_webhooks(token)                                     → list[dict]  (follows Link pagination)
+fetch_room_members(token, room_id)                            → list[dict]
+fetch_resource(token, resource, resource_id)                  → dict|None
+_fetch_rooms_by_type(token, room_type, max_results)           → list[dict]  (internal)
+fetch_rooms_filtered(token, room_type=None,
+                     max_results=500)                         → list[dict]  (merges direct+group)
+fetch_room_detail(token, room_id)                             → dict|None
+fetch_messages(token, room_id, max_results=25,
+               before_message=None)                           → list[dict]  (cursor-based)
+```
+
+`fetch_rooms_filtered` with `room_type=None` triggers two separate API calls
+(`type=direct` and `type=group`) because the Webex API omits direct rooms when
+no `type` parameter is supplied.
 
 ### Route Patterns
 
@@ -426,7 +511,23 @@ proxy.css     → loaded by all proxy/* templates + dashboard (top-proxies table
   • Method checkboxes (.proxy-method-grid, .proxy-method-chip)
   • Log table (.proxy-log-table, .proxy-log-pill, .proxy-log-status,
                .proxy-log-pagination, .proxy-log-stats)
+  • Also loaded by webex/spaces.html and webex/room_messages.html for
+    shared pagination classes (.proxy-log-pagination, .proxy-log-page-btn, etc.)
   • Action buttons (.btn-proxy-action, .btn-proxy-danger)
+
+  webex.css     → loaded by all webex/* templates
+  • Config hero + avatar circle + profile field rows + token display
+  • Verified/unverified badge (.webex-verified-badge)
+  • Webhook table + resource/event type labels
+  • Signature validity badge + space/room-type badge
+  • Event log table with expand rows (.webex-log-*, .webex-detail-*)
+  • JSON payload pre-block
+  • Room picker modal overrides (search, list, checkbox items)
+  • Webhooks tab bar (All/Bridger/External) + source badge
+  • Type filter tabs (.webex-type-tabs, .webex-type-tab)
+  • Search box (.webex-spaces-search-*)
+  • Space row icon (.webex-space-icon)
+  • Message items (.webex-messages-list, .webex-msg-*)
 ```
 
 **Rule:** A class used on more than one page group moves to `base.css`.
@@ -462,6 +563,9 @@ proxy.js     → loaded by all proxy/* templates
                            with ✓ tick feedback
   • initClearLogs()      — delete confirmation modal before submitting the
                            clear-logs form
+
+webex.js     → loaded by all webex/* templates
+  • Webex-specific interactive behaviours (room picker, expand rows, etc.)
 ```
 
 All init functions are self-contained — they query the DOM and no-op silently
@@ -532,6 +636,13 @@ These live in `base.css` and are safe to use on any page:
 | `proxy/create.html` | `proxy.css` | `proxy.js` | Inline slug/target JS + proxy.js |
 | `proxy/detail.html` | `proxy.css` | Inline JS + `proxy.js` | Inline edit form toggle |
 | `proxy/logs.html` | `proxy.css` | Inline JS + `proxy.js` | Clear-logs modal |
+| `webex/list.html` | `webex.css` | `webex.js` | Configs table |
+| `webex/create.html` | `webex.css` | `webex.js` | New config form |
+| `webex/detail.html` | `webex.css` | `webex.js` | Webhooks tab bar, Spaces button |
+| `webex/webhook_create.html` | `webex.css` | `webex.js` | Room picker modal + inline fetch JS |
+| `webex/webhook_logs.html` | `proxy.css` + `webex.css` | `webex.js` | Expand rows, room-type badge |
+| `webex/spaces.html` | `proxy.css` + `webex.css` | Inline JS | AJAX prev/next replaces `<tbody>` |
+| `webex/room_messages.html` | `proxy.css` + `webex.css` | Inline JS | AJAX load-more appends items |
 
 ---
 

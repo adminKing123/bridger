@@ -8,6 +8,7 @@ with an **HTTP Proxy** service for forwarding requests and bypassing CORS.
 
 > **Service documentation**
 > - HTTP Proxy service → see [proxy-service.md](proxy-service.md)
+> - Webex Integration service → see [webex-service.md](webex-service.md)
 
 ---
 
@@ -39,7 +40,10 @@ Bridger/
 │   │   ├── __init__.py
 │   │   ├── user.py            # User + OTP SQLAlchemy models
 │   │   ├── proxy.py           # ProxyConfig model
-│   │   └── proxy_log.py       # ProxyLog model (per-request audit log)
+│   │   ├── proxy_log.py       # ProxyLog model (per-request audit log)
+│   │   ├── webex_config.py    # WebexConfig model
+│   │   ├── webex_webhook.py   # WebexWebhook model
+│   │   └── webex_webhook_log.py # WebexWebhookLog model
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   ├── auth.py            # signup, login, logout, verify-email,
@@ -47,16 +51,20 @@ Bridger/
 │   │   ├── profile.py         # protected /profile + landing index
 │   │   ├── dashboard.py       # protected /dashboard
 │   │   ├── proxy_manager.py   # CRUD + lifecycle for proxy configs
-│   │   └── proxy_handler.py   # Live request forwarding + subdomain hook
+│   │   ├── proxy_handler.py   # Live request forwarding + subdomain hook
+│   │   └── webex.py           # Webex config/webhook management + event receive
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── email_service.py   # SMTP email sender + template helpers
-│   │   └── otp_service.py     # OTP generation, storage, verification
+│   │   ├── otp_service.py     # OTP generation, storage, verification
+│   │   └── webex_service.py   # Webex API calls (verify, webhooks, rooms, messages)
 │   ├── forms/
 │   │   ├── __init__.py
 │   │   ├── auth_forms.py      # WTForms: Signup, Login, Verify,
 │   │   │                      #   ForgotPassword, ResetPassword, UpdateProfile
-│   │   └── proxy_forms.py     # ProxyCreateForm, ProxyEditForm
+│   │   ├── proxy_forms.py     # ProxyCreateForm, ProxyEditForm
+│   │   ├── webex_forms.py     # WebexCreateForm, WebexEditForm
+│   │   └── webex_webhook_forms.py # WebhookCreateForm
 │   ├── templates/
 │   │   ├── base.html          # Bootstrap 5 shell + navbar
 │   │   ├── auth/
@@ -69,20 +77,31 @@ Bridger/
 │   │   │   └── dashboard.html
 │   │   ├── profile/
 │   │   │   └── profile.html
-│   │   └── proxy/
-│   │       ├── list.html      # Paginated proxy list
-│   │       ├── create.html    # New proxy form
-│   │       ├── detail.html    # View / inline-edit proxy
-│   │       └── logs.html      # Paginated request log table
+│   │   ├── proxy/
+│   │   │   ├── list.html      # Paginated proxy list
+│   │   │   ├── create.html    # New proxy form
+│   │   │   ├── detail.html    # View / inline-edit proxy
+│   │   │   └── logs.html      # Paginated request log table
+│   │   └── webex/
+│   │       ├── list.html      # Configs list
+│   │       ├── create.html    # New config form
+│   │       ├── detail.html    # Config detail + webhooks panel
+│   │       ├── webhook_create.html  # Webhook form + room picker modal
+│   │       ├── webhook_logs.html    # Event log table with expand rows
+│   │       ├── spaces.html    # AJAX-paginated rooms browser
+│   │       └── room_messages.html   # Cursor-paginated message viewer
 │   └── static/
 │       ├── css/main.css
-│       └── js/main.js
+│       ├── css/webex.css
+│       ├── js/main.js
+│       └── js/webex.js
 ├── config.py                  # Config class (reads .env)
 ├── run.py                     # Entry point
 ├── .env                       # Secrets (not committed)
 ├── .gitignore
 ├── requirements.txt
 ├── proxy-service.md           # HTTP Proxy service documentation
+├── webex-service.md           # Webex Integration service documentation
 └── plan.md                    # ← This file
 ```
 
@@ -99,6 +118,7 @@ Bridger/
 | 5 | Protected Profile | View info + update username; redirects to login if not authed |
 | 6 | Dashboard | Authenticated landing page with account stat cards |
 | 7 | HTTP Proxy Service | Per-user proxy configs; endpoint & subdomain delivery modes; CORS bypass; per-request logging with client IP — see [proxy-service.md](proxy-service.md) |
+| 8 | Webex Integration Service | Per-user Webex account/bot configs; Bridger-hosted webhook registration with HMAC verification; enriched event log (sender, receiver, room type, message text); AJAX spaces browser with type filter/search; cursor-based message viewer — see [webex-service.md](webex-service.md) |
 
 ---
 
@@ -167,6 +187,15 @@ See [proxy-service.md → Data Model](proxy-service.md#data-model).
 ### `proxy_logs`
 See [proxy-service.md → Data Model](proxy-service.md#data-model).
 
+### `webex_configs`
+See [webex-service.md → Data Model](webex-service.md#data-model).
+
+### `webex_webhooks`
+See [webex-service.md → Data Model](webex-service.md#data-model).
+
+### `webex_webhook_logs`
+See [webex-service.md → Data Model](webex-service.md#data-model).
+
 ---
 
 ## Route Map
@@ -192,6 +221,21 @@ See [proxy-service.md → Data Model](proxy-service.md#data-model).
 | GET | `/proxies/<id>/logs` | **Yes** | Paginated request log |
 | ANY | `/proxy/<slug>/[path]` | No | Endpoint-mode forwarding |
 | ANY | `<slug>.localhost/[path]` | No | Subdomain-mode forwarding |
+| GET | `/webex/` | **Yes** | List Webex configs (paginated) |
+| GET/POST | `/webex/new` | **Yes** | Create Webex config |
+| GET | `/webex/<id>` | **Yes** | Config detail + webhooks panel |
+| POST | `/webex/<id>/edit` | **Yes** | Edit config name/token |
+| POST | `/webex/<id>/delete` | **Yes** | Delete config + cascade |
+| POST | `/webex/<id>/verify` | **Yes** | Re-verify token |
+| GET/POST | `/webex/<id>/webhooks/new` | **Yes** | Create webhook(s) |
+| POST | `/webex/<id>/webhooks/<wh_id>/delete` | **Yes** | Delete Bridger webhook |
+| GET | `/webex/<id>/webhooks/<wh_id>/logs` | **Yes** | Event log (paginated) |
+| POST | `/webex/<id>/webhooks/<wh_id>/logs/clear` | **Yes** | Clear event logs |
+| POST | `/webex/receive/<uuid>` | No | Receive Webex event (CSRF exempt) |
+| GET | `/webex/<id>/spaces` | **Yes** | Spaces browser |
+| GET | `/webex/<id>/spaces/messages` | **Yes** | Room messages viewer |
+| GET | `/webex/<id>/spaces/api` | **Yes** | JSON: rooms (AJAX) |
+| GET | `/webex/<id>/spaces/messages/api` | **Yes** | JSON: messages cursor (AJAX) |
 
 ---
 
@@ -248,6 +292,12 @@ App runs at: http://localhost:5000
 - [x] Dashboard
 - [x] HTTP Proxy service (endpoint + subdomain modes)
 - [x] Proxy request logging (DB-persisted, client IP, timing)
+- [x] Webex Integration service (config CRUD, token verification)
+- [x] Webex webhook management (create, delete Bridger + external)
+- [x] Webex event receive + HMAC-SHA1 verification
+- [x] Webex event log (enriched: sender, receiver, room type, message text)
+- [x] Webex spaces browser (AJAX pagination, type filter, search)
+- [x] Webex room messages viewer (cursor-based AJAX load-more)
 - [x] Proxy logs UI (paginated table + stats strip)
 - [ ] Unit tests
 - [ ] Deployment config (Gunicorn / Docker)
