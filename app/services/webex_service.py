@@ -246,6 +246,25 @@ _RESOURCE_ENDPOINTS: dict[str, str] = {
 }
 
 
+def fetch_room_members(access_token: str, room_id: str) -> list[dict]:
+    """
+    Return the membership list of a room — called once at webhook creation
+    to cache the partner email for direct rooms. Never called per-event.
+    """
+    try:
+        response = requests.get(
+            f"{_WEBEX_API_BASE}/memberships",
+            headers={"Authorization": f"Bearer {access_token}"},
+            params={"roomId": room_id, "max": 10},
+            timeout=_REQUEST_TIMEOUT,
+        )
+        if response.status_code == 200:
+            return response.json().get("items", [])
+        return []
+    except requests.RequestException:
+        return []
+
+
 def fetch_resource(access_token: str, resource: str, resource_id: str) -> dict | None:
     """
     Fetch the full resource object from Webex using the resource type and ID

@@ -47,6 +47,7 @@ from app.services.webex_service import (
     delete_webhook as delete_webhook_api,
     fetch_all_webhooks,
     fetch_resource,
+    fetch_room_members,
     fetch_rooms,
     verify_token,
 )
@@ -300,6 +301,17 @@ def create_webhook(config_id: int):
                     filter_str=room_filter,
                     secret=per_secret,
                 )
+                # Cache partner email for direct-room message webhooks
+                per_partner_email = None
+                if form.resource.data == "messages" and room_filter.startswith("roomId="):
+                    room_id = room_filter.split("=", 1)[1]
+                    members = fetch_room_members(cfg.access_token, room_id)
+                    owner_email = (cfg.webex_email or "").lower()
+                    for m in members:
+                        if m.get("personEmail", "").lower() != owner_email:
+                            per_partner_email = m.get("personEmail")
+                            break
+
                 wh = WebexWebhook(
                     config_id=cfg.id,
                     uuid=per_uuid,
@@ -312,6 +324,7 @@ def create_webhook(config_id: int):
                     secret=per_secret,
                     webex_webhook_id=api_result.get("id") if api_result else None,
                     webex_status=api_result.get("status", "unknown") if api_result else "unknown",
+                    partner_email=per_partner_email,
                 )
                 db.session.add(wh)
                 if api_result:
@@ -341,6 +354,18 @@ def create_webhook(config_id: int):
             secret=wh_secret,
         )
 
+        # Cache partner email for direct-room message webhooks
+        single_partner_email = None
+        raw_filter = form.filter_str.data.strip() if form.filter_str.data else ""
+        if form.resource.data == "messages" and "roomId=" in raw_filter:
+            room_id = raw_filter.split("roomId=", 1)[1].split("&")[0]
+            members = fetch_room_members(cfg.access_token, room_id)
+            owner_email = (cfg.webex_email or "").lower()
+            for m in members:
+                if m.get("personEmail", "").lower() != owner_email:
+                    single_partner_email = m.get("personEmail")
+                    break
+
         wh = WebexWebhook(
             config_id=cfg.id,
             uuid=webhook_uuid,
@@ -353,6 +378,7 @@ def create_webhook(config_id: int):
             secret=wh_secret,
             webex_webhook_id=api_result.get("id") if api_result else None,
             webex_status=api_result.get("status", "unknown") if api_result else "unknown",
+            partner_email=single_partner_email,
         )
 
         db.session.add(wh)
@@ -511,22 +537,14 @@ def receive_event(wh_uuid: str):
     room_type      = data_obj.get("roomType")   # "direct" | "group" — in every messages event
 
     if room_type == "direct":
-        # toPersonEmail is the other side of the 1-to-1 conversation
-        to_email = (
-            (resource_obj.get("toPersonEmail") if resource_obj else None)
-            or data_obj.get("toPersonEmail")
-        )
-        if to_email:
-            receiver_email = to_email
+        if sender_email and sender_email.lower() == (owner_email or "").lower():
+            # Owner sent the message — receiver is the other person.
+            # Use partner_email cached once at webhook creation (no per-event API call).
+            receiver_email = wh.partner_email
         else:
-            # Fallback: whichever side isn't the sender
-            if sender_email and sender_email.lower() == (owner_email or "").lower():
-                # Owner sent — receiver unknown without extra call; leave blank
-                receiver_email = None
-            else:
-                # Someone else sent to owner
-                receiver_email = owner_email
-                receiver_name  = wh.config.webex_display_name
+            # Someone else sent to owner — owner is the receiver.
+            receiver_email = owner_email
+            receiver_name  = wh.config.webex_display_name
     # group / None — receiver_email stays None (multiple recipients)
 
     # ── Persist log entry ──────────────────────────────────────────────────

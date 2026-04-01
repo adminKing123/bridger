@@ -55,6 +55,11 @@ class WebexWebhook(db.Model):
     webex_webhook_id = db.Column(db.String(200), nullable=True)
     webex_status     = db.Column(db.String(50),  nullable=True)   # active / inactive / unknown
 
+    # ── Cached partner email for direct-room webhooks ────────────────────────
+    # Populated once at webhook creation for messages resource + roomId filter.
+    # Used in receive_event to identify the receiver without extra API calls.
+    partner_email = db.Column(db.String(200), nullable=True)
+
     # ── Timestamps ────────────────────────────────────────────────────────────
     created_at = db.Column(
         db.DateTime,
