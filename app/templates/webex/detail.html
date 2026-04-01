@@ -1,6 +1,6 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
-{% block title %}{{ cfg.name }} — Webex — Bridger{% endblock %}
+{% block title %}{{ cfg.name }} â€” Webex â€” Bridger{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/webex.css') }}" />
@@ -9,14 +9,14 @@
 {% block content %}
 <div class="container py-4" style="max-width:780px;">
 
-  <!-- ── Back link ───────────────────────────────────────────── -->
+  <!-- â”€â”€ Back link â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div class="mb-3">
     <a href="{{ url_for('webex.index') }}" class="proxy-back-link">
       <i class="bi bi-arrow-left me-1"></i>All Webex Integrations
     </a>
   </div>
 
-  <!-- ── Hero ────────────────────────────────────────────────── -->
+  <!-- â”€â”€ Hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div class="webex-hero mb-4">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
 
@@ -30,7 +30,7 @@
           <p class="webex-hero-sub">
             {% if cfg.webex_display_name %}
               {{ cfg.webex_display_name }}
-              {% if cfg.webex_email %}&nbsp;·&nbsp;{{ cfg.webex_email }}{% endif %}
+              {% if cfg.webex_email %}&nbsp;Â·&nbsp;{{ cfg.webex_email }}{% endif %}
             {% else %}
               Token not yet verified
             {% endif %}
@@ -60,7 +60,7 @@
           type="submit"
           class="btn-webex-verify"
           data-submit-btn
-          data-loading-text="Verifying…"
+          data-loading-text="Verifyingâ€¦"
         >
           <i class="bi bi-shield-check"></i>Verify Token
         </button>
@@ -71,7 +71,7 @@
 
   <div class="row g-3">
 
-    <!-- ── Left column: Webex profile ──────────────────────── -->
+    <!-- â”€â”€ Left column: Webex profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="col-lg-5">
       <div class="panel h-100">
         <div class="panel-head">
@@ -93,17 +93,17 @@
 
             <div class="webex-field">
               <span class="webex-field-label">Email</span>
-              <span class="webex-field-val">{{ cfg.webex_email or '—' }}</span>
+              <span class="webex-field-val">{{ cfg.webex_email or 'â€”' }}</span>
             </div>
 
             <div class="webex-field">
               <span class="webex-field-label">Person ID</span>
-              <span class="webex-field-val mono">{{ cfg.webex_person_id or '—' }}</span>
+              <span class="webex-field-val mono">{{ cfg.webex_person_id or 'â€”' }}</span>
             </div>
 
             <div class="webex-field">
               <span class="webex-field-label">Organisation ID</span>
-              <span class="webex-field-val mono">{{ cfg.webex_org_id or '—' }}</span>
+              <span class="webex-field-val mono">{{ cfg.webex_org_id or 'â€”' }}</span>
             </div>
 
           {% else %}
@@ -122,7 +122,7 @@
       </div>
     </div>
 
-    <!-- ── Right column: settings ────────────────────────── -->
+    <!-- â”€â”€ Right column: settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="col-lg-7 d-flex flex-column gap-3">
 
       <!-- Configuration panel (view / edit toggle) -->
@@ -187,7 +187,7 @@
               {% endfor %}
             </div>
 
-            <!-- Access token (optional on edit — blank = keep current) -->
+            <!-- Access token (optional on edit â€” blank = keep current) -->
             <div class="mb-3">
               {{ form.access_token.label(class="form-label") }}
               <div class="webex-token-input-wrap" id="webexTokenWrap">
@@ -216,7 +216,7 @@
                 type="submit"
                 class="btn-save"
                 data-submit-btn
-                data-loading-text="Saving…"
+                data-loading-text="Savingâ€¦"
               >
                 <i class="bi bi-check-lg"></i>Save Changes
               </button>
@@ -249,36 +249,380 @@
     </div>
   </div>
 
+  <!-- â”€â”€ Webhooks panel (full width below the two columns) â”€â”€â”€â”€ -->
+  <div class="panel mt-3">
+    <div class="panel-head">
+      <i class="bi bi-broadcast" style="color:#00a899;font-size:.9rem;"></i>
+      <span class="panel-head-title">Webhooks</span>
+      <span class="proxy-log-count ms-auto">
+        {{ webhooks.total }} Bridger &nbsp;Â·&nbsp; {{ external_webhooks|length }} external
+      </span>
+      <a href="{{ url_for('webex.create_webhook', config_id=cfg.id) }}"
+         class="btn-webex-action view"
+         style="font-size:.78rem;padding:.35rem .85rem;display:inline-flex;align-items:center;gap:.35rem;">
+        <i class="bi bi-plus-lg"></i>Add Webhook
+      </a>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="webex-tab-bar">
+      <a href="{{ url_for('webex.detail_config', config_id=cfg.id, tab='all') }}"
+         class="webex-tab {% if tab == 'all' %}active{% endif %}">
+        All
+        <span class="webex-tab-count">{{ webhooks.total + external_webhooks|length }}</span>
+      </a>
+      <a href="{{ url_for('webex.detail_config', config_id=cfg.id, tab='bridger') }}"
+         class="webex-tab {% if tab == 'bridger' %}active{% endif %}">
+        Bridger
+        <span class="webex-tab-count">{{ webhooks.total }}</span>
+      </a>
+      <a href="{{ url_for('webex.detail_config', config_id=cfg.id, tab='external') }}"
+         class="webex-tab {% if tab == 'external' %}active{% endif %}">
+        External
+        <span class="webex-tab-count">{{ external_webhooks|length }}</span>
+      </a>
+    </div>
+
+    {# â”€â”€ ALL tab: Bridger rows + External rows merged â”€â”€ #}
+    {% if tab == 'all' %}
+      {% set has_any = webhooks.items or external_webhooks %}
+      {% if has_any %}
+        <div class="panel-body p-0">
+          <div class="webex-webhook-table-wrap">
+            <table class="webex-webhook-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Resource / Event</th>
+                  <th>Target</th>
+                  <th>Status</th>
+                  <th>Source</th>
+                  <th>Logs</th>
+                  <th>Created</th>
+                  <th class="webex-table-actions-col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for wh in webhooks.items %}
+                  <tr>
+                    <td style="font-weight:600;color:var(--text);">{{ wh.name }}</td>
+                    <td>
+                      <span class="webex-event-resource">{{ wh.resource_label }}</span>
+                      <span style="color:var(--text-3);margin:0 .25rem;">/</span>
+                      <span class="webex-event-badge webex-event-badge--{{ wh.event | lower }}">{{ wh.event }}</span>
+                    </td>
+                    <td>
+                      {% if wh.uses_bridger_target %}
+                        <span class="webex-sig-badge webex-sig-badge--ok" style="font-size:.72rem;">
+                          <i class="bi bi-check-circle-fill"></i> Bridger
+                        </span>
+                      {% else %}
+                        <span class="webex-sig-badge webex-sig-badge--na" style="font-size:.72rem;" title="{{ wh.target_url }}">
+                          <i class="bi bi-link-45deg"></i> Custom
+                        </span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if wh.webex_status == 'active' %}
+                        <span class="proxy-status-badge running">Active</span>
+                      {% elif wh.webex_status == 'inactive' %}
+                        <span class="proxy-status-badge stopped">Inactive</span>
+                      {% else %}
+                        <span class="proxy-status-badge" style="background:var(--bg);color:var(--text-3);">Unknown</span>
+                      {% endif %}
+                    </td>
+                    <td><span class="webex-source-badge bridger"><i class="bi bi-shield-check"></i> Bridger</span></td>
+                    <td style="font-size:.875rem;color:var(--text-2);">{{ wh.log_count }}</td>
+                    <td class="proxy-log-time" title="{{ wh.created_at.strftime('%Y-%m-%d %H:%M UTC') }}">
+                      {{ wh.created_at.strftime('%d %b %Y') }}
+                    </td>
+                    <td>
+                      <div class="d-flex gap-2 align-items-center">
+                        <a href="{{ url_for('webex.webhook_logs', config_id=cfg.id, wh_id=wh.id) }}"
+                           class="btn-webex-action view" style="font-size:.75rem;padding:.28rem .65rem;">
+                          <i class="bi bi-card-list"></i>Logs
+                        </a>
+                        <button type="button" class="btn-webex-action"
+                                style="font-size:.75rem;padding:.28rem .65rem;background:var(--danger-light);color:var(--danger);"
+                                data-wh-delete-trigger data-wh-id="{{ wh.id }}" data-wh-name="{{ wh.name | e }}">
+                          <i class="bi bi-trash3"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+                {% for ewh in external_webhooks %}
+                  <tr class="webex-external-row">
+                    <td style="font-weight:600;color:var(--text);">{{ ewh.name }}</td>
+                    <td>
+                      <span class="webex-event-resource">{{ ewh.resource }}</span>
+                      <span style="color:var(--text-3);margin:0 .25rem;">/</span>
+                      <span class="webex-event-badge webex-event-badge--{{ ewh.event | lower }}">{{ ewh.event }}</span>
+                    </td>
+                    <td>
+                      <span class="webex-sig-badge webex-sig-badge--na" style="font-size:.72rem;"
+                            title="{{ ewh.targetUrl }}">
+                        <i class="bi bi-link-45deg"></i> {{ ewh.targetUrl | truncate(32, True) }}
+                      </span>
+                    </td>
+                    <td>
+                      {% if ewh.status == 'active' %}
+                        <span class="proxy-status-badge running">Active</span>
+                      {% else %}
+                        <span class="proxy-status-badge stopped">{{ ewh.status | title }}</span>
+                      {% endif %}
+                    </td>
+                    <td><span class="webex-source-badge external"><i class="bi bi-box-arrow-up-right"></i> External</span></td>
+                    <td style="font-size:.875rem;color:var(--text-3);">â€”</td>
+                    <td class="proxy-log-time">{{ ewh.created[:10] if ewh.created else 'â€”' }}</td>
+                    <td>
+                      <button type="button" class="btn-webex-action"
+                              style="font-size:.75rem;padding:.28rem .65rem;background:var(--danger-light);color:var(--danger);"
+                              data-ext-delete-trigger
+                              data-ext-id="{{ ewh.id | e }}"
+                              data-ext-name="{{ ewh.name | e }}">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% if webhooks.pages > 1 %}
+          <div class="panel-body" style="border-top:1px solid var(--border);padding-top:.75rem;">
+            <div class="proxy-log-pagination">
+              {% if webhooks.has_prev %}
+                <a href="{{ url_for('webex.detail_config', config_id=cfg.id, tab='all', wh_page=webhooks.prev_num) }}" class="proxy-log-page-btn">
+                  <i class="bi bi-chevron-left"></i> Prev
+                </a>
+              {% else %}
+                <span class="proxy-log-page-btn disabled"><i class="bi bi-chevron-left"></i> Prev</span>
+              {% endif %}
+              <span class="proxy-log-page-info">{{ webhooks.page }} / {{ webhooks.pages }}</span>
+              {% if webhooks.has_next %}
+                <a href="{{ url_for('webex.detail_config', config_id=cfg.id, tab='all', wh_page=webhooks.next_num) }}" class="proxy-log-page-btn">
+                  Next <i class="bi bi-chevron-right"></i>
+                </a>
+              {% else %}
+                <span class="proxy-log-page-btn disabled">Next <i class="bi bi-chevron-right"></i></span>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="panel-body" style="text-align:center;padding:2rem 1rem;color:var(--text-3);">
+          <i class="bi bi-broadcast" style="font-size:1.75rem;display:block;margin-bottom:.5rem;"></i>
+          <p style="font-size:.875rem;margin:0 0 1rem;">No webhooks found for this configuration.</p>
+          <a href="{{ url_for('webex.create_webhook', config_id=cfg.id) }}" class="btn-save" style="display:inline-flex;">
+            <i class="bi bi-plus-lg"></i>Add First Webhook
+          </a>
+        </div>
+      {% endif %}
+
+    {# â”€â”€ BRIDGER tab: only DB-managed webhooks â”€â”€ #}
+    {% elif tab == 'bridger' %}
+      {% if webhooks.items %}
+        <div class="panel-body p-0">
+          <div class="webex-webhook-table-wrap">
+            <table class="webex-webhook-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Resource / Event</th>
+                  <th>Target</th>
+                  <th>Status</th>
+                  <th>Logs</th>
+                  <th>Created</th>
+                  <th class="webex-table-actions-col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for wh in webhooks.items %}
+                  <tr>
+                    <td style="font-weight:600;color:var(--text);">{{ wh.name }}</td>
+                    <td>
+                      <span class="webex-event-resource">{{ wh.resource_label }}</span>
+                      <span style="color:var(--text-3);margin:0 .25rem;">/</span>
+                      <span class="webex-event-badge webex-event-badge--{{ wh.event | lower }}">{{ wh.event }}</span>
+                    </td>
+                    <td>
+                      {% if wh.uses_bridger_target %}
+                        <span class="webex-sig-badge webex-sig-badge--ok" style="font-size:.72rem;">
+                          <i class="bi bi-check-circle-fill"></i> Bridger
+                        </span>
+                      {% else %}
+                        <span class="webex-sig-badge webex-sig-badge--na" style="font-size:.72rem;" title="{{ wh.target_url }}">
+                          <i class="bi bi-link-45deg"></i> Custom
+                        </span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if wh.webex_status == 'active' %}
+                        <span class="proxy-status-badge running">Active</span>
+                      {% elif wh.webex_status == 'inactive' %}
+                        <span class="proxy-status-badge stopped">Inactive</span>
+                      {% else %}
+                        <span class="proxy-status-badge" style="background:var(--bg);color:var(--text-3);">Unknown</span>
+                      {% endif %}
+                    </td>
+                    <td style="font-size:.875rem;color:var(--text-2);">{{ wh.log_count }}</td>
+                    <td class="proxy-log-time" title="{{ wh.created_at.strftime('%Y-%m-%d %H:%M UTC') }}">
+                      {{ wh.created_at.strftime('%d %b %Y') }}
+                    </td>
+                    <td>
+                      <div class="d-flex gap-2 align-items-center">
+                        <a href="{{ url_for('webex.webhook_logs', config_id=cfg.id, wh_id=wh.id) }}"
+                           class="btn-webex-action view" style="font-size:.75rem;padding:.28rem .65rem;">
+                          <i class="bi bi-card-list"></i>Logs
+                        </a>
+                        <button type="button" class="btn-webex-action"
+                                style="font-size:.75rem;padding:.28rem .65rem;background:var(--danger-light);color:var(--danger);"
+                                data-wh-delete-trigger data-wh-id="{{ wh.id }}" data-wh-name="{{ wh.name | e }}">
+                          <i class="bi bi-trash3"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% if webhooks.pages > 1 %}
+          <div class="panel-body" style="border-top:1px solid var(--border);padding-top:.75rem;">
+            <div class="proxy-log-pagination">
+              {% if webhooks.has_prev %}
+                <a href="{{ url_for('webex.detail_config', config_id=cfg.id, tab='bridger', wh_page=webhooks.prev_num) }}" class="proxy-log-page-btn">
+                  <i class="bi bi-chevron-left"></i> Prev
+                </a>
+              {% else %}
+                <span class="proxy-log-page-btn disabled"><i class="bi bi-chevron-left"></i> Prev</span>
+              {% endif %}
+              <span class="proxy-log-page-info">{{ webhooks.page }} / {{ webhooks.pages }}</span>
+              {% if webhooks.has_next %}
+                <a href="{{ url_for('webex.detail_config', config_id=cfg.id, tab='bridger', wh_page=webhooks.next_num) }}" class="proxy-log-page-btn">
+                  Next <i class="bi bi-chevron-right"></i>
+                </a>
+              {% else %}
+                <span class="proxy-log-page-btn disabled">Next <i class="bi bi-chevron-right"></i></span>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="panel-body" style="text-align:center;padding:2rem 1rem;color:var(--text-3);">
+          <i class="bi bi-shield-check" style="font-size:1.75rem;display:block;margin-bottom:.5rem;"></i>
+          <p style="font-size:.875rem;margin:0 0 1rem;">No Bridger-managed webhooks yet.</p>
+          <a href="{{ url_for('webex.create_webhook', config_id=cfg.id) }}" class="btn-save" style="display:inline-flex;">
+            <i class="bi bi-plus-lg"></i>Add Webhook
+          </a>
+        </div>
+      {% endif %}
+
+    {# â”€â”€ EXTERNAL tab: webhooks not created via Bridger â”€â”€ #}
+    {% elif tab == 'external' %}
+      {% if external_webhooks %}
+        <div class="panel-body p-0">
+          <div class="webex-webhook-table-wrap">
+            <table class="webex-webhook-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Resource / Event</th>
+                  <th>Target URL</th>
+                  <th>Status</th>
+                  <th>Filter</th>
+                  <th>Created</th>
+                  <th class="webex-table-actions-col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ewh in external_webhooks %}
+                  <tr class="webex-external-row">
+                    <td style="font-weight:600;color:var(--text);">{{ ewh.name }}</td>
+                    <td>
+                      <span class="webex-event-resource">{{ ewh.resource }}</span>
+                      <span style="color:var(--text-3);margin:0 .25rem;">/</span>
+                      <span class="webex-event-badge webex-event-badge--{{ ewh.event | lower }}">{{ ewh.event }}</span>
+                    </td>
+                    <td style="font-size:.8rem;color:var(--text-2);word-break:break-all;max-width:220px;">
+                      {{ ewh.targetUrl }}
+                    </td>
+                    <td>
+                      {% if ewh.status == 'active' %}
+                        <span class="proxy-status-badge running">Active</span>
+                      {% else %}
+                        <span class="proxy-status-badge stopped">{{ ewh.status | title }}</span>
+                      {% endif %}
+                    </td>
+                    <td style="font-size:.8rem;color:var(--text-3);">{{ ewh.filter or 'â€”' }}</td>
+                    <td class="proxy-log-time">{{ ewh.created[:10] if ewh.created else 'â€”' }}</td>
+                    <td>
+                      <button type="button" class="btn-webex-action"
+                              style="font-size:.75rem;padding:.28rem .65rem;background:var(--danger-light);color:var(--danger);"
+                              data-ext-delete-trigger
+                              data-ext-id="{{ ewh.id | e }}"
+                              data-ext-name="{{ ewh.name | e }}">
+                        <i class="bi bi-trash3"></i> Remove
+                      </button>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% else %}
+        <div class="panel-body" style="text-align:center;padding:2rem 1rem;color:var(--text-3);">
+          <i class="bi bi-box-arrow-up-right" style="font-size:1.75rem;display:block;margin-bottom:.5rem;"></i>
+          <p style="font-size:.875rem;margin:0;">No external webhooks found on this Webex account.</p>
+        </div>
+      {% endif %}
+    {% endif %}
+
+  </div>
+
 </div>
 
-<!-- ── Delete confirmation modal ──────────────────────────────── -->
-<div
-  class="br-modal-backdrop"
-  id="deleteWebexModal"
-  aria-hidden="true"
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="deleteWebexModalTitle"
->
+<!-- â”€â”€ Delete Bridger webhook modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<div class="br-modal-backdrop" id="deleteWhModal" aria-hidden="true" role="dialog" aria-modal="true">
   <div class="br-modal">
-    <div class="br-modal-icon">
-      <i class="bi bi-trash3"></i>
-    </div>
-    <h2 class="br-modal-title" id="deleteWebexModalTitle">Delete integration?</h2>
+    <div class="br-modal-icon"><i class="bi bi-broadcast"></i></div>
+    <h2 class="br-modal-title">Remove webhook?</h2>
     <p class="br-modal-body">
-      <strong>{{ cfg.name }}</strong> will be permanently removed including its stored token.
+      <strong id="deleteWhName"></strong> will be deregistered from Webex and all its logs deleted.
+    </p>
+    <div class="br-modal-actions">
+      <button type="button" class="br-modal-cancel" id="deleteWhCancel">Cancel</button>
+      <form id="deleteWhForm" method="POST" style="flex:1;" data-loadable>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="br-modal-confirm" data-submit-btn data-loading-text="Removingâ€¦">
+          Yes, Remove
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- â”€â”€ Delete External webhook modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<div class="br-modal-backdrop" id="deleteExtModal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="br-modal">
+    <div class="br-modal-icon" style="background:var(--danger-light);color:var(--danger);">
+      <i class="bi bi-box-arrow-up-right"></i>
+    </div>
+    <h2 class="br-modal-title">Remove external webhook?</h2>
+    <p class="br-modal-body">
+      <strong id="deleteExtName"></strong> will be permanently removed from your Webex account.
       This cannot be undone.
     </p>
     <div class="br-modal-actions">
-      <button type="button" class="br-modal-cancel" id="deleteWebexCancel">Cancel</button>
-      <form
-        method="POST"
-        action="{{ url_for('webex.delete_config', config_id=cfg.id) }}"
-        style="flex:1;"
-      >
+      <button type="button" class="br-modal-cancel" id="deleteExtCancel">Cancel</button>
+      <form id="deleteExtForm" method="POST" style="flex:1;" data-loadable>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="br-modal-confirm" style="width:100%;">
-          <i class="bi bi-trash3"></i>Delete
+        <button type="submit" class="br-modal-confirm" data-submit-btn data-loading-text="Removingâ€¦">
+          Yes, Remove
         </button>
       </form>
     </div>
@@ -291,54 +635,76 @@
 <script src="{{ url_for('static', filename='js/webex.js') }}"></script>
 <script>
 (function () {
-  /* ── Config view/edit toggle (same pattern as proxy) ── */
+  var cfgId = {{ cfg.id }};
+
+  /* â”€â”€ Config view/edit toggle â”€â”€ */
   var view       = document.getElementById('webexView');
   var editForm   = document.getElementById('webexEditForm');
   var openBtn    = document.getElementById('editWebexBtn');
   var discardBtn = document.getElementById('discardWebexBtn');
-
-  function openEdit() {
-    view.style.display     = 'none';
-    editForm.style.display = 'block';
-    openBtn.style.display  = 'none';
-    var first = editForm.querySelector('input:not([type=hidden])');
-    if (first) first.focus();
-  }
-  function closeEdit() {
-    editForm.style.display = 'none';
-    view.style.display     = 'block';
-    openBtn.style.display  = '';
-  }
+  function openEdit()  { view.style.display='none'; editForm.style.display='block'; openBtn.style.display='none'; var f=editForm.querySelector('input:not([type=hidden])'); if(f) f.focus(); }
+  function closeEdit() { editForm.style.display='none'; view.style.display='block'; openBtn.style.display=''; }
   if (editForm && editForm.querySelector('.is-invalid')) openEdit();
   if (openBtn)    openBtn.addEventListener('click', openEdit);
   if (discardBtn) discardBtn.addEventListener('click', closeEdit);
 
-  /* ── Delete modal ── */
-  var backdrop   = document.getElementById('deleteWebexModal');
-  var trigger    = document.getElementById('deleteWebexTrigger');
-  var cancelBtn  = document.getElementById('deleteWebexCancel');
+  /* â”€â”€ Config delete modal â”€â”€ */
+  var delBackdrop = document.getElementById('deleteWebexModal');
+  var delTrigger  = document.getElementById('deleteWebexTrigger');
+  var delCancel   = document.getElementById('deleteWebexCancel');
+  function openConfigDelete()  { delBackdrop.classList.add('open'); delBackdrop.removeAttribute('aria-hidden'); if(delCancel) delCancel.focus(); }
+  function closeConfigDelete() { delBackdrop.classList.remove('open'); delBackdrop.setAttribute('aria-hidden','true'); }
+  if (delTrigger) delTrigger.addEventListener('click', openConfigDelete);
+  if (delCancel)  delCancel.addEventListener('click', closeConfigDelete);
+  if (delBackdrop) delBackdrop.addEventListener('click', function(e){ if(e.target===delBackdrop) closeConfigDelete(); });
 
-  function openDelete() {
-    backdrop.classList.add('open');
-    backdrop.removeAttribute('aria-hidden');
-    if (cancelBtn) cancelBtn.focus();
+  /* â”€â”€ Bridger webhook delete modal â”€â”€ */
+  var whBackdrop = document.getElementById('deleteWhModal');
+  var whForm     = document.getElementById('deleteWhForm');
+  var whName     = document.getElementById('deleteWhName');
+  var whCancel   = document.getElementById('deleteWhCancel');
+  function openWhDelete(id, name) {
+    whName.textContent = name;
+    whForm.action = '/webex/' + cfgId + '/webhooks/' + id + '/delete';
+    whBackdrop.classList.add('open'); whBackdrop.removeAttribute('aria-hidden');
+    if (whCancel) whCancel.focus();
   }
-  function closeDelete() {
-    backdrop.classList.remove('open');
-    backdrop.setAttribute('aria-hidden', 'true');
-  }
-  if (trigger)   trigger.addEventListener('click', openDelete);
-  if (cancelBtn) cancelBtn.addEventListener('click', closeDelete);
-  if (backdrop)  backdrop.addEventListener('click', function (e) {
-    if (e.target === backdrop) closeDelete();
+  function closeWhDelete() { whBackdrop.classList.remove('open'); whBackdrop.setAttribute('aria-hidden','true'); }
+  document.querySelectorAll('[data-wh-delete-trigger]').forEach(function(btn){
+    btn.addEventListener('click', function(){ openWhDelete(btn.dataset.whId, btn.dataset.whName); });
   });
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && backdrop.classList.contains('open')) closeDelete();
+  if (whCancel)   whCancel.addEventListener('click', closeWhDelete);
+  if (whBackdrop) whBackdrop.addEventListener('click', function(e){ if(e.target===whBackdrop) closeWhDelete(); });
+
+  /* â”€â”€ External webhook delete modal â”€â”€ */
+  var extBackdrop = document.getElementById('deleteExtModal');
+  var extForm     = document.getElementById('deleteExtForm');
+  var extNameEl   = document.getElementById('deleteExtName');
+  var extCancel   = document.getElementById('deleteExtCancel');
+  function openExtDelete(id, name) {
+    extNameEl.textContent = name;
+    extForm.action = '/webex/' + cfgId + '/webhooks/external/' + encodeURIComponent(id) + '/delete';
+    extBackdrop.classList.add('open'); extBackdrop.removeAttribute('aria-hidden');
+    if (extCancel) extCancel.focus();
+  }
+  function closeExtDelete() { extBackdrop.classList.remove('open'); extBackdrop.setAttribute('aria-hidden','true'); }
+  document.querySelectorAll('[data-ext-delete-trigger]').forEach(function(btn){
+    btn.addEventListener('click', function(){ openExtDelete(btn.dataset.extId, btn.dataset.extName); });
+  });
+  if (extCancel)   extCancel.addEventListener('click', closeExtDelete);
+  if (extBackdrop) extBackdrop.addEventListener('click', function(e){ if(e.target===extBackdrop) closeExtDelete(); });
+
+  /* â”€â”€ ESC closes any open modal â”€â”€ */
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'Escape') return;
+    if (delBackdrop && delBackdrop.classList.contains('open')) closeConfigDelete();
+    if (whBackdrop  && whBackdrop.classList.contains('open'))  closeWhDelete();
+    if (extBackdrop && extBackdrop.classList.contains('open')) closeExtDelete();
   });
 
-  /* ── Token reveal + toggle (from webex.js) ── */
-  initWebexTokenReveal();
-  initWebexTokenToggle();
+  /* â”€â”€ Token reveal (from webex.js) â”€â”€ */
+  if (typeof initWebexTokenReveal === 'function') initWebexTokenReveal();
+  if (typeof initWebexTokenToggle === 'function') initWebexTokenToggle();
 })();
 </script>
 {% endblock %}

@@ -1,0 +1,485 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Webhook — {{ cfg.name }} — Bridger{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/webex.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:640px;">
+
+  <!-- ── Back link ───────────────────────────────────────────── -->
+  <div class="mb-3">
+    <a href="{{ url_for('webex.detail_config', config_id=cfg.id) }}" class="proxy-back-link">
+      <i class="bi bi-arrow-left me-1"></i>Back to {{ cfg.name }}
+    </a>
+  </div>
+
+  <!-- ── Page header ─────────────────────────────────────────── -->
+  <div class="mb-4">
+    <h1 class="dash-title mb-1">Add Webhook</h1>
+    <p class="dash-subtitle mb-0">
+      Register a new Webex webhook for
+      <strong>{{ cfg.name }}</strong>.
+      Events will be received at your Bridger endpoint and logged automatically.
+    </p>
+  </div>
+
+  <!-- ── Form panel ──────────────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-head">
+      <i class="bi bi-broadcast" style="color:#00a899;font-size:.9rem;"></i>
+      <span class="panel-head-title">Webhook Configuration</span>
+    </div>
+    <div class="panel-body">
+
+      <form
+        method="POST"
+        action="{{ url_for('webex.create_webhook', config_id=cfg.id) }}"
+        novalidate
+        autocomplete="off"
+        data-loadable
+      >
+        {{ form.hidden_tag() }}
+        <!-- Pass through the pre-generated UUID so we use the same one on POST -->
+        <input type="hidden" name="webhook_uuid" value="{{ webhook_uuid }}">
+
+        <!-- Name -->
+        <div class="mb-3">
+          {{ form.name.label(class="form-label") }}
+          {{ form.name(
+            class="form-control" + (" is-invalid" if form.name.errors else "")
+          ) }}
+          {% for e in form.name.errors %}
+            <div class="invalid-feedback">
+              <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Resource + Event (side by side) -->
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            {{ form.resource.label(class="form-label") }}
+            {{ form.resource(
+              class="form-select" + (" is-invalid" if form.resource.errors else "")
+            ) }}
+            {% for e in form.resource.errors %}
+              <div class="invalid-feedback">{{ e }}</div>
+            {% endfor %}
+          </div>
+          <div class="col-sm-6">
+            {{ form.event.label(class="form-label") }}
+            {{ form.event(
+              class="form-select" + (" is-invalid" if form.event.errors else "")
+            ) }}
+            {% for e in form.event.errors %}
+              <div class="invalid-feedback">{{ e }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="mb-3">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            {{ form.filter_str.label(class="form-label mb-0") }}
+            <button type="button" class="btn-room-pick" id="openRoomPicker">
+              <i class="bi bi-collection me-1"></i>
+              <span id="roomPickBtnText">Pick Rooms</span>
+            </button>
+          </div>
+
+          <!-- Manual filter — shown when no rooms selected via picker -->
+          <div id="filterManualArea">
+            {{ form.filter_str(
+              class="form-control font-mono" + (" is-invalid" if form.filter_str.errors else ""),
+              id="filterInput",
+              placeholder="e.g. roomId=Y2lzY29z… or leave blank for all"
+            ) }}
+            {% for e in form.filter_str.errors %}
+              <div class="invalid-feedback">{{ e }}</div>
+            {% endfor %}
+            <div class="form-text">
+              Use <strong>Pick Rooms</strong> above to select one or more spaces, or type
+              a filter manually (e.g. <code>roomId=Y2lzY29z…</code>). Leave blank for all events.
+            </div>
+          </div>
+
+          <!-- Chips area — shown when rooms selected via picker -->
+          <div id="filterRoomsArea" style="display:none;">
+            <div class="webex-chips-wrap" id="chipsContainer"></div>
+            <div class="form-text mt-1">
+              Each selected room creates its own Bridger-logged webhook.
+              <a href="#" id="clearAllRooms" class="ms-1">Clear all</a> to switch back to manual filter.
+            </div>
+          </div>
+
+          <!-- Hidden inputs injected by JS when rooms are picked -->
+          <div id="roomFilterInputs"></div>
+        </div>
+
+        <!-- Target URL -->
+        <div class="mb-3">
+          {{ form.target_url.label(class="form-label") }}
+          {{ form.target_url(
+            class="form-control font-mono" + (" is-invalid" if form.target_url.errors else ""),
+            id="targetUrlInput"
+          ) }}
+          {% for e in form.target_url.errors %}
+            <div class="invalid-feedback">{{ e }}</div>
+          {% endfor %}
+
+          <!-- Custom-target warning (shown by JS when URL is changed) -->
+          <div class="webex-custom-target-warn" id="customTargetWarn" style="display:none;">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            You've changed the target URL away from the Bridger endpoint.
+            Incoming events will go to your custom URL — <strong>Bridger will not be able to log them.</strong>
+          </div>
+
+          <div class="form-text" id="defaultTargetHint">
+            <i class="bi bi-check-circle-fill me-1" style="color:#00a899;"></i>
+            This is your Bridger receive endpoint. Events sent here will be logged automatically.
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="profile-form-actions" style="margin-top:1.5rem;">
+          <a href="{{ url_for('webex.detail_config', config_id=cfg.id) }}"
+             class="btn-profile-discard">Cancel</a>
+          <button
+            type="submit"
+            class="btn-save"
+            data-submit-btn
+            data-loading-text="Registering…"
+          >
+            <i class="bi bi-broadcast"></i>Register Webhook
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Info box ─────────────────────────────────────────────── -->
+  <div class="webex-info-box mt-3">
+    <div class="webex-info-box-icon"><i class="bi bi-info-circle-fill"></i></div>
+    <div>
+      <strong>How it works</strong> — Webex will POST a signed event payload to your
+      Bridger endpoint every time the selected resource + event combination fires.
+      Bridger verifies the HMAC-SHA1 signature and stores the full payload in the log.
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Room picker modal ────────────────────────────────────────── -->
+<div class="br-modal-backdrop" id="roomPickerBackdrop">
+  <div class="br-modal webex-room-picker-modal">
+
+    <!-- Header -->
+    <div class="webex-picker-header">
+      <div class="webex-picker-title">
+        <i class="bi bi-collection-fill me-2" style="color:#00a899;"></i>Pick a Room
+      </div>
+      <button type="button" class="webex-picker-close" id="closeRoomPicker" aria-label="Close">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Search -->
+    <div class="webex-picker-search">
+      <i class="bi bi-search webex-picker-search-icon"></i>
+      <input
+        type="text"
+        class="webex-picker-search-input"
+        id="roomSearch"
+        placeholder="Search rooms…"
+        autocomplete="off"
+      />
+    </div>
+
+    <!-- Room list -->
+    <div class="webex-picker-list" id="roomList">
+      <!-- Populated by JS -->
+      <div class="webex-picker-loading" id="roomPickerLoading">
+        <div class="webex-picker-spinner"></div>
+        <span>Loading rooms…</span>
+      </div>
+    </div>
+
+    <!-- Footer — selection count + apply -->
+    <div class="webex-picker-apply-bar">
+      <span class="webex-picker-count" id="roomSelectionCount">0 selected</span>
+      <div class="webex-picker-footer-hint">Up to 200 most recently active spaces.</div>
+      <button type="button" class="btn-room-apply" id="applyRoomSelection" disabled>
+        Apply Selection
+      </button>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  /* ── Target URL warning ─────────────────────────────────── */
+  var targetInput = document.getElementById('targetUrlInput');
+  var warn        = document.getElementById('customTargetWarn');
+  var hint        = document.getElementById('defaultTargetHint');
+  var defaultUrl  = {{ default_target | tojson }};
+
+  function checkTarget() {
+    var isDefault = targetInput.value.trim() === defaultUrl;
+    warn.style.display = isDefault ? 'none'  : 'flex';
+    hint.style.display = isDefault ? 'block' : 'none';
+  }
+  if (targetInput) {
+    targetInput.addEventListener('input', checkTarget);
+    checkTarget();
+  }
+
+  /* ── Room picker (multi-select) ─────────────────────────── */
+  var roomsUrl    = {{ url_for('webex.list_rooms', config_id=cfg.id) | tojson }};
+  var backdrop    = document.getElementById('roomPickerBackdrop');
+  var openBtn     = document.getElementById('openRoomPicker');
+  var closeBtn    = document.getElementById('closeRoomPicker');
+  var listEl      = document.getElementById('roomList');
+  var loadingEl   = document.getElementById('roomPickerLoading');
+  var searchEl    = document.getElementById('roomSearch');
+  var applyBtn    = document.getElementById('applyRoomSelection');
+  var countEl     = document.getElementById('roomSelectionCount');
+  var btnText     = document.getElementById('roomPickBtnText');
+  var chipsWrap   = document.getElementById('chipsContainer');
+  var manualArea  = document.getElementById('filterManualArea');
+  var roomsArea   = document.getElementById('filterRoomsArea');
+  var hiddenWrap  = document.getElementById('roomFilterInputs');
+  var clearAllBtn = document.getElementById('clearAllRooms');
+
+  var roomsCache     = null;   // null = not fetched
+  var fetching       = false;
+  // Map: filterStr → { filterStr, title, isMe }
+  var selectedRooms  = new Map();
+
+  /* ── Open / close ──────────────────────────────────────── */
+  function openPicker() {
+    backdrop.classList.add('open');
+    searchEl.value = '';
+    searchEl.focus();
+    if (roomsCache === null && !fetching) loadRooms();
+    else if (roomsCache) renderRooms(roomsCache, '');
+  }
+  function closePicker() { backdrop.classList.remove('open'); }
+
+  /* ── Load rooms from API ────────────────────────────────── */
+  function loadRooms() {
+    fetching = true;
+    showLoading(true);
+    fetch(roomsUrl, { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        fetching = false;
+        if (data.error) { showError(data.error); return; }
+        roomsCache = { me: data.me || null, rooms: data.rooms || [] };
+        renderRooms(roomsCache, '');
+      })
+      .catch(function () {
+        fetching = false;
+        showError('Could not load rooms. Check your access token and try again.');
+      });
+  }
+
+  /* ── Render room list ───────────────────────────────────── */
+  function renderRooms(cache, query) {
+    showLoading(false);
+    var me      = cache.me || null;
+    var rooms   = cache.rooms || [];
+    var q       = query.trim().toLowerCase();
+    var filtered = q
+      ? rooms.filter(function (r) { return r.title.toLowerCase().indexOf(q) !== -1; })
+      : rooms;
+
+    /* Pinned "My Messages" */
+    var meHtml = '';
+    if (me && me.personId && (!q || 'my messages'.indexOf(q) !== -1 ||
+        (me.displayName && me.displayName.toLowerCase().indexOf(q) !== -1))) {
+      var meFilter  = 'personId=' + me.personId;
+      var meChecked = selectedRooms.has(meFilter);
+      meHtml =
+        '<div class="webex-picker-section-label">My Account</div>' +
+        '<button type="button" class="webex-room-row webex-room-row-me' + (meChecked ? ' selected' : '') + '" data-filter="' + escAttr(meFilter) + '" data-title="My Messages" data-is-me="1">' +
+          '<span class="webex-room-icon me"><i class="bi bi-person-circle"></i></span>' +
+          '<span class="webex-room-info">' +
+            '<span class="webex-room-name">My Messages</span>' +
+            '<span class="webex-room-meta">' +
+              '<span class="webex-room-type webex-room-type-me">personId filter</span>' +
+              '<span class="webex-room-activity">' + escHtml(me.email) + '</span>' +
+            '</span>' +
+          '</span>' +
+          '<span class="webex-room-check"><i class="bi bi-check2"></i></span>' +
+        '</button>' +
+        (filtered.length ? '<div class="webex-picker-section-label">Spaces</div>' : '');
+    }
+
+    if (!meHtml && filtered.length === 0) {
+      listEl.innerHTML =
+        '<div class="webex-picker-empty"><i class="bi bi-collection me-2"></i>' +
+        (q ? 'No rooms match "' + escHtml(q) + '".' : 'No rooms found.') + '</div>';
+      return;
+    }
+
+    var html = '';
+    filtered.forEach(function (r) {
+      var isGroup   = r.type === 'group';
+      var icon      = isGroup ? 'bi-people-fill' : 'bi-person-fill';
+      var typeLabel = isGroup ? 'Group' : 'Direct';
+      var typeCls   = isGroup ? 'webex-room-type-group' : 'webex-room-type-direct';
+      var activity  = r.lastActivity ? relativeTime(r.lastActivity) : '';
+      var roomFilter = 'roomId=' + r.id;
+      var checked   = selectedRooms.has(roomFilter);
+      html +=
+        '<button type="button" class="webex-room-row' + (checked ? ' selected' : '') + '" data-filter="' + escAttr(roomFilter) + '" data-title="' + escAttr(r.title) + '">' +
+          '<span class="webex-room-icon ' + (isGroup ? 'group' : 'direct') + '"><i class="bi ' + icon + '"></i></span>' +
+          '<span class="webex-room-info">' +
+            '<span class="webex-room-name">' + escHtml(r.title) + (r.isLocked ? ' <i class="bi bi-lock-fill webex-room-lock"></i>' : '') + '</span>' +
+            '<span class="webex-room-meta">' +
+              '<span class="webex-room-type ' + typeCls + '">' + typeLabel + '</span>' +
+              (activity ? '<span class="webex-room-activity">' + escHtml(activity) + '</span>' : '') +
+            '</span>' +
+          '</span>' +
+          '<span class="webex-room-check"><i class="bi bi-check2"></i></span>' +
+        '</button>';
+    });
+
+    listEl.innerHTML = meHtml + html;
+
+    /* Attach toggle listeners */
+    listEl.querySelectorAll('.webex-room-row').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var f = btn.getAttribute('data-filter');
+        var t = btn.getAttribute('data-title');
+        if (selectedRooms.has(f)) {
+          selectedRooms.delete(f);
+          btn.classList.remove('selected');
+        } else {
+          selectedRooms.set(f, { filterStr: f, title: t });
+          btn.classList.add('selected');
+        }
+        updateCount();
+      });
+    });
+  }
+
+  /* ── Update count badge in footer ──────────────────────── */
+  function updateCount() {
+    var n = selectedRooms.size;
+    countEl.textContent = n + ' selected';
+    applyBtn.disabled = n === 0;
+  }
+
+  /* ── Apply: close picker, update chips + hidden inputs ──── */
+  function applySelection() {
+    closePicker();
+    updateChipsAndInputs();
+    // Update the "Pick Rooms" button label
+    var n = selectedRooms.size;
+    btnText.textContent = n > 0 ? n + ' room' + (n > 1 ? 's' : '') + ' selected' : 'Pick Rooms';
+    manualArea.style.display  = n > 0 ? 'none' : '';
+    roomsArea.style.display   = n > 0 ? ''     : 'none';
+  }
+
+  function updateChipsAndInputs() {
+    /* Chips */
+    chipsWrap.innerHTML = '';
+    selectedRooms.forEach(function (room) {
+      var chip = document.createElement('span');
+      chip.className = 'webex-chip';
+      chip.innerHTML =
+        '<span class="webex-chip-label">' + escHtml(room.title) + '</span>' +
+        '<button type="button" class="webex-chip-remove" aria-label="Remove ' + escAttr(room.title) + '">' +
+          '<i class="bi bi-x"></i>' +
+        '</button>';
+      chip.querySelector('.webex-chip-remove').addEventListener('click', function () {
+        selectedRooms.delete(room.filterStr);
+        updateCount();
+        applySelection();
+        // Re-render list if picker is open
+        if (backdrop.classList.contains('open') && roomsCache) {
+          renderRooms(roomsCache, searchEl.value);
+        }
+      });
+      chipsWrap.appendChild(chip);
+    });
+
+    /* Hidden inputs */
+    hiddenWrap.innerHTML = '';
+    selectedRooms.forEach(function (room) {
+      var inp = document.createElement('input');
+      inp.type  = 'hidden';
+      inp.name  = 'room_filter[]';
+      inp.value = room.filterStr;
+      hiddenWrap.appendChild(inp);
+    });
+  }
+
+  /* ── Clear all rooms ────────────────────────────────────── */
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      selectedRooms.clear();
+      updateCount();
+      applySelection();
+      if (roomsCache) renderRooms(roomsCache, searchEl.value);
+    });
+  }
+
+  /* ── Helpers ─────────────────────────────────────────────── */
+  function showLoading(show) {
+    if (show) {
+      listEl.innerHTML = '';
+      listEl.appendChild(loadingEl);
+      loadingEl.style.display = 'flex';
+    } else {
+      if (loadingEl.parentNode === listEl) listEl.removeChild(loadingEl);
+    }
+  }
+  function showError(msg) {
+    listEl.innerHTML =
+      '<div class="webex-picker-empty webex-picker-error">' +
+      '<i class="bi bi-exclamation-triangle-fill me-2"></i>' + escHtml(msg) + '</div>';
+  }
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escAttr(s) { return String(s).replace(/"/g, '&quot;'); }
+  function relativeTime(iso) {
+    var diff = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (diff < 60)    return 'just now';
+    if (diff < 3600)  return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+  }
+
+  /* ── Event bindings ─────────────────────────────────────── */
+  if (openBtn)  openBtn.addEventListener('click', openPicker);
+  if (closeBtn) closeBtn.addEventListener('click', closePicker);
+  if (applyBtn) applyBtn.addEventListener('click', applySelection);
+
+  if (backdrop) {
+    backdrop.addEventListener('click', function (e) {
+      if (e.target === backdrop) closePicker();
+    });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && backdrop && backdrop.classList.contains('open')) closePicker();
+  });
+  if (searchEl) {
+    searchEl.addEventListener('input', function () {
+      if (roomsCache) renderRooms(roomsCache, searchEl.value);
+    });
+  }
+})();
+</script>
+{% endblock %}

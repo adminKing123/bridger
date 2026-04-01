@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+
+{% block title %}Logs — {{ wh.name }} — {{ cfg.name }} — Bridger{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/webex.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:1080px;">
+
+  <!-- ── Back + page title ───────────────────────────────────── -->
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{{ url_for('webex.detail_config', config_id=cfg.id) }}"
+       class="btn-back" aria-label="Back">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h1 class="dash-title mb-0">Webhook Event Logs</h1>
+      <p class="dash-subtitle mb-0">
+        {{ wh.name }}
+        <span class="proxy-log-slug">{{ wh.resource }} / {{ wh.event }}</span>
+        &nbsp;·&nbsp;
+        <span style="font-size:.75rem;opacity:.8;">{{ cfg.name }}</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Stats strip ─────────────────────────────────────────── -->
+  <div class="proxy-log-stats mb-3">
+    <div class="proxy-log-stat">
+      <span class="proxy-log-stat-val">{{ logs.total }}</span>
+      <span class="proxy-log-stat-label">Total Events</span>
+    </div>
+    <div class="proxy-log-stat">
+      {%- set verified_count = logs.items | selectattr('signature_valid', 'equalto', true) | list | length -%}
+      <span class="proxy-log-stat-val" style="color:var(--success);">{{ verified_count }}</span>
+      <span class="proxy-log-stat-label">Sig. Verified</span>
+    </div>
+    <div class="proxy-log-stat">
+      {%- set failed_sig = logs.items | selectattr('signature_valid', 'equalto', false) | list | length -%}
+      <span class="proxy-log-stat-val" style="color:var(--danger);">{{ failed_sig }}</span>
+      <span class="proxy-log-stat-label">Sig. Failed</span>
+    </div>
+    <div class="proxy-log-stat">
+      {%- set resources = logs.items | map(attribute='resource') | select | unique | list -%}
+      <span class="proxy-log-stat-val">{{ resources | length }}</span>
+      <span class="proxy-log-stat-label">Unique Resources</span>
+    </div>
+  </div>
+
+  <!-- ── Event log table ─────────────────────────────────────── -->
+  <div class="panel">
+    <div class="panel-head">
+      <i class="bi bi-card-list" style="color:#00a899;font-size:.9rem;"></i>
+      <span class="panel-head-title">Event Entries</span>
+      <span class="proxy-log-count ms-auto">
+        Page {{ logs.page }} of {{ logs.pages }} &nbsp;·&nbsp; {{ logs.total }} total
+      </span>
+      {% if logs.total > 0 %}
+        <button type="button"
+                class="btn-proxy-action stop"
+                id="clearLogsBtn"
+                title="Clear all logs"
+                style="font-size:.75rem;padding:.3rem .6rem;display:inline-flex;align-items:center;gap:.3rem;">
+          <i class="bi bi-trash3"></i>Clear Logs
+        </button>
+      {% endif %}
+      <a href="{{ url_for('webex.webhook_logs', config_id=cfg.id, wh_id=wh.id, page=logs.page) }}"
+         class="btn-proxy-action view"
+         title="Refresh"
+         style="font-size:.75rem;padding:.3rem .6rem;display:inline-flex;align-items:center;gap:.3rem;">
+        <i class="bi bi-arrow-clockwise"></i>Refresh
+      </a>
+    </div>
+
+    {% if logs.items %}
+      <div class="panel-body p-0">
+        <div class="webex-log-table-wrap">
+          <table class="webex-log-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Time</th>
+                <th>Resource</th>
+                <th>Event</th>
+                <th>Actor ID</th>
+                <th>Org ID</th>
+                <th>Signature</th>
+                <th>Client IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for entry in logs.items %}
+                <!-- Main row -->
+                <tr class="webex-log-row" data-row-id="{{ entry.id }}">
+                  <!-- Expand toggle -->
+                  <td class="webex-log-expand-cell">
+                    <button type="button"
+                            class="webex-log-expand-btn"
+                            aria-expanded="false"
+                            aria-label="Show details"
+                            data-target="detail-{{ entry.id }}">
+                      <i class="bi bi-chevron-right"></i>
+                    </button>
+                  </td>
+
+                  <!-- Time -->
+                  <td class="proxy-log-time"
+                      title="{{ entry.received_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}">
+                    {{ entry.received_at.strftime('%d %b %H:%M:%S') }}
+                  </td>
+
+                  <!-- Resource -->
+                  <td>
+                    <span class="webex-event-resource">{{ entry.resource or '—' }}</span>
+                  </td>
+
+                  <!-- Event type -->
+                  <td>
+                    {% if entry.event_type %}
+                      <span class="webex-event-badge webex-event-badge--{{ entry.event_type | lower }}">
+                        {{ entry.event_type }}
+                      </span>
+                    {% else %}
+                      <span class="proxy-log-status proxy-log-status--unknown">—</span>
+                    {% endif %}
+                  </td>
+
+                  <!-- Actor ID -->
+                  <td class="proxy-log-ip" title="{{ entry.actor_id or '' }}">
+                    {% if entry.actor_id %}
+                      <span class="webex-log-id-cell">{{ entry.actor_id[:28] }}…</span>
+                    {% else %}—{% endif %}
+                  </td>
+
+                  <!-- Org ID -->
+                  <td class="proxy-log-ip" title="{{ entry.org_id or '' }}">
+                    {% if entry.org_id %}
+                      <span class="webex-log-id-cell">{{ entry.org_id[:28] }}…</span>
+                    {% else %}—{% endif %}
+                  </td>
+
+                  <!-- Signature -->
+                  <td>
+                    {% if entry.signature_valid is none %}
+                      <span class="webex-sig-badge webex-sig-badge--na">N/A</span>
+                    {% elif entry.signature_valid %}
+                      <span class="webex-sig-badge webex-sig-badge--ok">
+                        <i class="bi bi-shield-check"></i> Valid
+                      </span>
+                    {% else %}
+                      <span class="webex-sig-badge webex-sig-badge--fail">
+                        <i class="bi bi-shield-x"></i> Failed
+                      </span>
+                    {% endif %}
+                  </td>
+
+                  <!-- Client IP -->
+                  <td class="proxy-log-ip">{{ entry.client_ip or '—' }}</td>
+                </tr>
+
+                <!-- Expandable detail row -->
+                <tr class="webex-log-detail-row" id="detail-{{ entry.id }}" style="display:none;">
+                  <td colspan="8" class="webex-log-detail-cell">
+                    <div class="webex-log-detail-grid">
+
+                      <!-- Left: envelope fields -->
+                      <div class="webex-log-detail-section">
+                        <div class="webex-log-detail-label">Event Envelope</div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Event ID</span>
+                          <span class="webex-log-detail-val mono">{{ entry.webex_event_id or '—' }}</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Resource</span>
+                          <span class="webex-log-detail-val">{{ entry.resource or '—' }}</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Event</span>
+                          <span class="webex-log-detail-val">{{ entry.event_type or '—' }}</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Actor ID</span>
+                          <span class="webex-log-detail-val mono">{{ entry.actor_id or '—' }}</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Org ID</span>
+                          <span class="webex-log-detail-val mono">{{ entry.org_id or '—' }}</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">App ID</span>
+                          <span class="webex-log-detail-val mono">{{ entry.app_id or '—' }}</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Owned By</span>
+                          <span class="webex-log-detail-val">{{ entry.owned_by or '—' }}</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Received At</span>
+                          <span class="webex-log-detail-val">{{ entry.received_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Client IP</span>
+                          <span class="webex-log-detail-val mono">{{ entry.client_ip or '—' }}</span>
+                        </div>
+                      </div>
+
+                      <!-- Right: data payload + raw payload -->
+                      <div class="webex-log-detail-section">
+                        {% if entry.data_json %}
+                          <div class="webex-log-detail-label">Data Object</div>
+                          <pre class="webex-log-payload">{{ entry.data_json }}</pre>
+                        {% endif %}
+                        {% if entry.raw_payload %}
+                          <div class="webex-log-detail-label" style="margin-top:.75rem;">Full Payload</div>
+                          <pre class="webex-log-payload">{{ entry.raw_payload }}</pre>
+                        {% endif %}
+                      </div>
+
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      {% if logs.pages > 1 %}
+        <div class="panel-body" style="border-top:1px solid var(--border); padding-top:.75rem;">
+          <div class="proxy-log-pagination">
+            {% if logs.has_prev %}
+              <a href="{{ url_for('webex.webhook_logs', config_id=cfg.id, wh_id=wh.id, page=logs.prev_num) }}"
+                 class="proxy-log-page-btn">
+                <i class="bi bi-chevron-left"></i> Prev
+              </a>
+            {% else %}
+              <span class="proxy-log-page-btn disabled"><i class="bi bi-chevron-left"></i> Prev</span>
+            {% endif %}
+
+            <span class="proxy-log-page-info">{{ logs.page }} / {{ logs.pages }}</span>
+
+            {% if logs.has_next %}
+              <a href="{{ url_for('webex.webhook_logs', config_id=cfg.id, wh_id=wh.id, page=logs.next_num) }}"
+                 class="proxy-log-page-btn">
+                Next <i class="bi bi-chevron-right"></i>
+              </a>
+            {% else %}
+              <span class="proxy-log-page-btn disabled">Next <i class="bi bi-chevron-right"></i></span>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+
+    {% else %}
+      <div class="panel-body" style="text-align:center; padding:2.5rem 1rem; color:var(--text-3);">
+        <i class="bi bi-inbox" style="font-size:2rem; display:block; margin-bottom:.5rem;"></i>
+        No events received yet. Webex will POST here as matching events fire.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- ── Clear logs modal ─────────────────────────────────────── -->
+<div class="br-modal-backdrop" id="clearLogsModal" aria-hidden="true"
+     role="dialog" aria-modal="true" aria-labelledby="clearLogsModalTitle">
+  <div class="br-modal">
+    <div class="br-modal-icon"><i class="bi bi-trash3"></i></div>
+    <h2 class="br-modal-title" id="clearLogsModalTitle">Clear all event logs?</h2>
+    <p class="br-modal-body">
+      This will permanently delete all <strong>{{ logs.total }}</strong>
+      event {{ 'entry' if logs.total == 1 else 'entries' }} for
+      <strong>{{ wh.name }}</strong>. This cannot be undone.
+    </p>
+    <div class="br-modal-actions">
+      <button type="button" class="br-modal-cancel" id="clearLogsCancel">Cancel</button>
+      <form method="POST"
+            action="{{ url_for('webex.clear_webhook_logs', config_id=cfg.id, wh_id=wh.id) }}"
+            style="flex:1;"
+            data-loadable>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="br-modal-confirm" style="width:100%;"
+                data-submit-btn data-loading-text="Clearing…">
+          <i class="bi bi-trash3"></i>Clear Logs
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ── Clear logs modal ── */
+  var backdrop  = document.getElementById('clearLogsModal');
+  var openBtn   = document.getElementById('clearLogsBtn');
+  var cancelBtn = document.getElementById('clearLogsCancel');
+
+  function openModal()  { backdrop.classList.add('open'); backdrop.removeAttribute('aria-hidden'); if (cancelBtn) cancelBtn.focus(); }
+  function closeModal() { backdrop.classList.remove('open'); backdrop.setAttribute('aria-hidden', 'true'); }
+
+  if (openBtn)   openBtn.addEventListener('click', openModal);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+  if (backdrop)  backdrop.addEventListener('click', function (e) { if (e.target === backdrop) closeModal(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && backdrop && backdrop.classList.contains('open')) closeModal();
+  });
+
+  /* ── Expandable detail rows ── */
+  document.querySelectorAll('.webex-log-expand-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var targetId   = btn.getAttribute('data-target');
+      var detailRow  = document.getElementById(targetId);
+      var expanded   = btn.getAttribute('aria-expanded') === 'true';
+      var icon       = btn.querySelector('i');
+
+      if (expanded) {
+        detailRow.style.display = 'none';
+        btn.setAttribute('aria-expanded', 'false');
+        icon.className = 'bi bi-chevron-right';
+      } else {
+        detailRow.style.display = '';
+        btn.setAttribute('aria-expanded', 'true');
+        icon.className = 'bi bi-chevron-down';
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

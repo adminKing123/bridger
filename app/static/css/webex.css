@@ -248,3 +248,624 @@
   border: none;
   background: transparent;
 }
+
+/* ── Custom target URL warning banner ───────────────────────── */
+.webex-custom-target-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  color: #92400e;
+}
+
+/* ── Info box on webhook create page ────────────────────────── */
+.webex-info-box {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--primary-light);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.webex-info-box-icon {
+  color: var(--primary);
+  font-size: 1rem;
+  flex-shrink: 0;
+  padding-top: 0.1rem;
+}
+
+/* ── Webhook management table (on detail page) ──────────────── */
+.webex-webhook-table-wrap { overflow-x: auto; }
+.webex-webhook-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.webex-webhook-table thead tr { border-bottom: 2px solid var(--border); }
+.webex-webhook-table th {
+  padding: 0.65rem 1rem;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.webex-webhook-table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.webex-webhook-table tbody tr:last-child td { border-bottom: none; }
+.webex-webhook-table tbody tr:hover td { background: var(--bg); }
+
+/* ── Resource / event type labels ───────────────────────────── */
+.webex-event-resource {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.webex-event-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.webex-event-badge--created  { background: rgba(220, 252, 231, .8); color: #15803d; }
+.webex-event-badge--updated  { background: rgba(219, 234, 254, .8); color: #1e40af; }
+.webex-event-badge--deleted  { background: rgba(254, 226, 226, .8); color: #991b1b; }
+.webex-event-badge--started  { background: rgba(240, 253, 244, .8); color: #166534; }
+.webex-event-badge--ended    { background: rgba(243, 244, 246, .8); color: #374151; }
+.webex-event-badge--all      { background: rgba(245, 243, 255, .8); color: #6d28d9; }
+
+/* ── Signature validity badge ───────────────────────────────── */
+.webex-sig-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.webex-sig-badge--ok   { background: rgba(220, 252, 231, .8); color: #15803d; }
+.webex-sig-badge--fail { background: rgba(254, 226, 226, .8); color: #991b1b; }
+.webex-sig-badge--na   { background: var(--bg); color: var(--text-3); }
+
+/* ── Webhook event log table ─────────────────────────────────── */
+.webex-log-table-wrap { overflow-x: auto; }
+.webex-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.webex-log-table thead tr { border-bottom: 2px solid var(--border); }
+.webex-log-table th {
+  padding: 0.65rem 1rem;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.webex-log-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.webex-log-table tbody tr.webex-log-row:hover td { background: var(--bg); }
+.webex-log-table tbody tr.webex-log-detail-row td { background: var(--bg); padding: 0; }
+
+/* ── Expand toggle button ────────────────────────────────────── */
+.webex-log-expand-cell { width: 36px; text-align: center; padding-right: 0 !important; }
+.webex-log-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+.webex-log-expand-btn:hover { border-color: #00a899; color: #00a899; }
+
+/* ── Expandable detail cell ──────────────────────────────────── */
+.webex-log-detail-cell {
+  padding: 1rem 1.25rem !important;
+  background: var(--bg) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.webex-log-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+@media (max-width: 768px) {
+  .webex-log-detail-grid { grid-template-columns: 1fr; }
+}
+.webex-log-detail-section { display: flex; flex-direction: column; gap: 0.25rem; }
+.webex-log-detail-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+  margin-bottom: 0.35rem;
+}
+.webex-log-detail-field {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+  align-items: baseline;
+}
+.webex-log-detail-field:last-child { border-bottom: none; }
+.webex-log-detail-key {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-3);
+  white-space: nowrap;
+  min-width: 90px;
+}
+.webex-log-detail-val {
+  font-size: 0.8rem;
+  color: var(--text);
+  word-break: break-all;
+}
+.webex-log-detail-val.mono {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.73rem;
+  color: var(--text-2);
+}
+
+/* ── JSON payload pre block ──────────────────────────────────── */
+.webex-log-payload {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.85rem;
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text-2);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* ── Truncated ID cells ──────────────────────────────────────── */
+.webex-log-id-cell {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.73rem;
+  color: var(--text-2);
+}
+
+/* ── Monospace utility ───────────────────────────────────────── */
+.font-mono {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.83rem;
+}
+
+/* ── Pick a Room button (inline with label) ──────────────────── */
+.btn-room-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.75rem;
+  border: 1.5px solid #00a899;
+  border-radius: 999px;
+  background: transparent;
+  color: #00a899;
+  font-size: 0.775rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+  white-space: nowrap;
+}
+.btn-room-pick:hover {
+  background: #00a899;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* ── Room picker modal overrides ─────────────────────────────── */
+.webex-room-picker-modal {
+  max-width: 560px;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+
+/* Header */
+.webex-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.webex-picker-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.webex-picker-close {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--bg);
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background var(--transition), color var(--transition);
+}
+.webex-picker-close:hover { background: var(--border); color: var(--text); }
+
+/* Search */
+.webex-picker-search {
+  position: relative;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.webex-picker-search-icon {
+  position: absolute;
+  left: 1.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+.webex-picker-search-input {
+  width: 100%;
+  padding: 0.45rem 0.75rem 0.45rem 2.1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.webex-picker-search-input:focus { border-color: #00a899; }
+
+/* Room list */
+.webex-picker-list {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 0.4rem 0;
+}
+
+/* Loading state */
+.webex-picker-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 2.5rem 1rem;
+  color: var(--text-2);
+  font-size: 0.875rem;
+}
+.webex-picker-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid var(--border);
+  border-top-color: #00a899;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Empty / error state */
+.webex-picker-empty {
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 0.875rem;
+}
+.webex-picker-error { color: var(--danger); }
+
+/* Room row */
+.webex-room-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 1.25rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition);
+}
+.webex-room-row:hover { background: var(--bg); }
+.webex-room-row:hover .webex-room-select-hint { opacity: 1; }
+
+/* Room icon */
+.webex-room-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.webex-room-icon.group   { background: rgba(0,168,153,.12); color: #00a899; }
+.webex-room-icon.direct  { background: rgba(99,102,241,.12); color: #6366f1; }
+.webex-room-icon.me      { background: rgba(245,158,11,.12); color: #f59e0b; }
+
+/* My Messages pinned row */
+.webex-room-row-me { border-bottom: 1px solid var(--border); margin-bottom: 0.25rem; }
+
+/* Section divider label */
+.webex-picker-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+  padding: 0.5rem 1rem 0.25rem;
+}
+
+/* personId filter badge */
+.webex-room-type-me { background: rgba(245,158,11,.12); color: #f59e0b; }
+
+/* Room info */
+.webex-room-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.webex-room-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.webex-room-lock {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  margin-left: 0.2rem;
+}
+.webex-room-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.webex-room-type {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+}
+.webex-room-type-group  { background: rgba(0,168,153,.12); color: #00a899; }
+.webex-room-type-direct { background: rgba(99,102,241,.12); color: #6366f1; }
+.webex-room-activity {
+  font-size: 0.72rem;
+  color: var(--text-3);
+}
+
+/* Checkmark hint (visible on hover) */
+.webex-room-select-hint {
+  opacity: 0;
+  transition: opacity var(--transition);
+  color: #00a899;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* Footer / Apply bar */
+.webex-picker-footer {
+  padding: 0.6rem 1.25rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.72rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.webex-picker-apply-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1.25rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.webex-picker-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #00a899;
+  min-width: 5rem;
+}
+.webex-picker-footer-hint {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  flex: 1;
+}
+.btn-room-apply {
+  background: #00a899;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), opacity var(--transition);
+}
+.btn-room-apply:hover:not(:disabled) { background: #008a7d; }
+.btn-room-apply:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Room row — selected state */
+.webex-room-row.selected {
+  background: rgba(0, 168, 153, 0.08);
+}
+.webex-room-row.selected .webex-room-name {
+  color: #00a899;
+}
+
+/* Checkmark icon (replaces old select-hint arrow) */
+.webex-room-check {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: transparent;
+  flex-shrink: 0;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.webex-room-row.selected .webex-room-check {
+  background: #00a899;
+  border-color: #00a899;
+  color: #fff;
+}
+
+/* Chips */
+.webex-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.5rem 0;
+}
+.webex-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(0, 168, 153, 0.12);
+  border: 1px solid rgba(0, 168, 153, 0.3);
+  color: #00a899;
+  border-radius: 20px;
+  padding: 0.2rem 0.5rem 0.2rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  max-width: 220px;
+}
+.webex-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.webex-chip-remove {
+  background: none;
+  border: none;
+  padding: 0;
+  line-height: 1;
+  cursor: pointer;
+  color: #00a899;
+  opacity: 0.7;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  transition: opacity var(--transition);
+}
+.webex-chip-remove:hover { opacity: 1; }
+
+/* ── Webhooks tab bar ────────────────────────────────────────── */
+.webex-tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  padding: 0 1.25rem;
+  background: var(--surface);
+}
+.webex-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-3);
+  text-decoration: none;
+  border-bottom: 2.5px solid transparent;
+  margin-bottom: -2px;
+  transition: color var(--transition), border-color var(--transition);
+  white-space: nowrap;
+}
+.webex-tab:hover { color: var(--text); border-bottom-color: var(--border); }
+.webex-tab.active { color: #00a899; border-bottom-color: #00a899; }
+
+/* Count pill inside a tab */
+.webex-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-2);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.webex-tab.active .webex-tab-count {
+  background: rgba(0,168,153,.12);
+  color: #00a899;
+}
+
+/* ── Source badge (Bridger vs External) ──────────────────────── */
+.webex-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.webex-source-badge.bridger  { background: rgba(0,168,153,.10); color: #00a899; }
+.webex-source-badge.external { background: rgba(99,102,241,.10); color: #6366f1; }
+
+/* ── External webhook row tint ───────────────────────────────── */
+.webex-external-row td { background: rgba(99,102,241,.025); }
+.webex-external-row:hover td { background: rgba(99,102,241,.06) !important; }
