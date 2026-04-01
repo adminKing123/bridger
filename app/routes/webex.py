@@ -101,7 +101,21 @@ def index():
         .order_by(WebexConfig.created_at.desc())
         .paginate(page=page, per_page=20, error_out=False)
     )
-    return render_template("webex/list.html", configs=configs)
+    # Webhook counts keyed by config id — single query, no N+1
+    config_ids = [c.id for c in configs.items]
+    wh_counts: dict[int, int] = {}
+    if config_ids:
+        rows = (
+            db.session.query(
+                WebexWebhook.config_id,
+                db.func.count(WebexWebhook.id).label("cnt"),
+            )
+            .filter(WebexWebhook.config_id.in_(config_ids))
+            .group_by(WebexWebhook.config_id)
+            .all()
+        )
+        wh_counts = {r.config_id: r.cnt for r in rows}
+    return render_template("webex/list.html", configs=configs, wh_counts=wh_counts)
 
 
 @webex_bp.route("/new", methods=["GET", "POST"])

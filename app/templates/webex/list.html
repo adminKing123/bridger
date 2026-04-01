@@ -34,6 +34,7 @@
               <th>Name</th>
               <th>Account</th>
               <th>Email</th>
+              <th>Webhooks</th>
               <th>Status</th>
               <th>Added</th>
               <th class="webex-table-actions-col">Actions</th>
@@ -58,6 +59,16 @@
                 <!-- Email -->
                 <td>
                   <span class="webex-table-email">{{ cfg.display_email }}</span>
+                </td>
+
+                <!-- Webhook count -->
+                <td>
+                  {% set wc = wh_counts.get(cfg.id, 0) %}
+                  {% if wc %}
+                    <span class="webex-wh-count"><i class="bi bi-link-45deg"></i>{{ wc }}</span>
+                  {% else %}
+                    <span style="color:var(--text-3);font-size:.82rem;">—</span>
+                  {% endif %}
                 </td>
 
                 <!-- Verified status -->

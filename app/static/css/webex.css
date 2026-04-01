@@ -202,6 +202,17 @@
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
 }
 .webex-table-actions-col { width: 90px; }
+.webex-wh-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--teal);
+  background: var(--teal-ghost, rgba(0,188,212,.08));
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
 
 /* ── Table action buttons ────────────────────────────────────── */
 .btn-webex-action {
