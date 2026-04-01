@@ -57,12 +57,14 @@ def create_app(config_class=DevelopmentConfig) -> Flask:
     from app.routes.dashboard import dashboard_bp
     from app.routes.proxy_manager import proxy_manager_bp
     from app.routes.proxy_handler import proxy_handler_bp, handle_subdomain_proxy
+    from app.routes.webex import webex_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(profile_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(proxy_manager_bp)
     app.register_blueprint(proxy_handler_bp)
+    app.register_blueprint(webex_bp)
 
     # Intercept subdomain-mode proxy requests before normal routing
     app.before_request(handle_subdomain_proxy)
