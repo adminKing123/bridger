@@ -39,6 +39,7 @@ Bridger/
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── user.py            # User + OTP SQLAlchemy models
+│   │   ├── admin.py           # UserServicePermission model + SERVICES list
 │   │   ├── proxy.py           # ProxyConfig model
 │   │   ├── proxy_log.py       # ProxyLog model (per-request audit log)
 │   │   ├── webex_config.py    # WebexConfig model
@@ -46,6 +47,7 @@ Bridger/
 │   │   └── webex_webhook_log.py # WebexWebhookLog model
 │   ├── routes/
 │   │   ├── __init__.py
+│   │   ├── admin.py           # superadmin dashboard, user management, service permissions
 │   │   ├── auth.py            # signup, login, logout, verify-email,
 │   │   │                      #   forgot-password, reset-password
 │   │   ├── profile.py         # protected /profile + landing index
@@ -67,6 +69,10 @@ Bridger/
 │   │   └── webex_webhook_forms.py # WebhookCreateForm
 │   ├── templates/
 │   │   ├── base.html          # Bootstrap 5 shell + navbar
+│   │   ├── admin/
+│   │   │   ├── dashboard.html # KPI cards + recent sign-ups
+│   │   │   ├── users.html     # Paginated user list with search + status filter
+│   │   │   └── user_detail.html # Profile, block/unblock, service permissions
 │   │   ├── auth/
 │   │   │   ├── login.html
 │   │   │   ├── signup.html
@@ -92,6 +98,7 @@ Bridger/
 │   │       └── room_messages.html   # Cursor-paginated message viewer
 │   └── static/
 │       ├── css/main.css
+│       ├── css/admin.css
 │       ├── css/webex.css
 │       ├── js/main.js
 │       └── js/webex.js
@@ -119,6 +126,7 @@ Bridger/
 | 6 | Dashboard | Authenticated landing page with account stat cards |
 | 7 | HTTP Proxy Service | Per-user proxy configs; endpoint & subdomain delivery modes; CORS bypass; per-request logging with client IP — see [proxy-service.md](proxy-service.md) |
 | 8 | Webex Integration Service | Per-user Webex account/bot configs; Bridger-hosted webhook registration with HMAC verification; enriched event log (sender, receiver, room type, message text); AJAX spaces browser with type filter/search; cursor-based message viewer — see [webex-service.md](webex-service.md) |
+| 9 | Super Admin System | CLI-created superadmin account; admin dashboard with KPIs; paginated user list with search/filter; per-user block/unblock (force-logout on block); per-user service permissions (proxy granted on signup; webex requires admin approval); service guards on all protected blueprints |
 
 ---
 
@@ -167,6 +175,10 @@ POST /auth/reset-password  (OTP + new password entered)
 | email | VARCHAR(120) | unique, indexed, stored lowercase |
 | password_hash | VARCHAR(255) | bcrypt |
 | is_verified | BOOLEAN | default False |
+| first_name | VARCHAR(80) | nullable |
+| last_name | VARCHAR(80) | nullable |
+| is_superadmin | BOOLEAN | default False; set via `flask create-superadmin` only |
+| is_blocked | BOOLEAN | default False; blocked users are force-logged-out |
 | created_at | DATETIME | UTC |
 | updated_at | DATETIME | UTC, auto-updated |
 
@@ -195,6 +207,18 @@ See [webex-service.md → Data Model](webex-service.md#data-model).
 
 ### `webex_webhook_logs`
 See [webex-service.md → Data Model](webex-service.md#data-model).
+
+### `user_service_permissions`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | INTEGER PK | |
+| user_id | INTEGER FK | → users.id CASCADE DELETE, indexed |
+| service | VARCHAR(50) | `proxy` or `webex` |
+| is_enabled | BOOLEAN | default True |
+| granted_at | DATETIME | UTC |
+| granted_by_id | INTEGER FK | → users.id SET NULL (nullable — NULL for system grants) |
+
+Unique constraint on `(user_id, service)`. Superadmin bypasses this table entirely — `has_service()` always returns True for superadmins.
 
 ---
 
@@ -236,6 +260,11 @@ See [webex-service.md → Data Model](webex-service.md#data-model).
 | GET | `/webex/<id>/spaces/messages` | **Yes** | Room messages viewer |
 | GET | `/webex/<id>/spaces/api` | **Yes** | JSON: rooms (AJAX) |
 | GET | `/webex/<id>/spaces/messages/api` | **Yes** | JSON: messages cursor (AJAX) |
+| GET | `/admin/` | **Superadmin** | Admin dashboard (KPI stats + recent sign-ups) |
+| GET | `/admin/users` | **Superadmin** | Paginated user list with search + status filter |
+| GET | `/admin/users/<id>` | **Superadmin** | User detail (profile, block panel, service permissions) |
+| POST | `/admin/users/<id>/block` | **Superadmin** | Toggle block/unblock |
+| POST | `/admin/users/<id>/services` | **Superadmin** | Update service permissions |
 
 ---
 
@@ -250,6 +279,10 @@ See [webex-service.md → Data Model](webex-service.md#data-model).
 - Login sessions protected via Flask-Login + `SESSION_COOKIE_HTTPONLY`
 - Open-redirect prevented: `next` parameter validated against host URL
 - Credentials stored only in `.env` (excluded from version control)
+- Superadmin created **only** via `flask create-superadmin` CLI — no web endpoint
+- Blocked users are force-logged-out on their next request (`before_request` hook)
+- Service access enforced by `before_request` guards on each blueprint; superadmin always bypasses
+- Proxy service granted automatically on signup; Webex requires explicit admin approval
 
 ---
 
@@ -299,5 +332,8 @@ App runs at: http://localhost:5000
 - [x] Webex spaces browser (AJAX pagination, type filter, search)
 - [x] Webex room messages viewer (cursor-based AJAX load-more)
 - [x] Proxy logs UI (paginated table + stats strip)
+- [x] Super admin system (CLI creation, user list, block/unblock, service permissions)
+- [x] Service permission guards on proxy and webex blueprints
+- [x] Dashboard + navbar conditional service rendering
 - [ ] Unit tests
 - [ ] Deployment config (Gunicorn / Docker)

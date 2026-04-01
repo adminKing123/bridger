@@ -51,6 +51,7 @@ Bridger/
     │
     ├── models/
     │   ├── user.py               # User, OTP models
+    │   ├── admin.py              # UserServicePermission model + SERVICES tuple
     │   ├── proxy.py              # ProxyConfig model + slug generator
     │   ├── proxy_log.py          # ProxyLog model (per-request audit)
     │   ├── webex_config.py       # WebexConfig model
@@ -66,6 +67,7 @@ Bridger/
     │   └── webex_webhook_forms.py # WebhookCreateForm
     │
     ├── routes/
+    │   ├── admin.py              # /admin/* — superadmin dashboard + user management
     │   ├── auth.py               # /auth/* — all auth flows
     │   ├── profile.py            # /profile  +  / (landing redirect)
     │   ├── dashboard.py          # /dashboard
@@ -80,6 +82,10 @@ Bridger/
     │
     ├── templates/
     │   ├── base.html             # Shell: head, navbar, toasts, logout modal
+    │   ├── admin/
+    │   │   ├── dashboard.html    # KPI cards (total users, blocked, verified, proxy, webex) + recent sign-ups
+    │   │   ├── users.html        # Paginated user list, search, status tabs, inline block toggle
+    │   │   └── user_detail.html  # User profile, block/unblock panel, service permission toggles
     │   ├── auth/
     │   │   ├── login.html
     │   │   ├── signup.html
@@ -108,6 +114,7 @@ Bridger/
     └── static/
         ├── css/
         │   ├── base.css          # Design tokens + every-page styles
+        │   ├── admin.css         # Admin pages only (KPI cards, user table, toggle switches)
         │   ├── auth.css          # Auth pages only
         │   ├── dashboard.css     # Dashboard page only
         │   ├── profile.css       # Profile page only
@@ -185,9 +192,10 @@ create_app(config_class)
   ├─ login_manager.login_view = "auth.login"
   │
   ├─ register blueprints (auth, profile, dashboard,
-  │                        proxy_manager, proxy_handler, webex)
+  │                        proxy_manager, proxy_handler, webex, admin)
   │
   ├─ app.before_request(handle_subdomain_proxy)   ← subdomain hook
+  ├─ app.before_request(_check_blocked_user)       ← force-logout blocked users
   │
   └─ db.create_all()    ← idempotent schema creation
 ```
@@ -215,9 +223,10 @@ from app import db, bcrypt
 | `auth_bp` | `/auth` | `routes/auth.py` | No |
 | `profile_bp` | — | `routes/profile.py` | Yes (profile/index routes) |
 | `dashboard_bp` | `/dashboard` | `routes/dashboard.py` | Yes |
-| `proxy_manager_bp` | `/proxies` | `routes/proxy_manager.py` | Yes |
+| `proxy_manager_bp` | `/proxies` | `routes/proxy_manager.py` | Yes + service guard |
 | `proxy_handler_bp` | `/proxy` | `routes/proxy_handler.py` | No (public forwarding) |
-| `webex_bp` | `/webex` | `routes/webex.py` | Yes (except `receive/<uuid>`) |
+| `webex_bp` | `/webex` | `routes/webex.py` | Yes + service guard (except `receive/<uuid>`) |
+| `admin_bp` | `/admin` | `routes/admin.py` | Superadmin only (`@superadmin_required`) |
 
 ### Models
 
@@ -225,14 +234,26 @@ from app import db, bcrypt
 ```
 id · username · email · password_hash · is_verified
 first_name · last_name · created_at · updated_at
+is_superadmin · is_blocked
  └─ otps → OTP[] (cascade delete)
+ └─ service_permissions → UserServicePermission[] (cascade delete)
 ```
+Method: `has_service(service) → bool` — always True for superadmins; otherwise
+queries `UserServicePermission` for an enabled row.
 
 #### `OTP` (`otps` table)
 ```
 id · user_id(FK) · otp_code · purpose · expires_at · is_used · created_at
 purpose ∈ { 'email_verify', 'forgot_password' }
 ```
+
+#### `UserServicePermission` (`user_service_permissions` table)
+```
+id · user_id(FK) · service · is_enabled · granted_at · granted_by_id(FK nullable)
+service ∈ { 'proxy', 'webex' }   (defined in SERVICES tuple in models/admin.py)
+```
+Unique constraint on `(user_id, service)`. One row per user+service pair.
+Proxy row created automatically on signup; webex row added by superadmin.
 
 #### `ProxyConfig` (`proxy_configs` table)
 ```
@@ -482,6 +503,16 @@ base.css      → loaded by base.html (every page)
   • Logout modal (.br-modal-backdrop, .br-modal, .br-modal-*)
   • Keyframe animations (@keyframes slideIn, fadeIn, pulse)
 
+admin.css     → loaded only by admin/* templates
+  • KPI stat cards (.adm-kpi-grid, .adm-kpi-card, .adm-kpi-*)
+  • User list table (.adm-table, .adm-avatar, .adm-badge, .adm-username)
+  • User detail layout (.adm-detail-header, .adm-info-grid, .adm-info-row)
+  • Service permission list + toggle switches (.adm-svc-list, .adm-svc-row,
+                                                 .adm-toggle, .adm-toggle-input)
+  • Breadcrumb (.adm-breadcrumb)
+  • Search bar with icon (.adm-search-wrap)
+  • Status/block action buttons (.btn-danger-outline reused from base.css)
+
 auth.css      → loaded only by auth/* templates
   • Auth wrapper + card (.auth-wrap, .auth-card)
   • Auth buttons (.btn-auth, .btn-ind, .btn-google)
@@ -643,6 +674,9 @@ These live in `base.css` and are safe to use on any page:
 | `webex/webhook_logs.html` | `proxy.css` + `webex.css` | `webex.js` | Expand rows, room-type badge |
 | `webex/spaces.html` | `proxy.css` + `webex.css` | Inline JS | AJAX prev/next replaces `<tbody>` |
 | `webex/room_messages.html` | `proxy.css` + `webex.css` | Inline JS | AJAX load-more appends items |
+| `admin/dashboard.html` | `admin.css` | — | KPI cards + recent sign-ups |
+| `admin/users.html` | `admin.css` | — | Search, status tabs, inline block toggle |
+| `admin/user_detail.html` | `admin.css` | — | Block/unblock, service permission toggles |
 
 ---
 

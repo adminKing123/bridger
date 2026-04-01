@@ -128,7 +128,6 @@
                 <form method="post"
                       action="{{ url_for('admin.toggle_block', user_id=user.id) }}"
                       class="d-inline">
-                  {{ csrf_token() | safe if csrf_token is defined else '' }}
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" name="next" value="{{ request.url }}">
                   {% if user.is_blocked %}
