@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}Spaces — {{ cfg.name }} — Webex — Bridger{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/proxy.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/webex.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:960px;">
+
+  <!-- ── Back link ──────────────────────────────────────────── -->
+  <div class="mb-3">
+    <a href="{{ url_for('webex.detail_config', config_id=cfg.id) }}" class="proxy-back-link">
+      <i class="bi bi-arrow-left me-1"></i>{{ cfg.name }}
+    </a>
+  </div>
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <h1 class="dash-title">Spaces</h1>
+      <p class="dash-subtitle">All Webex spaces your account can access — read-only.</p>
+    </div>
+    <span class="proxy-log-count" id="spaces-count">
+      {{ total }} space{{ 's' if total != 1 else '' }}
+    </span>
+  </div>
+
+  <!-- ── Filter bar ─────────────────────────────────────────── -->
+  <div class="panel mb-3">
+    <div class="panel-body" style="padding:.75rem 1.25rem;">
+      <form
+        method="get"
+        action="{{ url_for('webex.spaces', config_id=cfg.id) }}"
+        class="d-flex flex-wrap gap-3 align-items-center"
+      >
+        <!-- Type tabs: full-page navigation intentional (changes filter state) -->
+        <div class="webex-type-tabs">
+          <a href="{{ url_for('webex.spaces', config_id=cfg.id, type='', q=q) }}"
+             class="webex-type-tab {% if not room_type %}active{% endif %}">
+            All
+          </a>
+          <a href="{{ url_for('webex.spaces', config_id=cfg.id, type='direct', q=q) }}"
+             class="webex-type-tab {% if room_type == 'direct' %}active{% endif %}">
+            <i class="bi bi-person"></i> Direct
+          </a>
+          <a href="{{ url_for('webex.spaces', config_id=cfg.id, type='group', q=q) }}"
+             class="webex-type-tab {% if room_type == 'group' %}active{% endif %}">
+            <i class="bi bi-people"></i> Group
+          </a>
+        </div>
+
+        <!-- Search -->
+        <div class="webex-spaces-search-wrap ms-auto">
+          <i class="bi bi-search webex-spaces-search-icon"></i>
+          <input
+            type="text"
+            name="q"
+            value="{{ q }}"
+            placeholder="Search spaces…"
+            class="webex-spaces-search-input"
+            autocomplete="off"
+          />
+          <input type="hidden" name="type" value="{{ room_type }}">
+        </div>
+        <button type="submit" class="btn-save" style="padding:.45rem 1rem;font-size:.82rem;">
+          <i class="bi bi-search"></i>Search
+        </button>
+        {% if q %}
+          <a
+            href="{{ url_for('webex.spaces', config_id=cfg.id, type=room_type) }}"
+            class="btn-webex-action view"
+            style="font-size:.8rem;padding:.42rem .85rem;"
+          >
+            <i class="bi bi-x-lg"></i>Clear
+          </a>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Spaces panel ───────────────────────────────────────── -->
+  <div class="panel">
+
+    <div class="webex-table-wrap">
+      <table class="webex-table">
+        <thead>
+          <tr>
+            <th>Space</th>
+            <th>Type</th>
+            <th>Last Activity</th>
+            <th style="width:130px;"></th>
+          </tr>
+        </thead>
+        <tbody id="spaces-tbody">
+          {% if rooms %}
+            {% for room in rooms %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="webex-space-icon {% if room.type == 'direct' %}direct{% endif %}">
+                      <i class="bi bi-{% if room.type == 'direct' %}person{% else %}people{% endif %}"></i>
+                    </div>
+                    <div>
+                      <div style="font-weight:600;color:var(--text);font-size:.9rem;">
+                        {{ room.title or 'Untitled' }}
+                      </div>
+                      <div class="webex-log-id-cell" style="font-size:.68rem;margin-top:.1rem;">
+                        {{ room.id[:32] }}…
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="webex-space-badge webex-space-badge--{{ room.type or 'group' }}">
+                    {{ room.type or '—' }}
+                  </span>
+                </td>
+                <td class="proxy-log-time">
+                  {% if room.lastActivity %}
+                    <span title="{{ room.lastActivity }}">{{ room.lastActivity[:10] }}</span>
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  <a
+                    href="{{ url_for('webex.room_messages', config_id=cfg.id, room_id=room.id) }}"
+                    class="btn-webex-action view"
+                    style="font-size:.75rem;padding:.3rem .75rem;white-space:nowrap;"
+                  >
+                    <i class="bi bi-chat-text"></i>Messages
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" style="text-align:center;padding:2.5rem 1rem;color:var(--text-3);">
+                <i class="bi bi-chat-square" style="font-size:1.75rem;display:block;margin-bottom:.5rem;"></i>
+                <p style="font-size:.875rem;margin:0;">
+                  No spaces found{% if q %} matching "<strong style="color:var(--text-2);">{{ q }}</strong>"{% endif %}{% if room_type %} of type <strong style="color:var(--text-2);">{{ room_type }}</strong>{% endif %}.
+                </p>
+                {% if q or room_type %}
+                  <a href="{{ url_for('webex.spaces', config_id=cfg.id) }}" class="btn-webex-action view" style="display:inline-flex;margin-top:.85rem;font-size:.8rem;">
+                    Clear filters
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination bar — only rendered when there is more than one page -->
+    {% if total_pages > 1 %}
+      <div class="panel-body" id="spaces-pagination"
+           style="border-top:1px solid var(--border);padding:.65rem 1.25rem;"
+           data-page="{{ page }}"
+           data-total-pages="{{ total_pages }}"
+           data-type="{{ room_type }}"
+           data-q="{{ q | e }}"
+           data-cfg="{{ cfg.id }}"
+           data-api="{{ url_for('webex.spaces_api', config_id=cfg.id) }}">
+        <div class="proxy-log-pagination">
+          <button type="button" class="proxy-log-page-btn" id="spaces-prev"
+                  {% if page <= 1 %}disabled{% endif %}>
+            <i class="bi bi-chevron-left"></i> Prev
+          </button>
+          <span class="proxy-log-page-info" id="spaces-page-info">{{ page }} / {{ total_pages }}</span>
+          <button type="button" class="proxy-log-page-btn" id="spaces-next"
+                  {% if page >= total_pages %}disabled{% endif %}>
+            Next <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const bar = document.getElementById('spaces-pagination');
+  if (!bar) return;
+
+  const prevBtn  = document.getElementById('spaces-prev');
+  const nextBtn  = document.getElementById('spaces-next');
+  const pageInfo = document.getElementById('spaces-page-info');
+  const tbody    = document.getElementById('spaces-tbody');
+  const countEl  = document.getElementById('spaces-count');
+
+  let page       = parseInt(bar.dataset.page,       10);
+  let totalPages = parseInt(bar.dataset.totalPages, 10);
+  const apiBase  = bar.dataset.api;
+  const cfgId    = bar.dataset.cfg;
+  const roomType = bar.dataset.type;
+  const q        = bar.dataset.q;
+
+  function esc(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function msgUrl(roomId) {
+    return `/webex/${cfgId}/spaces/messages?room_id=${encodeURIComponent(roomId)}`;
+  }
+
+  function buildRows(rooms) {
+    if (!rooms.length) {
+      return `<tr><td colspan="4" style="text-align:center;padding:2.5rem 1rem;color:var(--text-3);">
+        <i class="bi bi-chat-square" style="font-size:1.75rem;display:block;margin-bottom:.5rem;"></i>
+        <p style="font-size:.875rem;margin:0;">No spaces found.</p></td></tr>`;
+    }
+    return rooms.map(r => {
+      const direct = r.type === 'direct';
+      const act    = r.lastActivity ? r.lastActivity.slice(0, 10) : '—';
+      return `<tr>
+        <td>
+          <div class="d-flex align-items-center gap-2">
+            <div class="webex-space-icon ${direct ? 'direct' : ''}">
+              <i class="bi bi-${direct ? 'person' : 'people'}"></i>
+            </div>
+            <div>
+              <div style="font-weight:600;color:var(--text);font-size:.9rem;">${esc(r.title || 'Untitled')}</div>
+              <div class="webex-log-id-cell" style="font-size:.68rem;margin-top:.1rem;">${esc((r.id||'').slice(0,32))}…</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="webex-space-badge webex-space-badge--${esc(r.type||'group')}">${esc(r.type||'—')}</span></td>
+        <td class="proxy-log-time"><span title="${esc(r.lastActivity||'')}">${esc(act)}</span></td>
+        <td>
+          <a href="${msgUrl(r.id)}" class="btn-webex-action view" style="font-size:.75rem;padding:.3rem .75rem;white-space:nowrap;">
+            <i class="bi bi-chat-text"></i>Messages
+          </a>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function setLoading(on) {
+    prevBtn.disabled = on || page <= 1;
+    nextBtn.disabled = on || page >= totalPages;
+    tbody.style.opacity       = on ? '0.4' : '';
+    tbody.style.pointerEvents = on ? 'none' : '';
+  }
+
+  function loadPage(p) {
+    setLoading(true);
+    const params = new URLSearchParams({ type: roomType, q, page: p });
+    fetch(`${apiBase}?${params}`)
+      .then(res => { if (!res.ok) throw new Error(res.status); return res.json(); })
+      .then(data => {
+        page       = data.page;
+        totalPages = data.total_pages;
+        tbody.innerHTML = buildRows(data.rooms);
+        pageInfo.textContent = `${page} / ${totalPages}`;
+        if (countEl) {
+          const n = data.total;
+          countEl.textContent = `${n} space${n !== 1 ? 's' : ''}`;
+        }
+      })
+      .catch(() => alert('Could not load spaces. Please refresh.'))
+      .finally(() => setLoading(false));
+  }
+
+  prevBtn.addEventListener('click', () => { if (page > 1)           loadPage(page - 1); });
+  nextBtn.addEventListener('click', () => { if (page < totalPages)  loadPage(page + 1); });
+})();
+</script>
+
+{% endblock %}

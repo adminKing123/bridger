@@ -49,22 +49,33 @@
         </div>
       </div>
 
-      <!-- Right: re-verify button -->
-      <form
-        method="POST"
-        action="{{ url_for('webex.verify_config', config_id=cfg.id) }}"
-        data-loadable
-      >
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button
-          type="submit"
-          class="btn-webex-verify"
-          data-submit-btn
-          data-loading-text="Verifying&hellip;"
+      <!-- Right: actions -->
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        {% if cfg.is_verified %}
+          <a
+            href="{{ url_for('webex.spaces', config_id=cfg.id) }}"
+            class="btn-webex-verify"
+            style="text-decoration:none;"
+          >
+            <i class="bi bi-chat-square-text"></i>Spaces
+          </a>
+        {% endif %}
+        <form
+          method="POST"
+          action="{{ url_for('webex.verify_config', config_id=cfg.id) }}"
+          data-loadable
         >
-          <i class="bi bi-shield-check"></i>Verify Token
-        </button>
-      </form>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button
+            type="submit"
+            class="btn-webex-verify"
+            data-submit-btn
+            data-loading-text="Verifying&hellip;"
+          >
+            <i class="bi bi-shield-check"></i>Verify Token
+          </button>
+        </form>
+      </div>
 
     </div>
   </div>

@@ -917,3 +917,140 @@
 /* ── External webhook row tint ───────────────────────────────── */
 .webex-external-row td { background: rgba(99,102,241,.025); }
 .webex-external-row:hover td { background: rgba(99,102,241,.06) !important; }
+
+/* ══════════════════════════════════════════════════════════════
+   Spaces browser (spaces.html)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Type filter tabs ────────────────────────────────────────── */
+.webex-type-tabs {
+  display: flex;
+  gap: .2rem;
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: .2rem;
+}
+.webex-type-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .3rem .9rem;
+  border-radius: var(--radius-sm);
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--text-2);
+  text-decoration: none;
+  transition: background var(--transition), color var(--transition);
+  white-space: nowrap;
+}
+.webex-type-tab:hover  { background: var(--border); color: var(--text); }
+.webex-type-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-xs); }
+
+/* ── Search box ──────────────────────────────────────────────── */
+.webex-spaces-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.webex-spaces-search-icon {
+  position: absolute;
+  left: .7rem;
+  color: var(--text-3);
+  font-size: .8rem;
+  pointer-events: none;
+}
+.webex-spaces-search-input {
+  padding: .42rem .85rem .42rem 2rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: .82rem;
+  color: var(--text);
+  outline: none;
+  width: 220px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.webex-spaces-search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-ring);
+}
+
+/* ── Space row icon ──────────────────────────────────────────── */
+.webex-space-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: rgba(0,168,153,.12);
+  color: #00a899;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .9rem;
+  flex-shrink: 0;
+}
+.webex-space-icon.direct { background: rgba(219,234,254,.5); color: #1e40af; }
+
+/* ══════════════════════════════════════════════════════════════
+   Room messages (room_messages.html)
+   ══════════════════════════════════════════════════════════════ */
+
+.webex-messages-list      { display: flex; flex-direction: column; }
+.webex-msg-item {
+  display: flex;
+  align-items: flex-start;
+  gap: .85rem;
+  padding: .9rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+.webex-msg-item:last-child { border-bottom: none; }
+.webex-msg-item:hover      { background: var(--bg); }
+
+.webex-msg-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg,#00a899,#005e6b);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+}
+.webex-msg-body { flex: 1; min-width: 0; }
+.webex-msg-meta {
+  display: flex;
+  align-items: baseline;
+  gap: .65rem;
+  margin-bottom: .3rem;
+  flex-wrap: wrap;
+}
+.webex-msg-sender { font-size: .82rem; font-weight: 700; color: var(--text); }
+.webex-msg-time   {
+  font-size: .7rem;
+  color: var(--text-3);
+  white-space: nowrap;
+  font-family: 'SF Mono','Fira Code','Consolas',monospace;
+}
+.webex-msg-text {
+  font-size: .875rem;
+  color: var(--text-2);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.webex-msg-files {
+  margin-top: .45rem;
+  font-size: .75rem;
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .18rem .55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+}

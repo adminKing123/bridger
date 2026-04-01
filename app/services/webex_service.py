@@ -307,3 +307,126 @@ def fetch_resource(access_token: str, resource: str, resource_id: str) -> dict |
     except requests.RequestException as exc:
         logger.warning("fetch_resource request error: %s", exc)
         return None
+
+
+def _fetch_rooms_by_type(
+    access_token: str,
+    room_type: str,
+    max_results: int,
+) -> list[dict]:
+    """Internal helper: fetch rooms of a single type from Webex."""
+    try:
+        response = requests.get(
+            f"{_WEBEX_API_BASE}/rooms",
+            params={"max": min(max_results, 1000), "sortBy": "lastactivity", "type": room_type},
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            timeout=_REQUEST_TIMEOUT,
+        )
+        if response.status_code == 200:
+            return response.json().get("items", [])
+        logger.warning("_fetch_rooms_by_type(%s) failed — status %s", room_type, response.status_code)
+        return []
+    except requests.RequestException as exc:
+        logger.warning("_fetch_rooms_by_type request error: %s", exc)
+        return []
+
+
+def fetch_rooms_filtered(
+    access_token: str,
+    room_type: str | None = None,
+    max_results: int = 500,
+) -> list[dict]:
+    """
+    Fetch Webex rooms, optionally filtered by type.
+
+    The Webex API only returns ``group`` rooms when no ``type`` parameter is
+    provided. To fetch ALL rooms (both direct and group) pass ``room_type=None``:
+    this makes two calls and merges the results sorted by last activity.
+
+    Args:
+        access_token: Webex bearer token.
+        room_type:    "direct", "group", or None for all.
+        max_results:  Maximum rooms to return (Webex cap: 1000 per type).
+
+    Returns:
+        List of room dicts sorted by last activity, or [] on error.
+    """
+    if room_type in ("direct", "group"):
+        return _fetch_rooms_by_type(access_token, room_type, max_results)
+
+    # "All" — Webex has no combined endpoint; merge direct + group manually
+    direct = _fetch_rooms_by_type(access_token, "direct", max_results)
+    group  = _fetch_rooms_by_type(access_token, "group",  max_results)
+    merged = direct + group
+    merged.sort(key=lambda r: r.get("lastActivity", ""), reverse=True)
+    return merged[:max_results]
+
+
+def fetch_room_detail(access_token: str, room_id: str) -> dict | None:
+    """
+    Fetch details of a single Webex room by ID.
+
+    Returns:
+        Room dict on success, or None on failure / not found.
+    """
+    try:
+        response = requests.get(
+            f"{_WEBEX_API_BASE}/rooms/{room_id}",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=_REQUEST_TIMEOUT,
+        )
+        if response.status_code == 200:
+            return response.json()
+        logger.warning("fetch_room_detail failed — status %s", response.status_code)
+        return None
+    except requests.RequestException as exc:
+        logger.warning("fetch_room_detail request error: %s", exc)
+        return None
+
+
+def fetch_messages(
+    access_token: str,
+    room_id: str,
+    max_results: int = 25,
+    before_message: str | None = None,
+) -> list[dict]:
+    """
+    Fetch messages from a Webex room, newest first.
+
+    Args:
+        access_token:   Webex bearer token.
+        room_id:        ID of the room to query.
+        max_results:    Number of messages to return (max 50 per Webex API).
+        before_message: Message ID cursor — returns messages older than this.
+
+    Returns:
+        List of message dicts, or [] on error.
+    """
+    params: dict = {"roomId": room_id, "max": min(max_results, 50)}
+    if before_message:
+        params["beforeMessage"] = before_message
+
+    try:
+        response = requests.get(
+            f"{_WEBEX_API_BASE}/messages",
+            params=params,
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            timeout=_REQUEST_TIMEOUT,
+        )
+        if response.status_code == 200:
+            return response.json().get("items", [])
+        logger.warning(
+            "fetch_messages failed — status %s: %s",
+            response.status_code,
+            response.text[:200],
+        )
+        return []
+    except requests.RequestException as exc:
+        logger.warning("fetch_messages request error: %s", exc)
+        return []

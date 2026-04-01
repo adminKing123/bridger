@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ room.title or 'Space' }} — Spaces — Webex — Bridger{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/proxy.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/webex.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:780px;">
+
+  <!-- ── Back link ──────────────────────────────────────────── -->
+  <div class="mb-3">
+    <a href="{{ url_for('webex.spaces', config_id=cfg.id) }}" class="proxy-back-link">
+      <i class="bi bi-arrow-left me-1"></i>Spaces
+    </a>
+  </div>
+
+  <!-- ── Room hero ──────────────────────────────────────────── -->
+  <div class="webex-hero mb-4">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <div class="webex-hero-icon">
+        <i class="bi bi-{% if room.type == 'direct' %}person{% else %}people{% endif %}"></i>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <h1 class="webex-hero-name text-truncate">{{ room.title or 'Untitled Space' }}</h1>
+        <p class="webex-hero-sub mb-2">
+          {% if room.type == 'direct' %}1:1 Direct space{% else %}Group space{% endif %}
+          {% if room.lastActivity %}
+            &nbsp;·&nbsp;Last activity {{ room.lastActivity[:10] }}
+          {% endif %}
+        </p>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+          <span class="webex-space-badge webex-space-badge--{{ room.type or 'group' }}">
+            {{ room.type or '—' }}
+          </span>
+          {% if room.isLocked %}
+            <span class="webex-space-badge" style="background:rgba(254,226,226,.2);color:#fca5a5;">
+              <i class="bi bi-lock-fill"></i> Locked
+            </span>
+          {% endif %}
+          <span class="webex-log-id-cell" style="font-size:.68rem;opacity:.7;">
+            {{ room.id[:36] }}…
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Messages panel ─────────────────────────────────────── -->
+  <div class="panel">
+
+    <div class="panel-head">
+      <i class="bi bi-chat-text" style="color:#00a899;font-size:.9rem;"></i>
+      <span class="panel-head-title">Messages</span>
+      <span class="proxy-log-count ms-auto" style="font-size:.74rem;" id="msg-count">
+        {{ messages|length }} loaded
+      </span>
+    </div>
+
+    {% if messages %}
+
+      <!-- Message list — JS appends older items when "Load older" is clicked -->
+      <div class="webex-messages-list" id="webex-messages-list">
+        {% for msg in messages %}
+          <div class="webex-msg-item">
+            <div class="webex-msg-avatar" title="{{ msg.personEmail or msg.personId or '' }}">
+              {{ (msg.personEmail or msg.personId or '?')[0] | upper }}
+            </div>
+            <div class="webex-msg-body">
+              <div class="webex-msg-meta">
+                <span class="webex-msg-sender">{{ msg.personEmail or msg.personId or '—' }}</span>
+                {% if msg.created %}
+                  <span class="webex-msg-time" title="{{ msg.created }}">
+                    {{ msg.created[:19] | replace('T', ' ') }} UTC
+                  </span>
+                {% endif %}
+              </div>
+              {% if msg.text %}
+                <div class="webex-msg-text">{{ msg.text }}</div>
+              {% elif msg.html %}
+                <div class="webex-msg-text">{{ msg.html | striptags }}</div>
+              {% else %}
+                <div class="webex-msg-text" style="opacity:.4;font-style:italic;">(no text content)</div>
+              {% endif %}
+              {% if msg.files %}
+                <div class="webex-msg-files">
+                  <i class="bi bi-paperclip"></i>
+                  {{ msg.files | length }} attachment{{ 's' if msg.files | length != 1 else '' }}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Footer: load-more button or "no more" label -->
+      <div class="panel-body" id="msg-footer" style="border-top:1px solid var(--border);padding:.75rem 1.25rem;">
+        <div class="proxy-log-pagination" id="msg-pagination">
+          {% if has_older %}
+            <button
+              type="button"
+              class="proxy-log-page-btn ms-auto"
+              id="load-older-btn"
+              data-cfg="{{ cfg.id }}"
+              data-room="{{ room_id }}"
+              data-before="{{ oldest_id or '' }}"
+              data-api="{{ url_for('webex.room_messages_api', config_id=cfg.id) }}"
+            >
+              Older messages <i class="bi bi-arrow-down"></i>
+            </button>
+          {% else %}
+            <span class="proxy-log-page-btn disabled ms-auto">No older messages</span>
+          {% endif %}
+        </div>
+      </div>
+
+    {% else %}
+      <div class="panel-body" style="text-align:center;padding:3rem 1rem;color:var(--text-3);">
+        <i class="bi bi-chat-square" style="font-size:2rem;display:block;margin-bottom:.6rem;"></i>
+        <p style="font-size:.875rem;margin:0;">No messages found in this space.</p>
+      </div>
+    {% endif %}
+
+  </div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const btn = document.getElementById('load-older-btn');
+  if (!btn) return;
+
+  const list     = document.getElementById('webex-messages-list');
+  const countEl  = document.getElementById('msg-count');
+  const paginDiv = document.getElementById('msg-pagination');
+
+  const apiBase = btn.dataset.api;
+  const roomId  = btn.dataset.room;
+
+  let loadedCount = list ? list.querySelectorAll('.webex-msg-item').length : 0;
+
+  /** Safely encode a string for display inside HTML text nodes / attributes. */
+  function esc(s) {
+    return (s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /** Strip HTML tags by parsing in a sandboxed element. */
+  function stripTags(html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html || '';
+    return tmp.textContent || tmp.innerText || '';
+  }
+
+  /** Build the HTML string for one message item. */
+  function buildItem(msg) {
+    const initial  = (msg.personEmail || msg.personId || '?')[0].toUpperCase();
+    const sender   = msg.personEmail || msg.personId || '—';
+    const timeRaw  = msg.created ? msg.created.slice(0, 19).replace('T', ' ') + ' UTC' : '';
+    const timeHtml = timeRaw
+      ? `<span class="webex-msg-time" title="${esc(msg.created)}">${esc(timeRaw)}</span>`
+      : '';
+
+    let textHtml;
+    if (msg.text) {
+      textHtml = `<div class="webex-msg-text">${esc(msg.text)}</div>`;
+    } else if (msg.html) {
+      textHtml = `<div class="webex-msg-text">${esc(stripTags(msg.html))}</div>`;
+    } else {
+      textHtml = `<div class="webex-msg-text" style="opacity:.4;font-style:italic;">(no text content)</div>`;
+    }
+
+    let filesHtml = '';
+    if (msg.files && msg.files.length) {
+      const n = msg.files.length;
+      filesHtml = `<div class="webex-msg-files">
+        <i class="bi bi-paperclip"></i> ${n} attachment${n !== 1 ? 's' : ''}
+      </div>`;
+    }
+
+    return `<div class="webex-msg-item">
+      <div class="webex-msg-avatar" title="${esc(sender)}">${esc(initial)}</div>
+      <div class="webex-msg-body">
+        <div class="webex-msg-meta">
+          <span class="webex-msg-sender">${esc(sender)}</span>
+          ${timeHtml}
+        </div>
+        ${textHtml}
+        ${filesHtml}
+      </div>
+    </div>`;
+  }
+
+  btn.addEventListener('click', function () {
+    const beforeId = btn.dataset.before;
+
+    // Disable & show spinner
+    btn.disabled = true;
+    btn.innerHTML = `<span style="display:inline-flex;align-items:center;gap:.35rem;">
+      <span class="spinner-border spinner-border-sm"
+            style="width:.85rem;height:.85rem;border-width:.15em;"></span>
+      Loading&hellip;
+    </span>`;
+
+    const params = new URLSearchParams({ room_id: roomId, before: beforeId });
+    fetch(`${apiBase}?${params}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(res => { if (!res.ok) throw new Error(res.status); return res.json(); })
+      .then(data => {
+        // Append messages to the bottom of the list
+        data.messages.forEach(msg => {
+          list.insertAdjacentHTML('beforeend', buildItem(msg));
+        });
+
+        loadedCount += data.messages.length;
+        if (countEl) countEl.textContent = `${loadedCount} loaded`;
+
+        if (data.has_older) {
+          // Update cursor and re-enable button
+          btn.dataset.before = data.oldest_id;
+          btn.disabled = false;
+          btn.innerHTML = 'Older messages <i class="bi bi-arrow-down"></i>';
+        } else {
+          // Swap button for "no more" label
+          btn.remove();
+          const noMore = document.createElement('span');
+          noMore.className = 'proxy-log-page-btn disabled ms-auto';
+          noMore.textContent = 'No older messages';
+          paginDiv.appendChild(noMore);
+        }
+      })
+      .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = 'Older messages <i class="bi bi-arrow-down"></i>';
+        alert('Could not load messages. Please try again.');
+      });
+  });
+})();
+</script>
+
+{% endblock %}

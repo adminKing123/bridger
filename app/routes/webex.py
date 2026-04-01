@@ -20,6 +20,12 @@ GET         /webex/<id>/webhooks/<wh_id>/logs               view event logs
 POST        /webex/<id>/webhooks/<wh_id>/logs/clear         clear event logs
 
 POST        /webex/receive/<uuid>                           receive event (public)
+
+GET         /webex/<id>/spaces                              browse all spaces (read-only)
+GET         /webex/<id>/spaces/messages                    messages in a space (read-only)
+
+GET         /webex/<id>/spaces/api                         rooms JSON (AJAX)
+GET         /webex/<id>/spaces/messages/api               messages JSON (AJAX)
 """
 
 import hashlib
@@ -46,9 +52,12 @@ from app.services.webex_service import (
     create_webhook as create_webhook_api,
     delete_webhook as delete_webhook_api,
     fetch_all_webhooks,
+    fetch_messages,
     fetch_resource,
+    fetch_room_detail,
     fetch_room_members,
     fetch_rooms,
+    fetch_rooms_filtered,
     verify_token,
 )
 
@@ -643,4 +652,166 @@ def list_rooms(config_id: int):
             }
             for r in rooms
         ]
+    })
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Spaces browser — read-only views into Webex rooms and messages
+# ══════════════════════════════════════════════════════════════════════════════
+
+@webex_bp.route("/<int:config_id>/spaces")
+@login_required
+def spaces(config_id: int):
+    """
+    List all Webex spaces the token has access to.
+    Supports filtering by type (direct / group) and title search.
+    Pagination is client-side (all rooms fetched once from Webex API).
+    """
+    cfg = _own_config_or_404(config_id)
+    if not cfg.is_verified:
+        flash("Verify the Webex token before browsing spaces.", "warning")
+        return redirect(url_for("webex.detail_config", config_id=cfg.id))
+
+    room_type = request.args.get("type", "").strip()   # "" | "direct" | "group"
+    q         = request.args.get("q",    "").strip().lower()
+    page      = request.args.get("page",  1, type=int)
+
+    all_rooms = fetch_rooms_filtered(cfg.access_token, room_type=room_type or None)
+
+    # Title search (local — Webex API has no keyword search for rooms)
+    if q:
+        all_rooms = [r for r in all_rooms if q in (r.get("title") or "").lower()]
+
+    per_page    = 20
+    total       = len(all_rooms)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page        = max(1, min(page, total_pages))
+    rooms_page  = all_rooms[(page - 1) * per_page : page * per_page]
+
+    return render_template(
+        "webex/spaces.html",
+        cfg=cfg,
+        rooms=rooms_page,
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+        room_type=room_type,
+        q=q,
+    )
+
+
+@webex_bp.route("/<int:config_id>/spaces/messages")
+@login_required
+def room_messages(config_id: int):
+    """
+    Show messages in a specific Webex space.
+    Cursor-based pagination via the ``before`` query param (a message ID).
+    This endpoint is strictly read-only — no writes to Webex.
+    """
+    cfg = _own_config_or_404(config_id)
+    if not cfg.is_verified:
+        flash("Verify the Webex token before viewing messages.", "warning")
+        return redirect(url_for("webex.detail_config", config_id=cfg.id))
+
+    room_id = request.args.get("room_id", "").strip()
+    if not room_id:
+        return redirect(url_for("webex.spaces", config_id=cfg.id))
+
+    before_message = request.args.get("before", "").strip() or None
+
+    room = fetch_room_detail(cfg.access_token, room_id)
+    if room is None:
+        flash("Space not found or access denied.", "warning")
+        return redirect(url_for("webex.spaces", config_id=cfg.id))
+
+    per_page = 25
+    messages = fetch_messages(
+        cfg.access_token,
+        room_id=room_id,
+        max_results=per_page,
+        before_message=before_message,
+    )
+
+    # If exactly per_page returned there are likely older messages
+    has_older = len(messages) == per_page
+    oldest_id = messages[-1]["id"] if messages else None
+
+    return render_template(
+        "webex/room_messages.html",
+        cfg=cfg,
+        room=room,
+        messages=messages,
+        room_id=room_id,
+        before_message=before_message,
+        has_older=has_older,
+        oldest_id=oldest_id,
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# JSON API endpoints — consumed by JS in spaces.html / room_messages.html
+# ══════════════════════════════════════════════════════════════════════════════
+
+@webex_bp.route("/<int:config_id>/spaces/api")
+@login_required
+def spaces_api(config_id: int):
+    """Return a page of Webex rooms as JSON for AJAX pagination."""
+    cfg = _own_config_or_404(config_id)
+    if not cfg.is_verified:
+        return jsonify({"error": "Token not verified"}), 400
+
+    room_type = request.args.get("type", "").strip()
+    q         = request.args.get("q",    "").strip().lower()
+    page      = request.args.get("page",  1, type=int)
+
+    all_rooms = fetch_rooms_filtered(cfg.access_token, room_type=room_type or None)
+
+    if q:
+        all_rooms = [r for r in all_rooms if q in (r.get("title") or "").lower()]
+
+    per_page    = 20
+    total       = len(all_rooms)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page        = max(1, min(page, total_pages))
+    rooms_page  = all_rooms[(page - 1) * per_page : page * per_page]
+
+    return jsonify({
+        "rooms":       rooms_page,
+        "total":       total,
+        "page":        page,
+        "per_page":    per_page,
+        "total_pages": total_pages,
+    })
+
+
+@webex_bp.route("/<int:config_id>/spaces/messages/api")
+@login_required
+def room_messages_api(config_id: int):
+    """Return older messages as JSON for AJAX load-more."""
+    cfg = _own_config_or_404(config_id)
+    if not cfg.is_verified:
+        return jsonify({"error": "Token not verified"}), 400
+
+    room_id        = request.args.get("room_id", "").strip()
+    before_message = request.args.get("before",  "").strip() or None
+
+    if not room_id:
+        return jsonify({"error": "room_id required"}), 400
+
+    per_page = 25
+    messages = fetch_messages(
+        cfg.access_token,
+        room_id=room_id,
+        max_results=per_page,
+        before_message=before_message,
+    )
+
+    has_older = len(messages) == per_page
+    oldest_id = messages[-1]["id"] if messages else None
+
+    return jsonify({
+        "messages":  messages,
+        "has_older": has_older,
+        "oldest_id": oldest_id,
     })
