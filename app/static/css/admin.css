@@ -198,6 +198,15 @@
 
 .adm-btn-icon:hover { background: var(--surface); color: var(--text); border-color: var(--text-3); }
 
+/* Spinner colour inside small icon buttons (light background) */
+.adm-btn-icon .btn-spinner {
+  width: 12px;
+  height: 12px;
+  border-color: var(--border);
+  border-top-color: var(--text-2);
+}
+.adm-btn-icon.is-loading { opacity: .6; cursor: not-allowed; }
+
 .adm-btn-block:hover   { background: var(--danger-bg);  color: var(--danger);  border-color: var(--danger);  }
 .adm-btn-unblock:hover { background: var(--success-bg); color: var(--success); border-color: var(--success); }
 

@@ -127,15 +127,18 @@
 
                 <form method="post"
                       action="{{ url_for('admin.toggle_block', user_id=user.id) }}"
-                      class="d-inline">
+                      class="d-inline"
+                      data-loadable>
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" name="next" value="{{ request.url }}">
                   {% if user.is_blocked %}
-                    <button type="submit" class="adm-btn-icon adm-btn-unblock" title="Unblock">
+                    <button type="submit" class="adm-btn-icon adm-btn-unblock" title="Unblock"
+                            data-submit-btn data-loading-text="">
                       <i class="bi bi-lock-fill"></i>
                     </button>
                   {% else %}
-                    <button type="submit" class="adm-btn-icon adm-btn-block" title="Block">
+                    <button type="submit" class="adm-btn-icon adm-btn-block" title="Block"
+                            data-submit-btn data-loading-text="">
                       <i class="bi bi-lock"></i>
                     </button>
                   {% endif %}

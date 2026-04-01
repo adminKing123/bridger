@@ -82,15 +82,17 @@
             them from signing in until unblocked.
           {% endif %}
         </p>
-        <form method="post" action="{{ url_for('admin.toggle_block', user_id=user.id) }}">
+        <form method="post" action="{{ url_for('admin.toggle_block', user_id=user.id) }}" data-loadable>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="next" value="{{ url_for('admin.user_detail', user_id=user.id) }}">
           {% if user.is_blocked %}
-            <button type="submit" class="btn-save">
+            <button type="submit" class="btn-save"
+                    data-submit-btn data-loading-text="Unblocking…">
               <i class="bi bi-unlock me-1"></i>Unblock User
             </button>
           {% else %}
-            <button type="submit" class="btn-danger-outline">
+            <button type="submit" class="btn-danger-outline"
+                    data-submit-btn data-loading-text="Blocking…">
               <i class="bi bi-slash-circle me-1"></i>Block User
             </button>
           {% endif %}
@@ -108,7 +110,7 @@
           Changes take effect immediately — no sign-out required.
         </p>
 
-        <form method="post" action="{{ url_for('admin.update_services', user_id=user.id) }}">
+        <form method="post" action="{{ url_for('admin.update_services', user_id=user.id) }}" data-loadable>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
           <div class="adm-svc-list">
@@ -162,7 +164,8 @@
           </div><!-- /.adm-svc-list -->
 
           <div class="m-4 d-flex gap-2">
-            <button type="submit" class="btn-save">
+            <button type="submit" class="btn-save"
+                    data-submit-btn data-loading-text="Saving…">
               <i class="bi bi-floppy me-1"></i>Save Permissions
             </button>
             <a href="{{ url_for('admin.users') }}" class="btn-discard text-decoration-none">
