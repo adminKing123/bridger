@@ -27,6 +27,9 @@ from sqlalchemy import func
 from app import db
 from app.models.proxy import ProxyConfig
 from app.models.proxy_log import ProxyLog
+from app.models.webex_config import WebexConfig
+from app.models.webex_webhook import WebexWebhook
+from app.models.webex_webhook_log import WebexWebhookLog
 
 logger = logging.getLogger(__name__)
 
@@ -145,6 +148,122 @@ def api_proxy_stats():
         "method_counts":  [r.cnt    for r in method_rows],
         "top_proxies":    [
             {"id": r.id, "name": r.name, "status": r.status, "count": r.req_count}
+            for r in top_rows
+        ],
+    })
+
+
+@dashboard_bp.route("/dashboard/api/stats/webex")
+@login_required
+def api_webex_stats():
+    """
+    Return Webex Integration service statistics as JSON.
+    Scoped strictly to the current user.
+    """
+    user_id  = current_user.id
+    configs  = WebexConfig.query.filter_by(user_id=user_id).all()
+    cfg_ids  = [c.id for c in configs]
+    total    = len(configs)
+    verified = sum(1 for c in configs if c.is_verified)
+
+    if not cfg_ids:
+        return jsonify({
+            "total": 0, "verified": 0,
+            "total_webhooks": 0, "bridger_webhooks": 0,
+            "total_events": 0, "events_24h": 0,
+            "daily_labels": [], "daily_counts": [],
+            "resource_labels": [], "resource_counts": [],
+            "top_configs": [],
+        })
+
+    now       = datetime.utcnow()
+    since_24h = now - timedelta(hours=24)
+    since_7d  = now - timedelta(days=7)
+
+    # Webhook counts
+    wh_ids = [
+        r.id for r in WebexWebhook.query
+        .filter(WebexWebhook.config_id.in_(cfg_ids))
+        .with_entities(WebexWebhook.id)
+        .all()
+    ]
+    total_webhooks   = len(wh_ids)
+    bridger_webhooks = WebexWebhook.query.filter(
+        WebexWebhook.config_id.in_(cfg_ids),
+        WebexWebhook.uses_bridger_target == True,
+    ).count()
+
+    total_events = WebexWebhookLog.query.filter(
+        WebexWebhookLog.webhook_id.in_(wh_ids)
+    ).count() if wh_ids else 0
+
+    events_24h = WebexWebhookLog.query.filter(
+        WebexWebhookLog.webhook_id.in_(wh_ids),
+        WebexWebhookLog.created_at >= since_24h,
+    ).count() if wh_ids else 0
+
+    # Events per day — last 7 days
+    daily_rows = (
+        db.session.query(
+            func.strftime("%Y-%m-%d", WebexWebhookLog.created_at).label("day"),
+            func.count(WebexWebhookLog.id).label("cnt"),
+        )
+        .filter(
+            WebexWebhookLog.webhook_id.in_(wh_ids),
+            WebexWebhookLog.created_at >= since_7d,
+        )
+        .group_by("day")
+        .order_by("day")
+        .all()
+    ) if wh_ids else []
+    day_map = {row.day: row.cnt for row in daily_rows}
+    daily_labels, daily_counts = [], []
+    for offset in range(6, -1, -1):
+        dt = now - timedelta(days=offset)
+        daily_labels.append(dt.strftime("%d %b"))
+        daily_counts.append(day_map.get(dt.strftime("%Y-%m-%d"), 0))
+
+    # Resource type breakdown
+    resource_rows = (
+        db.session.query(
+            WebexWebhookLog.resource,
+            func.count(WebexWebhookLog.id).label("cnt"),
+        )
+        .filter(WebexWebhookLog.webhook_id.in_(wh_ids))
+        .group_by(WebexWebhookLog.resource)
+        .all()
+    ) if wh_ids else []
+
+    # Top 5 configs by event count
+    top_rows = (
+        db.session.query(
+            WebexConfig.id,
+            WebexConfig.name,
+            WebexConfig.is_verified,
+            func.count(WebexWebhookLog.id).label("evt_count"),
+        )
+        .outerjoin(WebexWebhook, WebexWebhook.config_id == WebexConfig.id)
+        .outerjoin(WebexWebhookLog, WebexWebhookLog.webhook_id == WebexWebhook.id)
+        .filter(WebexConfig.user_id == user_id)
+        .group_by(WebexConfig.id)
+        .order_by(func.count(WebexWebhookLog.id).desc())
+        .limit(5)
+        .all()
+    )
+
+    return jsonify({
+        "total":            total,
+        "verified":         verified,
+        "total_webhooks":   total_webhooks,
+        "bridger_webhooks": bridger_webhooks,
+        "total_events":     total_events,
+        "events_24h":       events_24h,
+        "daily_labels":     daily_labels,
+        "daily_counts":     daily_counts,
+        "resource_labels":  [r.resource or "unknown" for r in resource_rows],
+        "resource_counts":  [r.cnt for r in resource_rows],
+        "top_configs":      [
+            {"id": r.id, "name": r.name, "verified": r.is_verified, "count": r.evt_count}
             for r in top_rows
         ],
     })

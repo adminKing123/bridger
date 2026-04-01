@@ -5,6 +5,7 @@
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/proxy.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/webex.css') }}" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
 {% endblock %}
 
@@ -117,6 +118,20 @@
           <i class="bi bi-check2 dash-picker-check"></i>
         </li>
         <li class="dash-picker-item" role="option"
+            data-service="webex"
+            data-label="Webex Integration"
+            data-icon="bi-chat-dots"
+            data-icon-bg="#ccfbf1" data-icon-color="#0d9488">
+          <span class="dash-picker-item-icon" style="background:#ccfbf1;color:#0d9488;">
+            <i class="bi bi-chat-dots"></i>
+          </span>
+          <div>
+            <p class="dash-picker-item-name">Webex Integration</p>
+            <p class="dash-picker-item-desc">Webhooks &amp; event tracking</p>
+          </div>
+          <i class="bi bi-check2 dash-picker-check"></i>
+        </li>
+        <li class="dash-picker-item" role="option"
             data-service="coming"
             data-label="More Services"
             data-icon="bi-grid-1x2"
@@ -194,6 +209,56 @@
 
   </div>
   <!-- ── END HTTP Proxy panel ─────────────────────────────── -->
+
+  <!-- ── Webex Integration panel ─────────────────────────── -->
+  <div id="panel-webex" class="dash-panel-section" style="display:none;">
+
+    <div class="dash-section-head mb-3">
+      <div class="dash-section-icon" style="background:#ccfbf1;color:#0d9488;">
+        <i class="bi bi-chat-dots"></i>
+      </div>
+      <div>
+        <p class="dash-section-title" style="margin:0;">Webex Integration</p>
+        <p class="dash-section-desc">Webhooks &amp; event tracking across your configurations</p>
+      </div>
+      <a href="{{ url_for('webex.index') }}" class="btn-dash-section-link ms-auto">
+        Manage <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    <div id="webex-loading">
+      <div class="row g-3 mb-3">
+        {% for _ in range(4) %}
+        <div class="col-6 col-md-3">
+          <div class="dash-kpi-card">
+            <div class="skel skel-kpi-val"></div>
+            <div class="skel skel-label mt-2"></div>
+            <div class="skel skel-label mt-2" style="width:50%;"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="row g-3">
+        <div class="col-lg-7"><div class="panel" style="margin:0;"><div class="panel-body"><div class="skel skel-chart"></div></div></div></div>
+        <div class="col-lg-5"><div class="panel" style="margin:0;"><div class="panel-body"><div class="skel skel-chart"></div></div></div></div>
+        <div class="col-12"><div class="panel" style="margin:0;"><div class="panel-body"><div class="skel skel-chart" style="height:80px;"></div></div></div></div>
+      </div>
+    </div>
+
+    <div id="webex-error" style="display:none;">
+      <div class="dash-service-empty">
+        <i class="bi bi-exclamation-circle"></i>
+        <p>Could not load Webex stats. <button type="button" class="btn-link-inline" id="webexRetryBtn">Try again</button></p>
+      </div>
+    </div>
+
+    <div id="webex-content" style="display:none;">
+      <div class="row g-3 mb-3" id="webex-kpis"></div>
+      <div class="row g-3" id="webex-charts"></div>
+    </div>
+
+  </div>
+  <!-- ── END Webex Integration panel ──────────────────────── -->
 
   <!-- ── Coming Soon panel ────────────────────────────────── -->
   <div id="panel-coming" class="dash-panel-section" style="display:none;">
@@ -321,6 +386,7 @@
 
     /* Lazy-load data if this service needs it */
     if (key === 'proxy') loadProxyStats();
+    if (key === 'webex') loadWebexStats();
   }
 
   /* ── HTTP Proxy stats loader ──────────────────────────────── */
@@ -512,6 +578,188 @@
 
   function _esc(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ── Webex Integration stats loader ──────────────────────── */
+  var webexLoaded = false;
+  var webexCharts = {};
+  var URL_WEBEX_LIST   = '{{ url_for("webex.index") }}';
+  var URL_WEBEX_CREATE = '{{ url_for("webex.create_config") }}';
+
+  var RESOURCE_COLORS = {
+    messages: '#0d9488', rooms: '#6366f1', memberships: '#f59e0b',
+    meetings: '#3b82f6', recordings: '#a855f7', attachmentActions: '#ec4899',
+    unknown: '#94a3b8',
+  };
+
+  function showWebexState(state) {
+    document.getElementById('webex-loading').style.display = state === 'loading' ? '' : 'none';
+    document.getElementById('webex-error').style.display   = state === 'error'   ? '' : 'none';
+    document.getElementById('webex-content').style.display = state === 'content' ? '' : 'none';
+  }
+
+  function loadWebexStats() {
+    if (webexLoaded) return;
+    showWebexState('loading');
+    fetch('{{ url_for("dashboard.api_webex_stats") }}', { credentials: 'same-origin' })
+      .then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      })
+      .then(function (d) {
+        webexLoaded = true;
+        renderWebexStats(d);
+        showWebexState('content');
+      })
+      .catch(function () { showWebexState('error'); });
+  }
+
+  document.getElementById('webexRetryBtn').addEventListener('click', function () {
+    webexLoaded = false;
+    loadWebexStats();
+  });
+
+  function renderWebexStats(d) {
+    /* ── KPI cards ────────────────────────────────────────── */
+    var kpis = [
+      { val: d.total,            label: 'Configurations',    sub: d.verified + ' verified',   color: d.verified === d.total && d.total > 0 ? success : null },
+      { val: d.total_webhooks,   label: 'Total Webhooks',    sub: d.bridger_webhooks + ' via Bridger' },
+      { val: d.events_24h,       label: 'Events (24 h)',     sub: d.total_events + ' all time' },
+      { val: d.total > 0 ? (d.verified === d.total ? '100%' : Math.round(d.verified / d.total * 100) + '%') : '—',
+        label: 'Verified Rate',  sub: 'configurations verified', color: d.verified === d.total && d.total > 0 ? success : warning },
+    ];
+
+    var kpiRow = document.getElementById('webex-kpis');
+    kpiRow.innerHTML = kpis.map(function (k) {
+      return '<div class="col-6 col-md-3">'
+        + '<div class="dash-kpi-card">'
+        + '<span class="dash-kpi-val"' + (k.color ? ' style="color:' + k.color + ';"' : '') + '>' + k.val + '</span>'
+        + '<span class="dash-kpi-label">' + k.label + '</span>'
+        + '<span class="dash-kpi-sub">' + (k.sub || '') + '</span>'
+        + '</div></div>';
+    }).join('');
+
+    /* ── Charts + top list ────────────────────────────────── */
+    var chartsRow = document.getElementById('webex-charts');
+
+    if (d.total === 0) {
+      chartsRow.innerHTML = '<div class="col-12">'
+        + '<div class="dash-service-empty">'
+        + '<i class="bi bi-chat-dots"></i>'
+        + '<p>No Webex configurations yet.</p>'
+        + '<a href="' + URL_WEBEX_CREATE + '" class="btn-save"'
+        + ' style="text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;font-size:.83rem;padding:.45rem 1.1rem;">'
+        + '<i class="bi bi-plus-lg"></i>Add configuration</a>'
+        + '</div></div>';
+      return;
+    }
+
+    chartsRow.innerHTML =
+      '<div class="col-lg-7">'
+      + '<div class="panel" style="margin:0;height:100%;">'
+      + '<div class="panel-head"><i class="bi bi-bar-chart-line" style="color:#0d9488;font-size:.9rem;"></i>'
+      + '<span class="panel-head-title">Events — Last 7 Days</span></div>'
+      + '<div class="panel-body" style="height:260px;padding:.75rem 1rem 1rem;">'
+      + '<canvas id="webexDailyChart"></canvas></div></div></div>'
+
+      + '<div class="col-lg-5">'
+      + '<div class="panel" style="margin:0;height:100%;">'
+      + '<div class="panel-head"><i class="bi bi-pie-chart" style="color:#0d9488;font-size:.9rem;"></i>'
+      + '<span class="panel-head-title">Event Types</span></div>'
+      + '<div class="panel-body d-flex align-items-center justify-content-center" style="height:260px;padding:1rem;">'
+      + (d.resource_labels.length
+          ? '<canvas id="webexResourceChart"></canvas>'
+          : '<span style="color:' + text3 + ';font-size:.8rem;">No events yet</span>')
+      + '</div></div></div>'
+
+      + '<div class="col-12">'
+      + '<div class="panel" style="margin:0;">'
+      + '<div class="panel-head"><i class="bi bi-trophy" style="color:#0d9488;font-size:.9rem;"></i>'
+      + '<span class="panel-head-title">Top Configurations</span>'
+      + '<a href="' + URL_WEBEX_LIST + '" class="btn-dash-section-link ms-auto" style="font-size:.75rem;">View all <i class="bi bi-arrow-right"></i></a>'
+      + '</div>'
+      + '<div class="proxy-table-wrap">'
+      + '<table class="proxy-table" id="webex-top-table">'
+      + '<thead><tr><th style="width:50%">Configuration</th><th>Status</th><th style="text-align:right">Total Events</th></tr></thead>'
+      + '<tbody>' + buildWebexTopList(d.top_configs) + '</tbody>'
+      + '</table></div></div></div>';
+
+    Chart.defaults.font.family = "'Inter','Segoe UI',system-ui,sans-serif";
+    Chart.defaults.font.size   = 11;
+    Chart.defaults.color       = text2;
+
+    /* Bar chart */
+    var tealColor = '#0d9488';
+    new Chart(document.getElementById('webexDailyChart'), {
+      type: 'bar',
+      data: {
+        labels: d.daily_labels,
+        datasets: [{
+          label: 'Events', data: d.daily_counts,
+          backgroundColor: tealColor + 'bb', borderColor: tealColor,
+          borderWidth: 1.5, borderRadius: 5, borderSkipped: false,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function (c) { return ' ' + c.parsed.y + ' events'; } } },
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: text3 } },
+          y: { beginAtZero: true, ticks: { color: text3, precision: 0 }, grid: { color: border + '55' } },
+        },
+      },
+    });
+
+    /* Doughnut */
+    if (d.resource_labels.length) {
+      var rColors = d.resource_labels.map(function (r) { return RESOURCE_COLORS[r] || '#94a3b8'; });
+      new Chart(document.getElementById('webexResourceChart'), {
+        type: 'doughnut',
+        data: {
+          labels: d.resource_labels,
+          datasets: [{
+            data: d.resource_counts,
+            backgroundColor: rColors.map(function (c) { return c + 'dd'; }),
+            borderColor: surface, borderWidth: 2, hoverOffset: 6,
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: true, cutout: '62%',
+          plugins: {
+            legend: { position: 'right', labels: { boxWidth: 10, padding: 8, color: text2 } },
+            tooltip: {
+              callbacks: {
+                label: function (c) {
+                  var t = c.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                  return ' ' + c.parsed + ' (' + (t ? Math.round(c.parsed / t * 100) : 0) + '%)';
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+  }
+
+  function buildWebexTopList(rows) {
+    if (!rows.length) {
+      return '<tr><td colspan="3" style="padding:.9rem 1.25rem;font-size:.82rem;color:'
+        + text3 + ';text-align:center;">No data yet.</td></tr>';
+    }
+    return rows.map(function (r, i) {
+      var badge = r.verified
+        ? '<span class="webex-verified-badge" style="font-size:.72rem;padding:.15rem .55rem;">Verified</span>'
+        : '<span class="webex-unverified-badge" style="font-size:.72rem;padding:.15rem .55rem;">Unverified</span>';
+      return '<tr>'
+        + '<td><span style="color:var(--text-3);font-size:.75rem;margin-right:.5rem;">#' + (i + 1) + '</span>'
+        + '<a href="/webex/' + r.id + '" style="font-weight:600;color:var(--text);text-decoration:none;">' + _esc(r.name) + '</a></td>'
+        + '<td>' + badge + '</td>'
+        + '<td style="text-align:right;font-weight:700;color:var(--text);">' + r.count + '</td>'
+        + '</tr>';
+    }).join('');
   }
 
   /* ── Init ─────────────────────────────────────────────────── */
