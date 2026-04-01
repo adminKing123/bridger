@@ -503,9 +503,21 @@ def receive_event(wh_uuid: str):
     sender_name  = None
     sender_email = data_obj.get("personEmail")
 
-    # Receiver — always the Webex account that owns the webhook config
-    receiver_name  = wh.config.webex_display_name
-    receiver_email = wh.config.webex_email
+    # Receiver — if the config owner is the sender, the receiver is the other
+    # party (available in the fetched resource object). Otherwise the owner
+    # is the receiver.
+    receiver_name  = None
+    owner_email    = wh.config.webex_email
+    if sender_email and owner_email and sender_email.lower() == owner_email.lower():
+        # Owner sent the message — other party is the receiver
+        receiver_email = (
+            (resource_obj.get("toPersonEmail") if resource_obj else None)
+            or data_obj.get("toPersonEmail")
+        )
+    else:
+        # Someone else sent — owner is the receiver
+        receiver_email = owner_email
+        receiver_name  = wh.config.webex_display_name
 
     # ── Persist log entry ──────────────────────────────────────────────────
     entry = WebexWebhookLog(

@@ -586,6 +586,21 @@
 
 </div>
 
+
+<!-- Delete Webex configuration modal -->
+<div class="br-modal-backdrop" id="deleteWebexModal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="br-modal">
+    <h2 class="br-modal-title">Delete configuration?</h2>
+    <p class="br-modal-body"><strong>{{ cfg.name }}</strong> and all its webhooks and logs will be permanently deleted.</p>
+    <div class="br-modal-actions">
+      <button type="button" class="br-modal-cancel" id="deleteWebexCancel">Cancel</button>
+      <form method="POST" action="{{ url_for('webex.delete_config', config_id=cfg.id) }}" style="flex:1;" data-loadable>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="br-modal-confirm" data-submit-btn data-loading-text="Deleting&hellip;">Yes, Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
 <!-- â”€â”€ Delete Bridger webhook modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
 <div class="br-modal-backdrop" id="deleteWhModal" aria-hidden="true" role="dialog" aria-modal="true">
   <div class="br-modal">
