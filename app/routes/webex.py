@@ -465,6 +465,8 @@ def receive_event(wh_uuid: str):
 
     raw_body = request.get_data()
 
+    print(raw_body)
+
     # ── Signature verification ─────────────────────────────────────────────
     sig_valid: bool | None = None
     if wh.secret and wh.uses_bridger_target:
