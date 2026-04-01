@@ -317,6 +317,33 @@ body {
   background: #fff1f2;
 }
 
+/* ── 7b. Back navigation (shared across proxy + webex pages) ── */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-size: 0.9rem;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: border-color var(--transition), color var(--transition);
+}
+.btn-back:hover { border-color: var(--primary); color: var(--primary); }
+
+.proxy-back-link {
+  font-size: 0.84rem;
+  color: var(--text-3);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition);
+}
+.proxy-back-link:hover { color: var(--primary); }
+
 /* Monospace utility */
 .font-mono { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; }
 

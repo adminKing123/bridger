@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Webex Integrations — Bridger{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/webex.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:960px;">
+
+  <!-- ── Page header ─────────────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <h1 class="dash-title">Webex Integrations</h1>
+      <p class="dash-subtitle">Manage your Webex access tokens and connected bot/user accounts.</p>
+    </div>
+    <a
+      href="{{ url_for('webex.create_config') }}"
+      class="btn-save"
+      style="text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;"
+    >
+      <i class="bi bi-plus-lg"></i>Add Configuration
+    </a>
+  </div>
+
+  {% if configs.items %}
+
+    <div class="panel">
+      <div class="webex-table-wrap">
+        <table class="webex-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Account</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Added</th>
+              <th class="webex-table-actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cfg in configs.items %}
+              <tr>
+                <!-- Name -->
+                <td>
+                  <a
+                    href="{{ url_for('webex.detail_config', config_id=cfg.id) }}"
+                    class="webex-table-name"
+                  >{{ cfg.name }}</a>
+                </td>
+
+                <!-- Account display name -->
+                <td style="color:var(--text-2);font-size:.87rem;">
+                  {{ cfg.webex_display_name or '—' }}
+                </td>
+
+                <!-- Email -->
+                <td>
+                  <span class="webex-table-email">{{ cfg.display_email }}</span>
+                </td>
+
+                <!-- Verified status -->
+                <td>
+                  <span class="webex-badge {{ 'verified' if cfg.is_verified else 'unverified' }}">
+                    <span class="webex-badge-dot"></span>
+                    {{ 'Verified' if cfg.is_verified else 'Unverified' }}
+                  </span>
+                </td>
+
+                <!-- Created date -->
+                <td style="color:var(--text-3);font-size:.78rem;white-space:nowrap;">
+                  {{ cfg.created_at.strftime('%d %b %Y') }}
+                </td>
+
+                <!-- Actions -->
+                <td class="webex-table-actions-col">
+                  <a
+                    href="{{ url_for('webex.detail_config', config_id=cfg.id) }}"
+                    class="btn-webex-action view"
+                  >
+                    <i class="bi bi-eye"></i>View
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if configs.pages > 1 %}
+      <div class="proxy-log-pagination mt-3">
+        {% if configs.has_prev %}
+          <a
+            href="{{ url_for('webex.index', page=configs.prev_num) }}"
+            class="proxy-log-page-btn"
+          ><i class="bi bi-chevron-left"></i> Prev</a>
+        {% else %}
+          <span class="proxy-log-page-btn disabled"><i class="bi bi-chevron-left"></i> Prev</span>
+        {% endif %}
+
+        <span class="proxy-log-page-info">{{ configs.page }} / {{ configs.pages }}</span>
+
+        {% if configs.has_next %}
+          <a
+            href="{{ url_for('webex.index', page=configs.next_num) }}"
+            class="proxy-log-page-btn"
+          >Next <i class="bi bi-chevron-right"></i></a>
+        {% else %}
+          <span class="proxy-log-page-btn disabled">Next <i class="bi bi-chevron-right"></i></span>
+        {% endif %}
+      </div>
+    {% endif %}
+
+  {% else %}
+
+    <!-- Empty state -->
+    <div class="dash-empty-panel">
+      <div class="dash-empty-icon">
+        <i class="bi bi-hdd-network"></i>
+      </div>
+      <h2 class="dash-empty-title">No Webex integrations yet</h2>
+      <p class="dash-empty-body">
+        Add a Webex access token to connect a personal account or bot.
+        Bridger will verify the token and display the associated profile.
+      </p>
+      <a
+        href="{{ url_for('webex.create_config') }}"
+        class="btn-save"
+        style="text-decoration:none;"
+      >
+        <i class="bi bi-plus-lg"></i>Add your first configuration
+      </a>
+    </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/webex.js') }}"></script>
+{% endblock %}

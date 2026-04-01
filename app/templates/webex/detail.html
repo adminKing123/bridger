@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ cfg.name }} — Webex — Bridger{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/webex.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:780px;">
+
+  <!-- ── Back link ───────────────────────────────────────────── -->
+  <div class="mb-3">
+    <a href="{{ url_for('webex.index') }}" class="proxy-back-link">
+      <i class="bi bi-arrow-left me-1"></i>All Webex Integrations
+    </a>
+  </div>
+
+  <!-- ── Hero ────────────────────────────────────────────────── -->
+  <div class="webex-hero mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+
+      <!-- Left: icon + identity -->
+      <div class="d-flex align-items-center gap-3">
+        <div class="webex-hero-icon">
+          <i class="bi bi-hdd-network"></i>
+        </div>
+        <div>
+          <h1 class="webex-hero-name">{{ cfg.name }}</h1>
+          <p class="webex-hero-sub">
+            {% if cfg.webex_display_name %}
+              {{ cfg.webex_display_name }}
+              {% if cfg.webex_email %}&nbsp;·&nbsp;{{ cfg.webex_email }}{% endif %}
+            {% else %}
+              Token not yet verified
+            {% endif %}
+          </p>
+          <div class="d-flex gap-2 flex-wrap align-items-center">
+            <span class="webex-badge {{ 'verified' if cfg.is_verified else 'unverified' }}">
+              <span class="webex-badge-dot"></span>
+              {{ 'Verified' if cfg.is_verified else 'Unverified' }}
+            </span>
+            {% if cfg.last_verified_at %}
+              <span style="font-size:.72rem;opacity:.7;">
+                Last checked {{ cfg.last_verified_at.strftime('%d %b %Y, %H:%M') }} UTC
+              </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: re-verify button -->
+      <form
+        method="POST"
+        action="{{ url_for('webex.verify_config', config_id=cfg.id) }}"
+        data-loadable
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button
+          type="submit"
+          class="btn-webex-verify"
+          data-submit-btn
+          data-loading-text="Verifying…"
+        >
+          <i class="bi bi-shield-check"></i>Verify Token
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <div class="row g-3">
+
+    <!-- ── Left column: Webex profile ──────────────────────── -->
+    <div class="col-lg-5">
+      <div class="panel h-100">
+        <div class="panel-head">
+          <i class="bi bi-person-badge" style="color:#00a899;font-size:.9rem;"></i>
+          <span class="panel-head-title">Webex Profile</span>
+        </div>
+        <div class="panel-body">
+
+          {% if cfg.is_verified %}
+
+            <!-- Avatar + display name -->
+            <div class="d-flex align-items-center gap-3 mb-3 pb-3" style="border-bottom:1px solid var(--border);">
+              <div class="webex-avatar">{{ cfg.initials }}</div>
+              <div>
+                <div style="font-weight:700;font-size:.95rem;">{{ cfg.webex_display_name }}</div>
+                <div style="font-size:.78rem;color:var(--text-3);margin-top:.1rem;">Webex Account</div>
+              </div>
+            </div>
+
+            <div class="webex-field">
+              <span class="webex-field-label">Email</span>
+              <span class="webex-field-val">{{ cfg.webex_email or '—' }}</span>
+            </div>
+
+            <div class="webex-field">
+              <span class="webex-field-label">Person ID</span>
+              <span class="webex-field-val mono">{{ cfg.webex_person_id or '—' }}</span>
+            </div>
+
+            <div class="webex-field">
+              <span class="webex-field-label">Organisation ID</span>
+              <span class="webex-field-val mono">{{ cfg.webex_org_id or '—' }}</span>
+            </div>
+
+          {% else %}
+
+            <div class="d-flex flex-column align-items-center justify-content-center py-4 text-center gap-2">
+              <i class="bi bi-shield-x" style="font-size:2rem;color:var(--text-3);"></i>
+              <p style="font-size:.875rem;color:var(--text-2);margin:0;">
+                Token has not been verified yet.<br>
+                Click <strong>Verify Token</strong> to fetch the Webex profile.
+              </p>
+            </div>
+
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Right column: settings ────────────────────────── -->
+    <div class="col-lg-7 d-flex flex-column gap-3">
+
+      <!-- Configuration panel (view / edit toggle) -->
+      <div class="panel">
+        <div class="panel-head">
+          <i class="bi bi-sliders" style="color:#00a899;font-size:.9rem;"></i>
+          <span class="panel-head-title">Configuration</span>
+          <button type="button" class="btn-edit-profile ms-auto" id="editWebexBtn">
+            <i class="bi bi-pencil-fill"></i>Edit
+          </button>
+        </div>
+
+        <!-- View mode (default) -->
+        <div id="webexView" class="panel-body">
+          <div class="profile-view-field">
+            <span class="profile-view-label">Name</span>
+            <span class="profile-view-val">{{ cfg.name }}</span>
+          </div>
+          <div class="profile-view-field" style="border-bottom:none;align-items:flex-start;padding-top:.85rem;">
+            <span class="profile-view-label" style="padding-top:.35rem;">Access Token</span>
+            <div class="webex-token-wrap" style="flex:1;">
+              <span
+                class="webex-token-text"
+                id="webexTokenDisplay"
+                data-masked="{{ cfg.masked_token }}"
+                data-actual="{{ cfg.access_token }}"
+              >{{ cfg.masked_token }}</span>
+              <button
+                type="button"
+                class="btn-token-toggle"
+                id="webexTokenRevealBtn"
+                aria-label="Show token"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit form (hidden by default; opens on "Edit" click or server errors) -->
+        <div id="webexEditForm" class="panel-body" style="display:none;">
+          <form
+            method="POST"
+            action="{{ url_for('webex.edit_config', config_id=cfg.id) }}"
+            novalidate
+            autocomplete="off"
+            data-loadable
+          >
+            {{ form.hidden_tag() }}
+
+            <!-- Name -->
+            <div class="mb-3">
+              {{ form.name.label(class="form-label") }}
+              {{ form.name(
+                class="form-control" + (" is-invalid" if form.name.errors else ""),
+                value=cfg.name
+              ) }}
+              {% for e in form.name.errors %}
+                <div class="invalid-feedback">
+                  <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Access token (optional on edit — blank = keep current) -->
+            <div class="mb-3">
+              {{ form.access_token.label(class="form-label") }}
+              <div class="webex-token-input-wrap" id="webexTokenWrap">
+                {{ form.access_token(
+                  class="form-control",
+                  placeholder="Leave blank to keep current token",
+                  id="access_token",
+                  autocomplete="off",
+                  required=false
+                ) }}
+                <button
+                  type="button"
+                  class="btn-token-toggle"
+                  id="webexTokenToggleBtn"
+                  aria-label="Show token"
+                >
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+              <div class="form-text">Leave blank to keep the existing token.</div>
+            </div>
+
+            <div class="profile-form-actions">
+              <button type="button" class="btn-profile-discard" id="discardWebexBtn">Discard</button>
+              <button
+                type="submit"
+                class="btn-save"
+                data-submit-btn
+                data-loading-text="Saving…"
+              >
+                <i class="bi bi-check-lg"></i>Save Changes
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="panel danger-zone">
+        <div class="panel-head">
+          <i class="bi bi-trash3" style="color:var(--danger);font-size:.9rem;"></i>
+          <span class="panel-head-title" style="color:var(--danger);">Danger Zone</span>
+        </div>
+        <div class="panel-body">
+          <p style="font-size:.875rem;color:var(--text-2);margin-bottom:1rem;">
+            Permanently delete this Webex configuration. This cannot be undone.
+          </p>
+          <button
+            type="button"
+            class="btn-danger-outline"
+            id="deleteWebexTrigger"
+          >
+            <i class="bi bi-trash3"></i>Delete Configuration
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Delete confirmation modal ──────────────────────────────── -->
+<div
+  class="br-modal-backdrop"
+  id="deleteWebexModal"
+  aria-hidden="true"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="deleteWebexModalTitle"
+>
+  <div class="br-modal">
+    <div class="br-modal-icon">
+      <i class="bi bi-trash3"></i>
+    </div>
+    <h2 class="br-modal-title" id="deleteWebexModalTitle">Delete integration?</h2>
+    <p class="br-modal-body">
+      <strong>{{ cfg.name }}</strong> will be permanently removed including its stored token.
+      This cannot be undone.
+    </p>
+    <div class="br-modal-actions">
+      <button type="button" class="br-modal-cancel" id="deleteWebexCancel">Cancel</button>
+      <form
+        method="POST"
+        action="{{ url_for('webex.delete_config', config_id=cfg.id) }}"
+        style="flex:1;"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="br-modal-confirm" style="width:100%;">
+          <i class="bi bi-trash3"></i>Delete
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/webex.js') }}"></script>
+<script>
+(function () {
+  /* ── Config view/edit toggle (same pattern as proxy) ── */
+  var view       = document.getElementById('webexView');
+  var editForm   = document.getElementById('webexEditForm');
+  var openBtn    = document.getElementById('editWebexBtn');
+  var discardBtn = document.getElementById('discardWebexBtn');
+
+  function openEdit() {
+    view.style.display     = 'none';
+    editForm.style.display = 'block';
+    openBtn.style.display  = 'none';
+    var first = editForm.querySelector('input:not([type=hidden])');
+    if (first) first.focus();
+  }
+  function closeEdit() {
+    editForm.style.display = 'none';
+    view.style.display     = 'block';
+    openBtn.style.display  = '';
+  }
+  if (editForm && editForm.querySelector('.is-invalid')) openEdit();
+  if (openBtn)    openBtn.addEventListener('click', openEdit);
+  if (discardBtn) discardBtn.addEventListener('click', closeEdit);
+
+  /* ── Delete modal ── */
+  var backdrop   = document.getElementById('deleteWebexModal');
+  var trigger    = document.getElementById('deleteWebexTrigger');
+  var cancelBtn  = document.getElementById('deleteWebexCancel');
+
+  function openDelete() {
+    backdrop.classList.add('open');
+    backdrop.removeAttribute('aria-hidden');
+    if (cancelBtn) cancelBtn.focus();
+  }
+  function closeDelete() {
+    backdrop.classList.remove('open');
+    backdrop.setAttribute('aria-hidden', 'true');
+  }
+  if (trigger)   trigger.addEventListener('click', openDelete);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeDelete);
+  if (backdrop)  backdrop.addEventListener('click', function (e) {
+    if (e.target === backdrop) closeDelete();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && backdrop.classList.contains('open')) closeDelete();
+  });
+
+  /* ── Token reveal + toggle (from webex.js) ── */
+  initWebexTokenReveal();
+  initWebexTokenToggle();
+})();
+</script>
+{% endblock %}

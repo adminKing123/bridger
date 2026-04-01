@@ -1,0 +1,250 @@
+/* ============================================================
+   Bridger — Webex page styles
+   Loaded on: webex/list.html, webex/create.html, webex/detail.html
+   ============================================================ */
+
+/* ── Webex hero (detail page) ───────────────────────────────── */
+.webex-hero {
+  background: linear-gradient(135deg, #005e6b 0%, #00a899 55%, #00c7b1 100%);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem 1.75rem;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.webex-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 80% -20%, rgba(255,255,255,.10), transparent 65%);
+  pointer-events: none;
+}
+.webex-hero-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,.20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+.webex-hero-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.2rem;
+  letter-spacing: -0.02em;
+}
+.webex-hero-sub {
+  font-size: 0.78rem;
+  opacity: 0.78;
+  margin: 0 0 0.55rem;
+}
+
+/* ── Verified / unverified badge ────────────────────────────── */
+.webex-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.webex-badge.verified   { background: rgba(220,252,231,.85); color: #15803d; }
+.webex-badge.unverified { background: rgba(241,245,249,.90); color: #64748b; }
+.webex-hero .webex-badge.verified   { background: rgba(255,255,255,.20); color: #fff; }
+.webex-hero .webex-badge.unverified { background: rgba(255,255,255,.12); color: rgba(255,255,255,.75); }
+.webex-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.webex-badge.verified .webex-badge-dot {
+  animation: proxy-pulse 1.6s ease-in-out infinite;
+}
+
+/* ── Hero action button (re-verify) ─────────────────────────── */
+.btn-webex-verify {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.25rem;
+  border: 1.5px solid rgba(255,255,255,.40);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+  white-space: nowrap;
+}
+.btn-webex-verify:hover {
+  background: rgba(255,255,255,.25);
+  border-color: rgba(255,255,255,.65);
+  transform: translateY(-1px);
+}
+
+/* ── Webex avatar circle ─────────────────────────────────────── */
+.webex-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00a899, #005e6b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: 0.05em;
+}
+
+/* ── Webex profile field row ─────────────────────────────────── */
+.webex-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.webex-field:last-child { border-bottom: none; }
+.webex-field-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+.webex-field-val {
+  font-size: 0.9rem;
+  color: var(--text);
+  font-weight: 500;
+  word-break: break-all;
+}
+.webex-field-val.mono {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+
+/* ── Token display row ───────────────────────────────────────── */
+.webex-token-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.webex-token-text {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.78rem;
+  color: var(--text-2);
+  flex: 1;
+  word-break: break-all;
+}
+.btn-token-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: 0.82rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color var(--transition), color var(--transition);
+}
+.btn-token-toggle:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ── Webex list table ────────────────────────────────────────── */
+.webex-table-wrap { overflow-x: auto; }
+.webex-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.webex-table thead tr { border-bottom: 2px solid var(--border); }
+.webex-table th {
+  padding: 0.75rem 1.25rem;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.webex-table td {
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.webex-table tbody tr:last-child td { border-bottom: none; }
+.webex-table tbody tr:hover td { background: var(--bg); }
+.webex-table-name {
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.webex-table-name:hover { color: #00a899; }
+.webex-table-email {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+.webex-table-actions-col { width: 90px; }
+
+/* ── Table action buttons ────────────────────────────────────── */
+.btn-webex-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: var(--radius);
+  font-size: 0.79rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  transition: background var(--transition), color var(--transition);
+}
+.btn-webex-action.view {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.btn-webex-action.view:hover { background: #e0e7ff; }
+
+/* ── Last-verified timestamp note ───────────────────────────── */
+.webex-verified-ts {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin-top: 0.2rem;
+}
+
+/* ── Create / edit token input wrapper ──────────────────────── */
+.webex-token-input-wrap {
+  position: relative;
+  display: flex;
+}
+.webex-token-input-wrap .form-control {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.83rem;
+  padding-right: 2.6rem;
+}
+.webex-token-input-wrap .btn-token-toggle {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+}

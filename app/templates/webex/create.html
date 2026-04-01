@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Webex Configuration — Bridger{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/webex.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:560px;">
+
+  <!-- ── Back + page title ───────────────────────────────────── -->
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{{ url_for('webex.index') }}" class="btn-back" aria-label="Back">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h1 class="dash-title mb-0">Add Webex Configuration</h1>
+      <p class="dash-subtitle mb-0">Connect a Webex personal account or bot using an access token.</p>
+    </div>
+  </div>
+
+  <!-- ── Create form ─────────────────────────────────────────── -->
+  <form
+    method="POST"
+    action="{{ url_for('webex.create_config') }}"
+    novalidate
+    autocomplete="off"
+    data-loadable
+  >
+    {{ form.hidden_tag() }}
+
+    <div class="panel mb-3">
+      <div class="panel-head">
+        <i class="bi bi-hdd-network" style="color:#00a899;font-size:.9rem;"></i>
+        <span class="panel-head-title">Configuration Details</span>
+      </div>
+      <div class="panel-body">
+
+        <!-- Name -->
+        <div class="mb-3">
+          {{ form.name.label(class="form-label") }}
+          {{ form.name(
+            class="form-control" + (" is-invalid" if form.name.errors else ""),
+            placeholder="e.g. My Bot Token",
+            autofocus=true
+          ) }}
+          {% for e in form.name.errors %}
+            <div class="invalid-feedback">
+              <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+            </div>
+          {% endfor %}
+          <div class="form-text">A label to identify this token in your integrations list.</div>
+        </div>
+
+        <!-- Access token -->
+        <div class="mb-0">
+          {{ form.access_token.label(class="form-label") }}
+          <div class="webex-token-input-wrap" id="webexTokenWrap">
+            {{ form.access_token(
+              class="form-control" + (" is-invalid" if form.access_token.errors else ""),
+              placeholder="Paste your Webex access token here",
+              id="access_token",
+              autocomplete="off"
+            ) }}
+            <button
+              type="button"
+              class="btn-token-toggle"
+              id="webexTokenToggleBtn"
+              aria-label="Show token"
+            >
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+          {% for e in form.access_token.errors %}
+            <div class="invalid-feedback" style="display:block;">
+              <i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}
+            </div>
+          {% endfor %}
+          <div class="form-text">
+            Generate a token at
+            <a href="https://developer.webex.com/docs/getting-started" target="_blank" rel="noopener">
+              developer.webex.com
+            </a>.
+            Bridger will verify it immediately on save.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="d-flex gap-2">
+      <button
+        type="submit"
+        class="btn-save"
+        data-submit-btn
+        data-loading-text="Saving &amp; Verifying…"
+      >
+        <i class="bi bi-floppy me-1"></i>Save Configuration
+      </button>
+      <a href="{{ url_for('webex.index') }}" class="btn-discard">Cancel</a>
+    </div>
+
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/webex.js') }}"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    initWebexTokenToggle();
+  });
+</script>
+{% endblock %}
