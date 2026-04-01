@@ -201,22 +201,22 @@ def api_webex_stats():
 
     events_24h = WebexWebhookLog.query.filter(
         WebexWebhookLog.webhook_id.in_(wh_ids),
-        WebexWebhookLog.created_at >= since_24h,
+        WebexWebhookLog.received_at >= since_24h,
     ).count() if wh_ids else 0
 
     # Events per day — last 7 days
     # func.date() works on SQLite, PostgreSQL, and MySQL
     daily_rows = (
         db.session.query(
-            func.date(WebexWebhookLog.created_at).label("day"),
+            func.date(WebexWebhookLog.received_at).label("day"),
             func.count(WebexWebhookLog.id).label("cnt"),
         )
         .filter(
             WebexWebhookLog.webhook_id.in_(wh_ids),
-            WebexWebhookLog.created_at >= since_7d,
+            WebexWebhookLog.received_at >= since_7d,
         )
-        .group_by(func.date(WebexWebhookLog.created_at))
-        .order_by(func.date(WebexWebhookLog.created_at))
+        .group_by(func.date(WebexWebhookLog.received_at))
+        .order_by(func.date(WebexWebhookLog.received_at))
         .all()
     ) if wh_ids else []
     # str() normalises both date objects (Postgres/MySQL) and strings (SQLite)
