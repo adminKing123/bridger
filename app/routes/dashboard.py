@@ -94,17 +94,19 @@ def api_proxy_stats():
     success_rate = round(ok_24h / requests_24h * 100) if requests_24h else None
 
     # Requests per day — last 7 days (fill gaps with 0)
+    # func.date() works on SQLite, PostgreSQL, and MySQL
     daily_rows = (
         db.session.query(
-            func.strftime("%Y-%m-%d", ProxyLog.created_at).label("day"),
+            func.date(ProxyLog.created_at).label("day"),
             func.count(ProxyLog.id).label("cnt"),
         )
         .filter(ProxyLog.proxy_id.in_(proxy_ids), ProxyLog.created_at >= since_7d)
-        .group_by("day")
-        .order_by("day")
+        .group_by(func.date(ProxyLog.created_at))
+        .order_by(func.date(ProxyLog.created_at))
         .all()
     )
-    day_map = {row.day: row.cnt for row in daily_rows}
+    # str() normalises both date objects (Postgres/MySQL) and strings (SQLite)
+    day_map = {str(row.day): row.cnt for row in daily_rows}
     daily_labels, daily_counts = [], []
     for offset in range(6, -1, -1):
         dt = now - timedelta(days=offset)
@@ -203,20 +205,22 @@ def api_webex_stats():
     ).count() if wh_ids else 0
 
     # Events per day — last 7 days
+    # func.date() works on SQLite, PostgreSQL, and MySQL
     daily_rows = (
         db.session.query(
-            func.strftime("%Y-%m-%d", WebexWebhookLog.created_at).label("day"),
+            func.date(WebexWebhookLog.created_at).label("day"),
             func.count(WebexWebhookLog.id).label("cnt"),
         )
         .filter(
             WebexWebhookLog.webhook_id.in_(wh_ids),
             WebexWebhookLog.created_at >= since_7d,
         )
-        .group_by("day")
-        .order_by("day")
+        .group_by(func.date(WebexWebhookLog.created_at))
+        .order_by(func.date(WebexWebhookLog.created_at))
         .all()
     ) if wh_ids else []
-    day_map = {row.day: row.cnt for row in daily_rows}
+    # str() normalises both date objects (Postgres/MySQL) and strings (SQLite)
+    day_map = {str(row.day): row.cnt for row in daily_rows}
     daily_labels, daily_counts = [], []
     for offset in range(6, -1, -1):
         dt = now - timedelta(days=offset)
