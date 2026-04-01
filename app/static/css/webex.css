@@ -357,6 +357,20 @@
 .webex-sig-badge--fail { background: rgba(254, 226, 226, .8); color: #991b1b; }
 .webex-sig-badge--na   { background: var(--bg); color: var(--text-3); }
 
+/* ── Space / room-type badge ─────────────────────────────────── */
+.webex-space-badge {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--bg);
+  color: var(--text-3);
+}
+.webex-space-badge--direct { background: rgba(219, 234, 254, .8); color: #1e40af; }
+.webex-space-badge--group  { background: rgba(220, 252, 231, .8); color: #15803d; }
+
 /* ── Webhook event log table ─────────────────────────────────── */
 .webex-log-table-wrap { overflow-x: auto; }
 .webex-log-table {

@@ -542,23 +542,40 @@ def receive_event(wh_uuid: str):
     sender_name  = None
     sender_email = data_obj.get("personEmail")
 
-    # Receiver — no extra API call needed:
-    #   • direct rooms: toPersonEmail is in the fetched resource_obj
-    #   • group rooms:  no single receiver; leave blank
+    # Room type — prefer data_obj (always present for messages events);
+    # fall back to the fetched resource object for other resource types.
+    room_type = (
+        data_obj.get("roomType")
+        or (resource_obj.get("roomType") if resource_obj else None)
+    )
+
+    # Receiver — determined from sender + owner identity.
+    #   • direct rooms:  one of {owner, partner} sent the message
+    #   • group rooms:   no single receiver; leave blank
     receiver_name  = None
     receiver_email = None
     owner_email    = wh.config.webex_email
-    room_type      = data_obj.get("roomType")   # "direct" | "group" — in every messages event
 
     if room_type == "direct":
         if sender_email and sender_email.lower() == (owner_email or "").lower():
-            # Owner sent the message — receiver is the other person.
-            # Use partner_email cached once at webhook creation (no per-event API call).
-            receiver_email = wh.partner_email
+            # Owner sent the message — receiver is the partner.
+            # 1) Try the partner_email cached at webhook creation.
+            # 2) Fall back to toPersonEmail in the fetched message object
+            #    (present when the message was created via the API with toPersonEmail).
+            receiver_email = (
+                wh.partner_email
+                or (resource_obj.get("toPersonEmail") if resource_obj else None)
+            )
         else:
-            # Someone else sent to owner — owner is the receiver.
+            # Someone else sent to the owner — owner is the receiver.
             receiver_email = owner_email
             receiver_name  = wh.config.webex_display_name
+
+            # Lazily cache the partner email so future owner→partner messages
+            # can resolve the receiver without an extra API call.
+            if not wh.partner_email and sender_email:
+                wh.partner_email = sender_email
+                # commit happens below with the log entry
     # group / None — receiver_email stays None (multiple recipients)
 
     # ── Persist log entry ──────────────────────────────────────────────────
@@ -586,6 +603,7 @@ def receive_event(wh_uuid: str):
         sender_email   = sender_email,
         receiver_name  = receiver_name,
         receiver_email = receiver_email,
+        room_type      = room_type,
     )
     db.session.add(entry)
     db.session.commit()

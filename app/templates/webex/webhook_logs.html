@@ -86,6 +86,7 @@
                 <th>Resource</th>
                 <th>Event</th>
                 <th>Message</th>
+                <th>Space</th>
                 <th>Sender</th>
                 <th>Receiver</th>
                 <th>Signature</th>
@@ -135,6 +136,19 @@
                       <span class="webex-log-msg-preview" title="{{ entry.message_text }}">{{ entry.message_text[:60] }}{% if entry.message_text|length > 60 %}…{% endif %}</span>
                     {% elif entry.resource_json %}
                       <span class="webex-log-msg-fetched">fetched</span>
+                    {% else %}
+                      <span style="opacity:.4;">—</span>
+                    {% endif %}
+                  </td>
+
+                  <!-- Space type -->
+                  <td>
+                    {% if entry.room_type == 'direct' %}
+                      <span class="webex-space-badge webex-space-badge--direct">direct</span>
+                    {% elif entry.room_type == 'group' %}
+                      <span class="webex-space-badge webex-space-badge--group">group</span>
+                    {% elif entry.room_type %}
+                      <span class="webex-space-badge">{{ entry.room_type }}</span>
                     {% else %}
                       <span style="opacity:.4;">—</span>
                     {% endif %}
@@ -197,7 +211,7 @@
 
                 <!-- Expandable detail row -->
                 <tr class="webex-log-detail-row" id="detail-{{ entry.id }}" style="display:none;">
-                  <td colspan="9" class="webex-log-detail-cell">
+                  <td colspan="10" class="webex-log-detail-cell">
                     <div class="webex-log-detail-grid">
 
                       <!-- Left: envelope fields -->
@@ -214,6 +228,10 @@
                         <div class="webex-log-detail-field">
                           <span class="webex-log-detail-key">Event</span>
                           <span class="webex-log-detail-val">{{ entry.event_type or '—' }}</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Space Type</span>
+                          <span class="webex-log-detail-val">{{ entry.room_type or '—' }}</span>
                         </div>
                         <div class="webex-log-detail-field">
                           <span class="webex-log-detail-key">Sender</span>

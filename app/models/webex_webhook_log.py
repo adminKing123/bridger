@@ -81,6 +81,10 @@ class WebexWebhookLog(db.Model):
     receiver_name    = db.Column(db.String(200),   nullable=True)
     receiver_email   = db.Column(db.String(200),   nullable=True)
 
+    # ── Space / room type ─────────────────────────────────────────────────────
+    # "direct" → 1:1 conversation, "group" → space with 3+ members, None → unknown
+    room_type        = db.Column(db.String(20),    nullable=True)
+
     # ── Signature verification ─────────────────────────────────────────────────
     # True  → HMAC-SHA1 signature matched our stored secret
     # False → signature mismatch (possible tampered request)
