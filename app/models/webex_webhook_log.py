@@ -63,6 +63,24 @@ class WebexWebhookLog(db.Model):
     # The full raw request body as received (serialised JSON)
     raw_payload = db.Column(db.Text, nullable=True)
 
+    # ── Enriched resource data (fetched from Webex API after delivery) ─────────
+    # For messages.created: plain text body of the message
+    message_text     = db.Column(db.Text,          nullable=True)
+    # For messages.created: markdown body of the message (if present)
+    message_markdown = db.Column(db.Text,          nullable=True)
+    # For messages.created: rendered HTML from Webex (if present)
+    message_html     = db.Column(db.Text,          nullable=True)
+    # For messages.created: JSON array of file attachment URLs
+    message_files    = db.Column(db.Text,          nullable=True)
+    # Full enriched resource object fetched from the API (serialised JSON)
+    resource_json    = db.Column(db.Text,          nullable=True)
+
+    # ── Sender / receiver (resolved from Webex People API) ────────────────────
+    sender_name      = db.Column(db.String(200),   nullable=True)
+    sender_email     = db.Column(db.String(200),   nullable=True)
+    receiver_name    = db.Column(db.String(200),   nullable=True)
+    receiver_email   = db.Column(db.String(200),   nullable=True)
+
     # ── Signature verification ─────────────────────────────────────────────────
     # True  → HMAC-SHA1 signature matched our stored secret
     # False → signature mismatch (possible tampered request)

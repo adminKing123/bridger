@@ -232,3 +232,59 @@ def fetch_all_webhooks(access_token: str) -> list[dict]:
         logger.warning("Webex fetch_all_webhooks request error: %s", exc)
 
     return results
+
+
+# Resource endpoint map — Webex API path for each webhook resource type
+_RESOURCE_ENDPOINTS: dict[str, str] = {
+    "messages":    "messages",
+    "rooms":       "rooms",
+    "memberships": "memberships",
+    "meetings":    "meetings",
+    "recordings":  "recordings",
+    "meetingParticipants": "meetingParticipants",
+    "meetingTranscripts":  "meetingTranscripts",
+}
+
+
+def fetch_resource(access_token: str, resource: str, resource_id: str) -> dict | None:
+    """
+    Fetch the full resource object from Webex using the resource type and ID
+    from a webhook event's ``data.id`` field.
+
+    Webex webhook payloads intentionally omit the resource content (e.g. the
+    message text) for security. This function makes the follow-up GET call
+    to retrieve it.
+
+    Args:
+        access_token: Webex bearer token stored on the WebexConfig.
+        resource:     The ``resource`` field from the webhook envelope
+                      (e.g. ``"messages"``, ``"rooms"``).
+        resource_id:  The ``data.id`` value from the webhook envelope.
+
+    Returns:
+        Parsed JSON dict of the resource on success, or None on failure.
+    """
+    endpoint = _RESOURCE_ENDPOINTS.get(resource)
+    if not endpoint:
+        logger.debug("fetch_resource: unknown resource type %r — skipping", resource)
+        return None
+
+    try:
+        response = requests.get(
+            f"{_WEBEX_API_BASE}/{endpoint}/{resource_id}",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            timeout=_REQUEST_TIMEOUT,
+        )
+        if response.status_code == 200:
+            return response.json()
+        logger.warning(
+            "fetch_resource %s/%s failed — status %s",
+            resource, resource_id, response.status_code,
+        )
+        return None
+    except requests.RequestException as exc:
+        logger.warning("fetch_resource request error: %s", exc)
+        return None

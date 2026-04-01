@@ -84,8 +84,9 @@
                 <th>Time</th>
                 <th>Resource</th>
                 <th>Event</th>
-                <th>Actor ID</th>
-                <th>Org ID</th>
+                <th>Message</th>
+                <th>Sender</th>
+                <th>Receiver</th>
                 <th>Signature</th>
                 <th>Client IP</th>
               </tr>
@@ -127,17 +128,42 @@
                     {% endif %}
                   </td>
 
-                  <!-- Actor ID -->
-                  <td class="proxy-log-ip" title="{{ entry.actor_id or '' }}">
-                    {% if entry.actor_id %}
-                      <span class="webex-log-id-cell">{{ entry.actor_id[:28] }}…</span>
+                  <!-- Message preview -->
+                  <td class="webex-log-msg-cell">
+                    {% if entry.message_text %}
+                      <span class="webex-log-msg-preview" title="{{ entry.message_text }}">{{ entry.message_text[:60] }}{% if entry.message_text|length > 60 %}…{% endif %}</span>
+                    {% elif entry.resource_json %}
+                      <span class="webex-log-msg-fetched">fetched</span>
+                    {% else %}
+                      <span style="opacity:.4;">—</span>
+                    {% endif %}
+                  </td>
+
+                  <!-- Sender -->
+                  <td>
+                    {% if entry.sender_name or entry.sender_email %}
+                      <div class="webex-log-person">
+                        {% if entry.sender_name %}
+                          <span class="webex-log-person-name">{{ entry.sender_name }}</span>
+                        {% endif %}
+                        {% if entry.sender_email %}
+                          <span class="webex-log-person-email">{{ entry.sender_email }}</span>
+                        {% endif %}
+                      </div>
                     {% else %}—{% endif %}
                   </td>
 
-                  <!-- Org ID -->
-                  <td class="proxy-log-ip" title="{{ entry.org_id or '' }}">
-                    {% if entry.org_id %}
-                      <span class="webex-log-id-cell">{{ entry.org_id[:28] }}…</span>
+                  <!-- Receiver -->
+                  <td>
+                    {% if entry.receiver_name or entry.receiver_email %}
+                      <div class="webex-log-person">
+                        {% if entry.receiver_name %}
+                          <span class="webex-log-person-name">{{ entry.receiver_name }}</span>
+                        {% endif %}
+                        {% if entry.receiver_email %}
+                          <span class="webex-log-person-email">{{ entry.receiver_email }}</span>
+                        {% endif %}
+                      </div>
                     {% else %}—{% endif %}
                   </td>
 
@@ -162,7 +188,7 @@
 
                 <!-- Expandable detail row -->
                 <tr class="webex-log-detail-row" id="detail-{{ entry.id }}" style="display:none;">
-                  <td colspan="8" class="webex-log-detail-cell">
+                  <td colspan="9" class="webex-log-detail-cell">
                     <div class="webex-log-detail-grid">
 
                       <!-- Left: envelope fields -->
@@ -179,6 +205,22 @@
                         <div class="webex-log-detail-field">
                           <span class="webex-log-detail-key">Event</span>
                           <span class="webex-log-detail-val">{{ entry.event_type or '—' }}</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Sender</span>
+                          <span class="webex-log-detail-val">{{ entry.sender_name or '—' }}</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Sender Email</span>
+                          <span class="webex-log-detail-val">{{ entry.sender_email or '—' }}</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Receiver</span>
+                          <span class="webex-log-detail-val">{{ entry.receiver_name or '—' }}</span>
+                        </div>
+                        <div class="webex-log-detail-field">
+                          <span class="webex-log-detail-key">Receiver Email</span>
+                          <span class="webex-log-detail-val">{{ entry.receiver_email or '—' }}</span>
                         </div>
                         <div class="webex-log-detail-field">
                           <span class="webex-log-detail-key">Actor ID</span>
@@ -206,16 +248,46 @@
                         </div>
                       </div>
 
-                      <!-- Right: data payload + raw payload -->
+                      <!-- Right: message content + payloads -->
                       <div class="webex-log-detail-section">
+
+                        {% if entry.message_text or entry.message_markdown or entry.message_files %}
+                          <div class="webex-log-detail-label">Message Content</div>
+                          {% if entry.message_text %}
+                            <div class="webex-log-detail-field">
+                              <span class="webex-log-detail-key">Text</span>
+                              <span class="webex-log-detail-val">{{ entry.message_text }}</span>
+                            </div>
+                          {% endif %}
+                          {% if entry.message_markdown %}
+                            <div class="webex-log-detail-field">
+                              <span class="webex-log-detail-key">Markdown</span>
+                              <span class="webex-log-detail-val mono">{{ entry.message_markdown }}</span>
+                            </div>
+                          {% endif %}
+                          {% if entry.message_files %}
+                            <div class="webex-log-detail-field" style="margin-bottom:.25rem;">
+                              <span class="webex-log-detail-key">Files</span>
+                            </div>
+                            <pre class="webex-log-payload">{{ entry.message_files }}</pre>
+                          {% endif %}
+                        {% endif %}
+
+                        {% if entry.resource_json %}
+                          <div class="webex-log-detail-label" style="margin-top:.75rem;">Full Resource Object</div>
+                          <pre class="webex-log-payload">{{ entry.resource_json }}</pre>
+                        {% endif %}
+
                         {% if entry.data_json %}
-                          <div class="webex-log-detail-label">Data Object</div>
+                          <div class="webex-log-detail-label" style="margin-top:.75rem;">Event Data Object</div>
                           <pre class="webex-log-payload">{{ entry.data_json }}</pre>
                         {% endif %}
+
                         {% if entry.raw_payload %}
-                          <div class="webex-log-detail-label" style="margin-top:.75rem;">Full Payload</div>
+                          <div class="webex-log-detail-label" style="margin-top:.75rem;">Raw Webhook Payload</div>
                           <pre class="webex-log-payload">{{ entry.raw_payload }}</pre>
                         {% endif %}
+
                       </div>
 
                     </div>

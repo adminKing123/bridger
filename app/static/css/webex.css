@@ -464,6 +464,29 @@
   color: var(--text-2);
 }
 
+/* ── Person cells (sender / receiver) ───────────────────────── */
+.webex-log-person {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.webex-log-person-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.webex-log-person-email {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Monospace utility ───────────────────────────────────────── */
 .font-mono {
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;

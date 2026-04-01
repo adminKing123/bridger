@@ -46,6 +46,7 @@ from app.services.webex_service import (
     create_webhook as create_webhook_api,
     delete_webhook as delete_webhook_api,
     fetch_all_webhooks,
+    fetch_resource,
     fetch_rooms,
     verify_token,
 )
@@ -487,20 +488,50 @@ def receive_event(wh_uuid: str):
         or request.remote_addr
     )
 
+    # ── Fetch full resource from Webex API (e.g. message text) ──────────────
+    resource_type = payload.get("resource")   # "messages", "rooms", …
+    resource_id   = data_obj.get("id")        # data.id from the envelope
+    actor_id      = payload.get("actorId")
+    resource_obj: dict | None = None
+
+    if resource_id and resource_type:
+        resource_obj = fetch_resource(
+            wh.config.access_token, resource_type, resource_id
+        )
+
+    # Sender — email is in the webhook envelope directly, no extra API call needed
+    sender_name  = None
+    sender_email = data_obj.get("personEmail")
+
+    # Receiver — always the Webex account that owns the webhook config
+    receiver_name  = wh.config.webex_display_name
+    receiver_email = wh.config.webex_email
+
     # ── Persist log entry ──────────────────────────────────────────────────
     entry = WebexWebhookLog(
         webhook_id=wh.id,
         client_ip=client_ip,
         webex_event_id=payload.get("id"),
-        resource=payload.get("resource"),
+        resource=resource_type,
         event_type=payload.get("event"),
-        actor_id=payload.get("actorId"),
+        actor_id=actor_id,
         org_id=payload.get("orgId"),
         app_id=payload.get("appId"),
         owned_by=payload.get("ownedBy"),
         data_json=json.dumps(data_obj) if data_obj else None,
         raw_payload=json.dumps(payload) if payload else raw_body.decode("utf-8", errors="replace"),
         signature_valid=sig_valid,
+        # Enriched fields from follow-up API call
+        message_text     = resource_obj.get("text")                          if resource_obj else None,
+        message_markdown = resource_obj.get("markdown")                      if resource_obj else None,
+        message_html     = resource_obj.get("html")                          if resource_obj else None,
+        message_files    = json.dumps(resource_obj.get("files", []))         if resource_obj and resource_obj.get("files") else None,
+        resource_json    = json.dumps(resource_obj)                           if resource_obj else None,
+        # Sender / receiver
+        sender_name    = sender_name,
+        sender_email   = sender_email,
+        receiver_name  = receiver_name,
+        receiver_email = receiver_email,
     )
     db.session.add(entry)
     db.session.commit()
