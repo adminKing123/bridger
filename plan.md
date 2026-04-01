@@ -300,7 +300,15 @@ pip install -r requirements.txt
 # 3. Configure environment
 cp .env.example .env       # then fill in secrets
 
-# 4. Run development server
+# 4. Run database migration (creates all tables)
+python migrate.py
+
+# 5. Create the superadmin account (required before accessing /admin)
+flask --app run.py create-superadmin
+# You will be prompted for username, email, first name, and password.
+# Only one superadmin can exist — re-running the command will error if one already exists.
+
+# 6. Run development server
 python run.py
 ```
 
