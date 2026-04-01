@@ -2,6 +2,10 @@
 
 {% block title %}Logs — {{ proxy.name }} — Bridger{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/proxy.css') }}" />
+{% endblock %}
+
 {% block content %}
 <div class="container py-4" style="max-width:960px;">
 
@@ -190,4 +194,5 @@
     </div>
   </div>
 </div>
+<script src="{{ url_for('static', filename='js/proxy.js') }}"></script>
 {% endblock %}

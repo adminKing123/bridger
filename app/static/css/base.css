@@ -1,0 +1,661 @@
+/* ============================================================
+   Bridger — Base styles (loaded on every page via base.html)
+   Includes: design tokens, body, navbar, shared form controls,
+             panel cards, shared buttons, toasts, logout modal,
+             keyframes, and responsive tweaks.
+   ============================================================ */
+
+/* ── 1. Design tokens ──────────────────────────────────────── */
+:root {
+  --primary:        #4f46e5;
+  --primary-dark:   #4338ca;
+  --primary-light:  #eef2ff;
+  --primary-ring:   rgba(79, 70, 229, 0.2);
+
+  --bg:             #f1f5f9;
+  --surface:        #ffffff;
+  --border:         #e2e8f0;
+
+  --text:           #0f172a;
+  --text-2:         #475569;
+  --text-3:         #94a3b8;
+
+  --success:        #16a34a;
+  --success-bg:     #f0fdf4;
+  --danger:         #dc2626;
+  --danger-bg:      #fef2f2;
+  --warning:        #b45309;
+  --warning-bg:     #fffbeb;
+  --info:           #0369a1;
+  --info-bg:        #f0f9ff;
+
+  --shadow-xs:      0 1px 2px rgba(0,0,0,.05);
+  --shadow-sm:      0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:      0 4px 16px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.04);
+  --shadow-lg:      0 20px 48px rgba(0,0,0,.1),  0 8px 20px rgba(0,0,0,.06);
+  --shadow-card:    0 0 0 1px rgba(0,0,0,.04), var(--shadow-md);
+
+  --radius-sm:      5px;
+  --radius:         9px;
+  --radius-lg:      13px;
+  --radius-xl:      18px;
+
+  --font:           -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --transition:     140ms ease;
+}
+
+/* ── 2. Base reset ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background-color: var(--bg);
+  background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+  background-size: 22px 22px;
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 3. Navbar ──────────────────────────────────────────────── */
+.app-navbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
+  padding: 0 !important;
+  min-height: 58px;
+}
+.app-navbar .navbar-brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--primary) !important;
+  text-decoration: none;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.app-navbar .nav-link {
+  color: var(--text-2) !important;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.45rem 0.7rem !important;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition), background var(--transition);
+}
+.app-navbar .nav-link:hover { color: var(--text) !important; background: var(--bg); }
+.app-navbar .btn-nav-cta {
+  background: var(--primary);
+  color: #fff !important;
+  font-size: 0.8375rem;
+  font-weight: 600;
+  padding: 0.38rem 0.95rem !important;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+}
+.app-navbar .btn-nav-cta:hover { background: var(--primary-dark) !important; }
+.app-navbar .dropdown-menu {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius);
+  min-width: 11rem;
+  padding: .35rem;
+}
+.app-navbar .dropdown-item {
+  font-size: .875rem;
+  font-weight: 500;
+  color: var(--text-2);
+  border-radius: var(--radius-sm);
+  padding: .4rem .7rem;
+}
+.app-navbar .dropdown-item:hover { background: var(--bg); color: var(--text); }
+.app-navbar .dropdown-divider { border-color: var(--border); margin: .3rem 0; }
+
+/* ── 4. Shared form elements (used on auth, profile & proxy forms) ── */
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+  display: block;
+}
+.form-control {
+  font-size: 0.9rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.575rem 0.85rem;
+  color: var(--text);
+  background: var(--surface);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  width: 100%;
+  display: block;
+}
+.form-control::placeholder { color: var(--text-3); font-size: 0.875rem; }
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-ring);
+}
+.form-control.is-invalid {
+  border-color: var(--danger);
+  background-image: none !important;
+  padding-right: 0.85rem !important;
+}
+.form-control.is-invalid:focus { box-shadow: 0 0 0 3px rgba(220,38,38,.15); }
+.form-control.is-valid {
+  border-color: var(--border);
+  background-image: none !important;
+  padding-right: 0.85rem !important;
+}
+.form-control.is-valid:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-ring);
+}
+.pw-group .form-control {
+  background-image: none !important;
+  padding-right: 0.85rem !important;
+}
+.pw-group .form-control.is-valid   { border-color: var(--border); }
+.pw-group:focus-within .form-control.is-valid { border-color: var(--primary); }
+
+.invalid-feedback {
+  font-size: 0.775rem;
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.3rem;
+}
+.form-text {
+  font-size: 0.775rem;
+  color: var(--text-3);
+  margin-top: 0.3rem;
+}
+
+/* Password eye toggle group */
+.pw-group {
+  display: flex;
+  position: relative;
+}
+.pw-group .form-control {
+  border-right: none;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  flex: 1;
+}
+.pw-group .form-control.is-invalid { border-right: none; }
+.pw-toggle {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-left: none;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--text-3);
+  padding: 0 0.7rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: color var(--transition);
+  flex-shrink: 0;
+}
+.pw-toggle:hover { color: var(--text); }
+.pw-group:focus-within .form-control,
+.pw-group:focus-within .pw-toggle { border-color: var(--primary); }
+.pw-group:focus-within .pw-toggle { box-shadow: 3px 0 0 3px var(--primary-ring) inset; }
+.pw-group .form-control.is-invalid ~ .pw-toggle { border-color: var(--danger); }
+
+/* ── 5. Inline spinner (button loading state) ───────────────── */
+.btn-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.55s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── 6. Page header & empty-state (shared across dashboard + proxy pages) ── */
+.dash-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.2rem;
+  letter-spacing: -0.02em;
+}
+.dash-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-2);
+  margin: 0;
+}
+.dash-empty-panel {
+  background: var(--surface);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-xl);
+  padding: 3.5rem 2rem;
+  text-align: center;
+}
+.dash-empty-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-xl);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+}
+.dash-empty-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.5rem;
+}
+.dash-empty-body {
+  font-size: 0.875rem;
+  color: var(--text-2);
+  margin: 0 0 1.5rem;
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── 6. Panel cards (shared by profile + proxy pages) ───────── */
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+.panel-head {
+  padding: 0.9rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.panel-head-title { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+.panel-body { padding: 1.5rem; }
+
+/* ── 7. Shared action buttons (used on profile + proxy pages) ── */
+.btn-save {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 0.55rem 1.375rem;
+  background: var(--primary); color: #fff;
+  font-size: 0.875rem; font-weight: 600;
+  border: none; border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+}
+.btn-save:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-1px); }
+.btn-save:disabled, .btn-save.is-loading { opacity: 0.7; cursor: not-allowed; transform: none; }
+.btn-save .btn-spinner { border-color: rgba(255,255,255,.4); border-top-color: #fff; }
+
+.btn-discard {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.14s, color 0.14s, background 0.14s;
+}
+.btn-discard:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: #fff1f2;
+}
+
+/* Monospace utility */
+.font-mono { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; }
+
+/* ── 8. Toast flash messages (fixed top-right) ──────────────── */
+.toast-stack {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1090;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 340px;
+  width: calc(100vw - 2rem);
+  pointer-events: none;
+}
+.toast-item {
+  pointer-events: all;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 0.8rem 0.9375rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  animation: toastIn 0.28s ease both;
+  border-left: 3px solid transparent;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.toast-item.success { border-color: var(--success); }
+.toast-item.danger  { border-color: var(--danger);  }
+.toast-item.warning { border-color: var(--warning); }
+.toast-item.info    { border-color: var(--info);    }
+.toast-icon { font-size: 0.975rem; flex-shrink: 0; margin-top: 0.1rem; }
+.toast-item.success .toast-icon { color: var(--success); }
+.toast-item.danger  .toast-icon { color: var(--danger);  }
+.toast-item.warning .toast-icon { color: var(--warning); }
+.toast-item.info    .toast-icon { color: var(--info);    }
+.toast-body { flex: 1; color: var(--text); }
+.toast-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-3); padding: 0; font-size: 1rem;
+  line-height: 1; flex-shrink: 0;
+  transition: color var(--transition);
+}
+.toast-close:hover { color: var(--text); }
+.toast-item.dismissing { animation: toastOut 0.22s ease forwards; }
+
+/* ── 9. Logout confirmation modal ───────────────────────────── */
+.br-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.br-modal-backdrop.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.br-modal {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: 2rem 2rem 1.75rem;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  transform: translateY(16px) scale(0.97);
+  transition: transform 0.22s ease, opacity 0.22s ease;
+  opacity: 0;
+}
+.br-modal-backdrop.open .br-modal {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+.br-modal-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-lg);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 1.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.125rem;
+}
+.br-modal-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.018em;
+}
+.br-modal-body {
+  font-size: 0.875rem;
+  color: var(--text-2);
+  margin: 0 0 1.5rem;
+  line-height: 1.55;
+}
+.br-modal-actions {
+  display: flex;
+  gap: 0.625rem;
+}
+.br-modal-cancel {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.br-modal-cancel:hover {
+  background: var(--bg);
+  border-color: var(--text-3);
+}
+.br-modal-confirm {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  background: var(--danger);
+  border: none;
+  border-radius: var(--radius);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: background var(--transition), transform var(--transition);
+}
+.br-modal-confirm:hover {
+  background: #b91c1c;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* ── 10. Keyframes ──────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toastOut {
+  to { opacity: 0; transform: translateX(16px); }
+}
+
+/* ── 11. Responsive ─────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .toast-stack { max-width: calc(100vw - 2rem); }
+}
+
+/* ── 12. Shared panel utilities (used on profile + proxy detail) ─── */
+
+/* Danger zone panel */
+.panel.danger-zone .panel-head { border-left: 3px solid var(--danger); }
+.panel.danger-zone .panel-head-title { color: var(--danger); }
+
+/* Danger outline button */
+.btn-danger-outline {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.475rem 1.1rem;
+  border: 1.5px solid var(--danger); background: transparent;
+  color: var(--danger); font-size: 0.85rem; font-weight: 600;
+  border-radius: var(--radius); cursor: pointer; text-decoration: none;
+  transition: background var(--transition), color var(--transition);
+}
+.btn-danger-outline:hover { background: var(--danger-bg); color: var(--danger); }
+
+/* Edit button (panel header) */
+.btn-edit-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.75rem;
+  background: var(--primary-light);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius);
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+  flex-shrink: 0;
+}
+.btn-edit-profile:hover { background: #e0e7ff; border-color: var(--primary); }
+.btn-edit-profile i { font-size: 0.72rem; }
+
+/* View-mode field rows */
+.profile-view-field {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+  gap: 0.75rem;
+}
+.profile-view-field:last-child { border-bottom: none; }
+.profile-view-label {
+  width: 100px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+}
+.profile-view-val {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* Form action row */
+.profile-form-actions {
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
+}
+.btn-profile-discard {
+  flex: 0 0 auto;
+  padding: 0.55rem 1.125rem;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+  white-space: nowrap;
+}
+.btn-profile-discard:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+.profile-form-actions .btn-save { flex: 1; justify-content: center; }
+
+/* Info tile rows */
+.info-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.95rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.info-tile-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+.info-tile-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.info-tile-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+  margin-bottom: 0.15rem;
+}
+.info-tile-val {
+  font-size: 0.875rem;
+  color: var(--text);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Legacy custom-property overrides (kept for compatibility) ── */
+:root {
+  --br-primary:       #4361ee;
+  --br-primary-dark:  #3a0ca3;
+  --br-radius-card:   0.875rem;
+  --br-shadow:        0 4px 24px rgba(0, 0, 0, 0.08);
+  --br-avatar-size:   88px;
+  --br-auth-icon-size: 72px;
+}
+
+.navbar-brand { letter-spacing: 0.02em; }
+
+.auth-icon {
+  width:  var(--br-auth-icon-size);
+  height: var(--br-auth-icon-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-circle {
+  width:  var(--br-avatar-size);
+  height: var(--br-avatar-size);
+  font-size: 2.2rem;
+  flex-shrink: 0;
+}
+
+.card { border-radius: var(--br-radius-card); }
+.card-header { border-radius: var(--br-radius-card) var(--br-radius-card) 0 0 !important; }
+
+.btn-primary {
+  background-color: var(--br-primary);
+  border-color:     var(--br-primary);
+}
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--br-primary-dark);
+  border-color:     var(--br-primary-dark);
+}
+
+.form-control:focus {
+  border-color: var(--br-primary);
+  box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.2);
+}
+
+.alert { border-left: 4px solid currentColor; }
+
+@media (max-width: 575.98px) {
+  .auth-card .card-body { padding: 1.5rem !important; }
+}

@@ -1,0 +1,316 @@
+/* ============================================================
+   Bridger — Auth styles
+   Loaded on: login, signup, verify_email, forgot_password,
+              reset_password
+   ============================================================ */
+
+/* ── Auth screen wrapper ────────────────────────────────────── */
+.auth-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.auth-topbar {
+  height: 58px;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.auth-brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--primary);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  letter-spacing: -0.02em;
+}
+.auth-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+}
+
+/* ── Auth card ──────────────────────────────────────────────── */
+.auth-card {
+  width: 100%;
+  max-width: 424px;
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: 2.75rem 2.5rem 2.25rem;
+  animation: fadeSlideUp 0.28s ease both;
+}
+.auth-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.125rem;
+  font-size: 1.375rem;
+}
+.auth-icon-wrap.ind { background: var(--primary-light); color: var(--primary); }
+.auth-icon-wrap.grn { background: var(--success-bg);    color: var(--success); }
+.auth-icon-wrap.amb { background: var(--warning-bg);    color: var(--warning); }
+.auth-icon-wrap.red { background: var(--danger-bg);     color: var(--danger);  }
+
+.auth-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  letter-spacing: -0.022em;
+  margin: 0 0 0.3rem;
+}
+.auth-subtitle {
+  font-size: 0.8375rem;
+  color: var(--text-2);
+  text-align: center;
+  margin: 0 0 1.75rem;
+  line-height: 1.5;
+}
+.auth-subtitle strong { color: var(--text); }
+
+/* ── Auth action buttons ────────────────────────────────────── */
+.btn-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  text-decoration: none;
+  position: relative;
+}
+.btn-auth:hover:not(:disabled) { transform: translateY(-1px); }
+.btn-auth:active:not(:disabled) { transform: translateY(0); }
+.btn-auth:disabled, .btn-auth.is-loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.btn-ind { background: var(--primary);  color: #fff; }
+.btn-ind:hover:not(:disabled) { background: var(--primary-dark); box-shadow: 0 4px 14px rgba(79,70,229,.35); }
+.btn-grn { background: var(--success); color: #fff; }
+.btn-grn:hover:not(:disabled) { background: #15803d; box-shadow: 0 4px 14px rgba(22,163,74,.35); }
+.btn-amb { background: #f59e0b; color: #fff; }
+.btn-amb:hover:not(:disabled) { background: #d97706; box-shadow: 0 4px 14px rgba(245,158,11,.35); }
+.btn-red { background: var(--danger); color: #fff; }
+.btn-red:hover:not(:disabled) { background: #b91c1c; box-shadow: 0 4px 14px rgba(220,38,38,.35); }
+
+/* ── Password strength bar ──────────────────────────────────── */
+.pw-strength-wrap { margin-top: 0.45rem; }
+.pw-strength-track {
+  height: 3px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+.pw-strength-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 99px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.pw-strength-label {
+  font-size: 0.74rem;
+  font-weight: 500;
+}
+
+/* ── Confirm-password match hint ────────────────────────────── */
+.pw-match-hint {
+  font-size: 0.76rem;
+  font-weight: 500;
+  margin-top: 0.3rem;
+  display: none;
+  align-items: center;
+  gap: 0.3rem;
+}
+.pw-match-hint.show { display: flex; }
+.pw-match-hint.ok   { color: var(--success); }
+.pw-match-hint.bad  { color: var(--danger);  }
+
+/* ── OTP boxes ──────────────────────────────────────────────── */
+.otp-group {
+  display: flex;
+  gap: 0.45rem;
+  justify-content: center;
+  margin: 0.5rem 0;
+}
+.otp-box {
+  width: 46px;
+  height: 54px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  caret-color: var(--primary);
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+.otp-box:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-ring);
+}
+.otp-box.filled {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.otp-box.has-error { border-color: var(--danger); animation: shake 0.3s ease; }
+.otp-group.all-done .otp-box { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+
+/* Legacy single-input OTP style */
+.otp-input {
+  font-size: 2rem !important;
+  letter-spacing: 0.6em;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  font-variant-numeric: tabular-nums;
+  border-radius: 0.5rem;
+  height: 4rem;
+}
+@media (max-width: 575.98px) {
+  .otp-input { letter-spacing: 0.35em; }
+}
+
+/* ── Auth divider + footer link ─────────────────────────────── */
+.auth-sep {
+  position: relative;
+  margin: 1.4rem 0 1.2rem;
+  font-size: 0.78rem;
+  color: var(--text-3);
+}
+.auth-sep::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  border-top: 1px solid var(--border);
+}
+.auth-sep span { position: relative; background: var(--surface); padding: 0 0.6rem; }
+
+.auth-foot {
+  text-align: center;
+  font-size: 0.84rem;
+  color: var(--text-2);
+}
+.auth-foot a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.auth-foot a:hover { text-decoration: underline; }
+
+/* ── Multi-step registration form ───────────────────────────── */
+.step-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 1.75rem;
+}
+.step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.25s, border-color 0.25s, color 0.25s;
+  position: relative;
+  z-index: 1;
+}
+.step-dot.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+.step-dot.done {
+  border-color: var(--success);
+  background: var(--success);
+  color: #fff;
+}
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.step-connector.done { background: var(--success); }
+
+.step-panel        { display: none; }
+.step-panel.active { display: block; animation: stepFadeIn 0.22s ease both; }
+
+.step-panel-head { margin-bottom: 1.5rem; }
+.step-panel-head .auth-title    { margin-bottom: 0.2rem; }
+.step-panel-head .auth-subtitle { margin-bottom: 0; }
+
+.step-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.btn-step-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 1rem;
+  min-width: 72px;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+  flex-shrink: 0;
+}
+.btn-step-back:hover { background: var(--bg); border-color: var(--text-3); }
+.step-nav .btn-auth { flex: 1; }
+
+/* ── Keyframes (auth-specific) ──────────────────────────────── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes stepFadeIn {
+  from { opacity: 0; transform: translateX(10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60%  { transform: translateX(-4px); }
+  40%,80%  { transform: translateX(4px); }
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .auth-card   { padding: 1.75rem 1.25rem 1.5rem; border-radius: var(--radius-lg); }
+  .otp-box     { width: 40px; height: 48px; font-size: 1.25rem; }
+}

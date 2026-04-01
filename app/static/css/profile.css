@@ -1,0 +1,121 @@
+/* ============================================================
+   Bridger — Profile page styles
+   Loaded on: profile/profile.html
+   ============================================================ */
+
+/* ── Profile hero ───────────────────────────────────────────── */
+.profile-hero {
+  background: linear-gradient(135deg, #312e81 0%, #4338ca 45%, #4f46e5 100%);
+  border-radius: var(--radius-xl);
+  padding: 2rem 2.25rem 2rem;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(67, 56, 202, 0.42);
+}
+.profile-hero::before {
+  content: '';
+  position: absolute;
+  right: -4.5rem; bottom: -4.5rem;
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.055);
+  pointer-events: none;
+}
+.profile-hero::after {
+  content: '';
+  position: absolute;
+  right: 5rem; top: -5rem;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.04);
+  pointer-events: none;
+}
+.profile-avatar {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.25), 0 4px 16px rgba(0,0,0,.22);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.75rem; font-weight: 800; color: var(--primary);
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+.profile-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin-bottom: 0;
+  line-height: 1.2;
+}
+.profile-handle {
+  font-size: 0.82rem;
+  opacity: 0.65;
+  margin: 0.2rem 0 0;
+  font-weight: 400;
+}
+.profile-email {
+  font-size: 0.84rem;
+  opacity: 0.72;
+  margin: 0.35rem 0 0;
+}
+.profile-tag {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.72rem; font-weight: 600;
+  padding: 0.22rem 0.65rem;
+  border-radius: 99px;
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.18);
+  letter-spacing: 0.01em;
+}
+
+/* ── Info rows ──────────────────────────────────────────────── */
+.info-row {
+  display: flex; align-items: center;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem;
+}
+.info-row:last-child { border-bottom: none; }
+.info-label { width: 130px; flex-shrink: 0; color: var(--text-2); font-weight: 500; }
+.info-val { color: var(--text); }
+
+/* ── Danger zone, btn-danger-outline, btn-edit-profile,
+   profile-view-*, profile-form-actions, btn-profile-discard,
+   info-tile-* — moved to base.css (shared with proxy detail) ── */
+
+.btn-cancel {
+  display: inline-flex; align-items: center;
+  padding: 0.55rem 1.375rem;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-2); font-size: 0.875rem; font-weight: 500;
+  border-radius: var(--radius); cursor: pointer; text-decoration: none;
+  transition: border-color var(--transition), color var(--transition);
+}
+.btn-cancel:hover { border-color: var(--text-3); color: var(--text); }
+
+
+
+/* Discard-changes text link */
+.btn-discard-link {
+  font-size: 0.8125rem;
+  color: var(--text-3);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.btn-discard-link:hover { color: var(--danger); text-decoration: underline; }
+
+
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .profile-hero   { padding: 1.5rem 1.25rem; }
+  .profile-avatar { width: 58px; height: 58px; font-size: 1.4rem; }
+}

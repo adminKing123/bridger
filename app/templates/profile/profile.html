@@ -2,6 +2,10 @@
 
 {% block title %}My Profile — Bridger{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}" />
+{% endblock %}
+
 {% block content %}
 <div class="container py-4" style="max-width:840px;">
 
@@ -212,4 +216,8 @@
   </div><!-- /row -->
 
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
 {% endblock %}

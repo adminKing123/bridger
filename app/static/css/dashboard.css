@@ -1,0 +1,427 @@
+/* ============================================================
+   Bridger — Dashboard styles
+   Loaded on: dashboard/dashboard.html
+   ============================================================ */
+
+/* ── Page header ────────────────────────────────────────────── */
+/* dash-title, dash-subtitle live in base.css (shared with proxy pages) */
+.dash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.dash-name { color: var(--primary); }
+
+/* Profile pill in header */
+.btn-dash-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem 0.4rem 0.4rem;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.btn-dash-profile:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-ring);
+  color: var(--text);
+}
+.dash-avatar-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Stat cards */
+.dash-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 1.125rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+.dash-stat-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.dash-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+.dash-stat-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.dash-stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  margin-bottom: 0.15rem;
+}
+.dash-stat-val {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Coming-soon / empty state — lives in base.css (shared with proxy pages) */
+
+/* Service entry cards */
+.dash-service-card {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+  color: var(--text);
+}
+.dash-service-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-ring);
+  transform: translateY(-2px);
+  color: var(--text);
+}
+.dash-service-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+.dash-service-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0 0 0.1rem;
+}
+.dash-service-desc {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  margin: 0;
+}
+
+/* Service section layout */
+.dash-section { }
+.dash-section-head {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  flex-wrap: wrap;
+}
+.dash-section-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+.dash-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 .1rem;
+}
+.dash-section-desc {
+  font-size: .75rem;
+  color: var(--text-2);
+  margin: 0;
+}
+.btn-dash-section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity var(--transition);
+}
+.btn-dash-section-link:hover { opacity: .75; color: var(--primary); }
+
+/* Service empty state */
+.dash-service-empty {
+  background: var(--surface);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--text-3);
+}
+.dash-service-empty p {
+  margin: 0 0 1rem;
+  font-size: .9rem;
+  color: var(--text-2);
+}
+
+/* KPI pill cards */
+.dash-kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 110px;
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+.dash-kpi-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.dash-kpi-val {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.1;
+  letter-spacing: -.03em;
+  margin-bottom: .3rem;
+}
+.dash-kpi-label {
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-3);
+}
+.dash-kpi-sub {
+  font-size: .73rem;
+  color: var(--text-3);
+  margin-top: .25rem;
+  min-height: 1em;
+}
+
+/* Top proxies mini list */
+.dash-top-proxy-row {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .65rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--text);
+  font-size: .85rem;
+  transition: background var(--transition);
+}
+.dash-top-proxy-row:last-child { border-bottom: none; }
+.dash-top-proxy-row:hover { background: var(--bg); color: var(--text); }
+.dash-top-proxy-name {
+  flex: 1;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dash-top-proxy-count {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--text-3);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .1rem .55rem;
+  flex-shrink: 0;
+}
+
+/* Coming-soon service cards */
+.dash-coming-section { opacity: .7; }
+.dash-coming-card {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: .9rem 1.1rem;
+  background: var(--surface);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-xl);
+}
+.dash-coming-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .95rem;
+}
+.dash-coming-name {
+  font-size: .875rem;
+  font-weight: 700;
+  color: var(--text-2);
+  margin: 0 0 .1rem;
+}
+.dash-coming-desc {
+  font-size: .72rem;
+  color: var(--text-3);
+  margin: 0;
+}
+.dash-coming-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: .65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-3);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .15rem .55rem;
+}
+
+/* Service picker dropdown */
+.dash-service-picker { position: relative; }
+.dash-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .38rem .75rem .38rem .45rem;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-xl);
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.dash-picker-btn:hover { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-ring); }
+.dash-picker-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .8rem;
+  flex-shrink: 0;
+}
+.dash-picker-chevron {
+  font-size: .7rem;
+  color: var(--text-3);
+  transition: transform .18s ease;
+  margin-left: .1rem;
+}
+.dash-picker-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 260px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: .3rem;
+  list-style: none;
+  margin: 0;
+  z-index: 200;
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity .16s ease, transform .16s ease;
+}
+.dash-picker-menu.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.dash-picker-item {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .6rem .7rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.dash-picker-item:hover { background: var(--bg); }
+.dash-picker-item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .85rem;
+}
+.dash-picker-item-name {
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 .05rem;
+}
+.dash-picker-item-desc { font-size: .72rem; color: var(--text-3); margin: 0; }
+.dash-picker-check {
+  margin-left: auto;
+  color: var(--primary);
+  font-size: .9rem;
+  opacity: 0;
+  flex-shrink: 0;
+}
+.dash-picker-item.active .dash-picker-check { opacity: 1; }
+
+/* Skeleton loaders */
+@keyframes skel-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.skel {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--border) 25%, var(--bg) 50%, var(--border) 75%);
+  background-size: 800px 100%;
+  animation: skel-shimmer 1.4s infinite linear;
+}
+.skel-kpi-val  { height: 2rem; width: 60%; }
+.skel-label    { height: .65rem; width: 75%; }
+.skel-chart    { height: 190px; width: 100%; border-radius: var(--radius); }
+
+/* Inline "try again" link-button */
+.btn-link-inline {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--primary);
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.btn-link-inline:hover { opacity: .75; }

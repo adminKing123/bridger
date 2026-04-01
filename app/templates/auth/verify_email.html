@@ -2,6 +2,10 @@
 
 {% block title %}Verify Email — Bridger{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}" />
+{% endblock %}
+
 {% block navbar %}
 <header class="auth-topbar">
   <a href="{{ url_for('profile.index') }}" class="auth-brand">
@@ -182,6 +186,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 <script>
   /* Auto-focus OTP input and auto-submit when 6 digits are entered */
   (function () {

@@ -2,6 +2,10 @@
 
 {% block title %}HTTP Proxies — Bridger{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/proxy.css') }}" />
+{% endblock %}
+
 {% block content %}
 <div class="container py-4" style="max-width:960px;">
 
@@ -154,8 +158,8 @@
       </p>
       <a
         href="{{ url_for('proxy_manager.create_proxy') }}"
-        class="btn-auth btn-ind"
-        style="display:inline-flex;text-decoration:none;font-size:.875rem;"
+        class="btn-save"
+        style="text-decoration:none;"
       >
         <i class="bi bi-plus-lg"></i>Create your first proxy
       </a>
@@ -164,4 +168,8 @@
   {% endif %}
 
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/proxy.js') }}"></script>
 {% endblock %}
