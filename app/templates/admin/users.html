@@ -59,8 +59,7 @@
             <th>Email</th>
             <th>Joined</th>
             <th>Status</th>
-            <th>Proxy</th>
-            <th>Webex</th>
+            <th>Services</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -100,22 +99,18 @@
               {% endif %}
             </td>
 
-            <!-- Proxy service -->
+            <!-- Services -->
             <td>
-              {% if perm_map.get(uid, {}).get('proxy', False) %}
-                <span class="adm-svc-chip adm-svc-on"><i class="bi bi-check-lg"></i> On</span>
-              {% else %}
-                <span class="adm-svc-chip adm-svc-off"><i class="bi bi-x-lg"></i> Off</span>
-              {% endif %}
-            </td>
-
-            <!-- Webex service -->
-            <td>
-              {% if perm_map.get(uid, {}).get('webex', False) %}
-                <span class="adm-svc-chip adm-svc-on"><i class="bi bi-check-lg"></i> On</span>
-              {% else %}
-                <span class="adm-svc-chip adm-svc-off"><i class="bi bi-x-lg"></i> Off</span>
-              {% endif %}
+              <div class="adm-svc-chips">
+                {% set svc_labels = {'proxy': 'Proxy', 'webex': 'Webex', 'syncore': 'SynCore'} %}
+                {% for svc, label in svc_labels.items() %}
+                  {% if perm_map.get(uid, {}).get(svc, False) %}
+                    <span class="adm-svc-chip adm-svc-on">{{ label }}</span>
+                  {% else %}
+                    <span class="adm-svc-chip adm-svc-off adm-svc-strike">{{ label }}</span>
+                  {% endif %}
+                {% endfor %}
+              </div>
             </td>
 
             <!-- Actions -->

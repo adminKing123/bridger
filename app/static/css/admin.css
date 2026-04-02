@@ -175,6 +175,9 @@
 
 .adm-svc-on  { background: var(--success-bg); color: var(--success); }
 .adm-svc-off { background: var(--bg);         color: var(--text-3);  border: 1px solid var(--border); }
+.adm-svc-strike { text-decoration: line-through; }
+
+.adm-svc-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
 
 /* ── Action buttons ────────────────────────────────────────── */
 
