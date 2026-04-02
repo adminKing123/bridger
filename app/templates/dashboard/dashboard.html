@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/proxy.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/webex.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/syncore.css') }}" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
 {% endblock %}
 
@@ -89,9 +90,10 @@
   <!-- ══════════════════════════════════════════════════════════
        SERVICE PICKER
        ══════════════════════════════════════════════════════════ -->
-  {% set has_proxy = current_user.is_superadmin or current_user.has_service('proxy') %}
-  {% set has_webex = current_user.is_superadmin or current_user.has_service('webex') %}
-  {% set service_count = (1 if has_proxy else 0) + (1 if has_webex else 0) %}
+  {% set has_proxy   = current_user.is_superadmin or current_user.has_service('proxy') %}
+  {% set has_webex   = current_user.is_superadmin or current_user.has_service('webex') %}
+  {% set has_syncore = current_user.is_superadmin or current_user.has_service('syncore') %}
+  {% set service_count = (1 if has_proxy else 0) + (1 if has_webex else 0) + (1 if has_syncore else 0) %}
 
   {% if service_count == 0 %}
   <!-- No services granted — contact admin notice -->
@@ -117,9 +119,10 @@
               aria-haspopup="listbox" aria-expanded="false">
         <span class="dash-picker-icon" id="servicePickerIcon">
           {% if has_proxy %}<i class="bi bi-arrow-left-right"></i>
-          {% else %}<i class="bi bi-chat-dots"></i>{% endif %}
+          {% elif has_webex %}<i class="bi bi-chat-dots"></i>
+          {% else %}<i class="bi bi-building"></i>{% endif %}
         </span>
-        <span id="servicePickerLabel">{% if has_proxy %}HTTP Proxy{% else %}Webex Integration{% endif %}</span>
+        <span id="servicePickerLabel">{% if has_proxy %}HTTP Proxy{% elif has_webex %}Webex Integration{% else %}SynCore{% endif %}</span>
         <i class="bi bi-chevron-down dash-picker-chevron" id="servicePickerChevron"></i>
       </button>
       <ul class="dash-picker-menu" id="servicePickerMenu" role="listbox">
@@ -152,6 +155,23 @@
           <div>
             <p class="dash-picker-item-name">Webex Integration</p>
             <p class="dash-picker-item-desc">Webhooks &amp; event tracking</p>
+          </div>
+          <i class="bi bi-check2 dash-picker-check"></i>
+        </li>
+        {% endif %}
+        {% if has_syncore %}
+        {# first item active when neither proxy nor webex available #}
+        <li class="dash-picker-item {% if not has_proxy and not has_webex %}active{% endif %}" role="option"
+            data-service="syncore"
+            data-label="SynCore"
+            data-icon="bi-building"
+            data-icon-bg="#ede9fe" data-icon-color="#7c3aed">
+          <span class="dash-picker-item-icon" style="background:#ede9fe;color:#7c3aed;">
+            <i class="bi bi-building"></i>
+          </span>
+          <div>
+            <p class="dash-picker-item-name">SynCore</p>
+            <p class="dash-picker-item-desc">Organisational HRMS Data Panel</p>
           </div>
           <i class="bi bi-check2 dash-picker-check"></i>
         </li>
@@ -278,15 +298,55 @@
   <!-- ── END Webex Integration panel ──────────────────────── -->
   {% endif %}
 
+  <!-- ── SynCore panel ─────────────────────────────────────── -->
+  {% if has_syncore %}
+  {# visible only when syncore is the first/only available service #}
+  <div id="panel-syncore" class="dash-panel-section"{% if has_proxy or has_webex %} style="display:none;"{% endif %}>
+
+    <div class="dash-section-head mb-3">
+      <div class="dash-section-icon" style="background:#ede9fe;color:#7c3aed;">
+        <i class="bi bi-building"></i>
+      </div>
+      <div>
+        <p class="dash-section-title" style="margin:0;">SynCore</p>
+        <p class="dash-section-desc">Organisational Synapses · HRMS Data Panel</p>
+      </div>
+      <a href="{{ url_for('syncore.index') }}" class="btn-dash-section-link ms-auto">
+        Open <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    <div id="syncore-loading">
+      <div class="row g-3 mb-3">
+        {% for _ in range(4) %}
+        <div class="col-6 col-md-3">
+          <div class="dash-kpi-card">
+            <div class="skel skel-kpi-val"></div>
+            <div class="skel skel-label mt-2"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div id="syncore-content" style="display:none;">
+      <!-- filled by JS once API responds with coming_soon -->
+    </div>
+
+  </div>
+  <!-- ── END SynCore panel ──────────────────────────────────── -->
+  {% endif %}
+
   {% endif %}{# end service_count > 0 #}
 
 </div><!-- /.container -->
 {% endblock %}
 
 {% block extra_scripts %}
-{% set has_proxy = current_user.is_superadmin or current_user.has_service('proxy') %}
-{% set has_webex = current_user.is_superadmin or current_user.has_service('webex') %}
-{% set service_count = (1 if has_proxy else 0) + (1 if has_webex else 0) %}
+{% set has_proxy   = current_user.is_superadmin or current_user.has_service('proxy') %}
+{% set has_webex   = current_user.is_superadmin or current_user.has_service('webex') %}
+{% set has_syncore = current_user.is_superadmin or current_user.has_service('syncore') %}
+{% set service_count = (1 if has_proxy else 0) + (1 if has_webex else 0) + (1 if has_syncore else 0) %}
 {% if service_count > 0 %}
 <script>
 (function () {
@@ -309,9 +369,10 @@
   };
 
   /* ── Service picker ───────────────────────────────────────── */
-  var HAS_PROXY = {{ 'true' if has_proxy else 'false' }};
-  var HAS_WEBEX = {{ 'true' if has_webex else 'false' }};
-  var currentService = HAS_PROXY ? 'proxy' : 'webex';
+  var HAS_PROXY   = {{ 'true' if has_proxy   else 'false' }};
+  var HAS_WEBEX   = {{ 'true' if has_webex   else 'false' }};
+  var HAS_SYNCORE = {{ 'true' if has_syncore else 'false' }};
+  var currentService = HAS_PROXY ? 'proxy' : (HAS_WEBEX ? 'webex' : 'syncore');
   var URL_PROXY_LIST   = '{{ url_for("proxy_manager.list_proxies") }}';
   var URL_PROXY_CREATE = '{{ url_for("proxy_manager.create_proxy") }}';
   var pickerBtn    = document.getElementById('servicePickerBtn');
@@ -374,8 +435,9 @@
     });
 
     /* Lazy-load data if this service needs it */
-    if (key === 'proxy') loadProxyStats();
-    if (key === 'webex') loadWebexStats();
+    if (key === 'proxy')   loadProxyStats();
+    if (key === 'webex')   loadWebexStats();
+    if (key === 'syncore') loadSyncoreStats();
   }
 
   /* ── HTTP Proxy stats loader ──────────────────────────────── */
@@ -753,12 +815,48 @@
     }).join('');
   }
 
+  /* ── SynCore stats loader ─────────────────────────────────── */
+  var syncoreLoaded = false;
+
+  function loadSyncoreStats() {
+    if (syncoreLoaded) return;
+    document.getElementById('syncore-loading').style.display = '';
+    document.getElementById('syncore-content').style.display = 'none';
+
+    fetch('{{ url_for("dashboard.api_syncore_stats") }}', { credentials: 'same-origin' })
+      .then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      })
+      .then(function (d) {
+        syncoreLoaded = true;
+        document.getElementById('syncore-loading').style.display = 'none';
+        var el = document.getElementById('syncore-content');
+        el.innerHTML =
+          '<div class="dash-service-empty">'
+          + '<i class="bi bi-building-gear" style="color:var(--primary);font-size:2.2rem;"></i>'
+          + '<p style="font-weight:600;font-size:1rem;margin:.75rem 0 .4rem;">Coming Soon</p>'
+          + '<p style="font-size:.83rem;color:' + text2 + ';max-width:400px;">SynCore features are actively in development. '
+          + 'Check back soon for your HRMS data panel.</p>'
+          + '<a href="{{ url_for("syncore.index") }}" class="btn-save text-decoration-none"'
+          + ' style="font-size:.83rem;padding:.45rem 1.2rem;margin-top:.5rem;">'
+          + '<i class="bi bi-building me-1"></i>Learn More</a>'
+          + '</div>';
+        el.style.display = '';
+      })
+      .catch(function () {
+        document.getElementById('syncore-loading').style.display = 'none';
+      });
+  }
+
   /* ── Init ─────────────────────────────────────────────────── */
   document.addEventListener('DOMContentLoaded', function () {
     if (HAS_PROXY) {
-      loadProxyStats(); /* auto-load the default service */
+      loadProxyStats();
     } else if (HAS_WEBEX) {
       loadWebexStats();
+    } else if (HAS_SYNCORE) {
+      loadSyncoreStats();
     }
   });
 

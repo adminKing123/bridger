@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}SynCore — Bridger{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/syncore.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:960px;">
+
+  <!-- ── Hero bar ──────────────────────────────────────────────── -->
+  <div class="syncore-hero mb-4">
+    <div class="syncore-hero-icon">
+      <i class="bi bi-building"></i>
+    </div>
+    <div class="syncore-hero-body">
+      <h1 class="syncore-hero-name">SynCore</h1>
+      <p class="syncore-hero-sub">Organisational Synapses · HRMS Data Panel</p>
+    </div>
+    <div class="syncore-hero-badge">
+      <span class="syncore-badge coming-soon">
+        <i class="bi bi-hourglass-split me-1"></i>Coming Soon
+      </span>
+    </div>
+  </div>
+
+  <!-- ── Coming-soon panel ─────────────────────────────────────── -->
+  <div class="panel syncore-coming-panel">
+    <div class="syncore-cs-inner">
+      <div class="syncore-cs-icon-wrap">
+        <i class="bi bi-building-gear"></i>
+      </div>
+      <h2 class="syncore-cs-title">We're building something great</h2>
+      <p class="syncore-cs-body">
+        SynCore is Bridger's upcoming HRMS Data Panel — giving your organisation a
+        unified view of people, departments, and workforce analytics. Features are
+        actively in development and will be rolled out soon.
+      </p>
+
+      <!-- Feature preview cards -->
+      <div class="syncore-preview-grid">
+        <div class="syncore-preview-card">
+          <div class="syncore-preview-icon" style="background:#ede9fe;color:#7c3aed;">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div class="syncore-preview-label">Employee Directory</div>
+          <div class="syncore-preview-desc">Centralised employee profiles and org structure</div>
+        </div>
+        <div class="syncore-preview-card">
+          <div class="syncore-preview-icon" style="background:#dcfce7;color:#16a34a;">
+            <i class="bi bi-calendar2-week-fill"></i>
+          </div>
+          <div class="syncore-preview-label">Attendance & Leave</div>
+          <div class="syncore-preview-desc">Track attendance, leaves, and time-off requests</div>
+        </div>
+        <div class="syncore-preview-card">
+          <div class="syncore-preview-icon" style="background:#e0f2fe;color:#0369a1;">
+            <i class="bi bi-bar-chart-line-fill"></i>
+          </div>
+          <div class="syncore-preview-label">Workforce Analytics</div>
+          <div class="syncore-preview-desc">Headcount trends, department breakdowns and insights</div>
+        </div>
+        <div class="syncore-preview-card">
+          <div class="syncore-preview-icon" style="background:#fef9c3;color:#a16207;">
+            <i class="bi bi-shield-lock-fill"></i>
+          </div>
+          <div class="syncore-preview-label">Role Management</div>
+          <div class="syncore-preview-desc">Manage roles, access levels and team hierarchies</div>
+        </div>
+      </div>
+
+      <a href="{{ url_for('dashboard.dashboard') }}" class="btn-discard text-decoration-none mt-2">
+        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/syncore.js') }}"></script>
+{% endblock %}

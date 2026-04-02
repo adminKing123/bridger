@@ -13,8 +13,10 @@ Adding a new service = add one more `_<service>_stats()` helper and one
 corresponding `/api/stats/<service>` route. The HTML/JS pattern stays the same.
 
 Routes:
-    GET  /dashboard                  — Main shell (fast, no DB queries)
-    GET  /dashboard/api/stats/proxy  — HTTP Proxy stats JSON
+    GET  /dashboard                    — Main shell (fast, no DB queries)
+    GET  /dashboard/api/stats/proxy    — HTTP Proxy stats JSON
+    GET  /dashboard/api/stats/webex    — Webex stats JSON
+    GET  /dashboard/api/stats/syncore  — SynCore stub JSON (coming soon)
 """
 
 import logging
@@ -271,3 +273,13 @@ def api_webex_stats():
             for r in top_rows
         ],
     })
+
+
+@dashboard_bp.route("/dashboard/api/stats/syncore")
+@login_required
+def api_syncore_stats():
+    """
+    SynCore statistics stub.
+    Returns a coming_soon status — real data will be wired once SynCore ships.
+    """
+    return jsonify({"status": "coming_soon"})

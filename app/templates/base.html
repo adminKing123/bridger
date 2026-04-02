@@ -51,9 +51,10 @@
           </li>
 
           <!-- Services dropdown (only shown when at least one service is accessible) -->
-          {% set has_proxy = current_user.is_superadmin or current_user.has_service('proxy') %}
-          {% set has_webex = current_user.is_superadmin or current_user.has_service('webex') %}
-          {% if has_proxy or has_webex %}
+          {% set has_proxy   = current_user.is_superadmin or current_user.has_service('proxy') %}
+          {% set has_webex   = current_user.is_superadmin or current_user.has_service('webex') %}
+          {% set has_syncore = current_user.is_superadmin or current_user.has_service('syncore') %}
+          {% if has_proxy or has_webex or has_syncore %}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button"
                data-bs-toggle="dropdown" aria-expanded="false">
@@ -71,6 +72,13 @@
               <li>
                 <a class="dropdown-item" href="{{ url_for('webex.index') }}">
                   <i class="bi bi-hdd-network me-2"></i>Webex
+                </a>
+              </li>
+              {% endif %}
+              {% if has_syncore %}
+              <li>
+                <a class="dropdown-item" href="{{ url_for('syncore.index') }}">
+                  <i class="bi bi-building me-2"></i>SynCore
                 </a>
               </li>
               {% endif %}

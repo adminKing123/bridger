@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from app import db
 
 # Canonical list of service identifiers in the platform
-SERVICES = ("proxy", "webex")
+SERVICES = ("proxy", "webex", "syncore")
 
 
 class UserServicePermission(db.Model):

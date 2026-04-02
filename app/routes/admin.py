@@ -80,6 +80,16 @@ def dashboard():
         )
         .count()
     )
+    syncore_users = (
+        db.session.query(UserServicePermission)
+        .join(User, User.id == UserServicePermission.user_id)
+        .filter(
+            UserServicePermission.service == "syncore",
+            UserServicePermission.is_enabled == True,
+            User.is_superadmin == False,
+        )
+        .count()
+    )
 
     recent_users = (
         User.query
@@ -96,6 +106,7 @@ def dashboard():
         verified_users=verified_users,
         proxy_users=proxy_users,
         webex_users=webex_users,
+        syncore_users=syncore_users,
         recent_users=recent_users,
         services=SERVICES,
     )

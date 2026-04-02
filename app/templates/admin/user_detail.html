@@ -161,6 +161,29 @@
               </div>
             </label>
 
+            <!-- SynCore service -->
+            <label class="adm-svc-row">
+              <div class="adm-svc-info">
+                <div class="adm-svc-icon" style="background:var(--primary-light);color:var(--primary)">
+                  <i class="bi bi-building"></i>
+                </div>
+                <div>
+                  <div class="adm-svc-name">SynCore</div>
+                  <div class="adm-svc-desc">Organisational Synapses HRMS Data Panel</div>
+                </div>
+              </div>
+              <div class="adm-toggle-wrap">
+                <input
+                  type="checkbox"
+                  name="syncore"
+                  class="adm-toggle-input"
+                  id="svc-syncore"
+                  {% if perms.get('syncore') and perms['syncore'].is_enabled %}checked{% endif %}
+                />
+                <label class="adm-toggle" for="svc-syncore"></label>
+              </div>
+            </label>
+
           </div><!-- /.adm-svc-list -->
 
           <div class="m-4 d-flex gap-2">
