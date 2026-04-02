@@ -185,18 +185,6 @@
 (function () {
   'use strict';
 
-  /* ── Messages link loading state (always active) ─────────── */
-  const tbody = document.getElementById('spaces-tbody');
-  if (tbody) {
-    tbody.addEventListener('click', function (e) {
-      const link = e.target.closest('a.btn-webex-action');
-      if (!link) return;
-      link.style.pointerEvents = 'none';
-      link.style.opacity = '0.7';
-      link.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>Loading\u2026';
-    });
-  }
-
   const bar = document.getElementById('spaces-pagination');
   if (!bar) return;
 
@@ -281,15 +269,6 @@
 
   prevBtn.addEventListener('click', () => { if (page > 1)           loadPage(page - 1); });
   nextBtn.addEventListener('click', () => { if (page < totalPages)  loadPage(page + 1); });
-
-  /* ── Messages link loading state for AJAX-replaced rows ──── */
-  tbody.addEventListener('click', function (e) {
-    const link = e.target.closest('a.btn-webex-action');
-    if (!link) return;
-    link.style.pointerEvents = 'none';
-    link.style.opacity = '0.7';
-    link.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>Loading\u2026';
-  });
 })();
 </script>
 
