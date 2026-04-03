@@ -261,6 +261,9 @@
     <button type="button" class="btn-save px-4 py-2" onclick="viewTodayLogs()">
       <i class="bi bi-clock-history me-1"></i>View Today's Logs
     </button>
+    <a href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id) }}" class="btn-save px-4 py-2 text-decoration-none">
+      <i class="bi bi-folder me-1"></i>View Projects
+    </a>
     <a href="{{ url_for('admin.syncore_employees') }}" class="btn-discard px-4 py-2 text-decoration-none">
       <i class="bi bi-arrow-left me-1"></i>Back to Employees
     </a>

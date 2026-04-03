@@ -12,9 +12,9 @@ Configuration:
   Set SYN_CORE_CONFIG environment variable with JSON containing:
     {
       "HR_CODE": "base64_encoded_hr_code",
-      "API_BASE": "https://hrsapi.thesynapses.com",
-      "DEFAULT_USER_ID": "560",
-      "DEFAULT_SIGNED_ARRAY": "base64_encoded_signed_array",
+      "API_BASE": "",
+      "DEFAULT_USER_ID": "",
+      "DEFAULT_SIGNED_ARRAY": "",
       "DATE_FMT": "%m/%d/%Y"
     }
 """
@@ -42,12 +42,12 @@ def _load_config() -> Dict:
     
     # Defaults
     return {
-        "HR_CODE": config.get("HR_CODE", "aWxlYWRzeW5hcHNlMjAzfFNMQ09OU1RBTlNUTg=="),
-        "API_BASE": config.get("API_BASE", "https://hrsapi.thesynapses.com"),
-        "DEFAULT_USER_ID": config.get("DEFAULT_USER_ID", "560"),
+        "HR_CODE": config.get("HR_CODE", ""),
+        "API_BASE": config.get("API_BASE", ""),
+        "DEFAULT_USER_ID": config.get("DEFAULT_USER_ID", ""),
         "DEFAULT_SIGNED_ARRAY": config.get(
             "DEFAULT_SIGNED_ARRAY",
-            "NTYwfDEzOTR8aC5uYXJ3YXJpeWFAdGhlc3luYXBzZXMuY29tfEVtcGxveWVl"
+            ""
         ),
         "DATE_FMT": config.get("DATE_FMT", "%m/%d/%Y"),
     }
@@ -344,5 +344,47 @@ def get_today_log_status(user_id: Optional[str] = None, signed_array: Optional[s
     
     response_data = data.get("response_data", [])
     logger.info("Retrieved %d log entries", len(response_data))
+    
+    return response_data
+
+
+def get_emp_projects(user_id: Optional[str] = None, signed_array: Optional[str] = None) -> List[Dict]:
+    """
+    Fetch all projects assigned to a specific employee.
+    
+    Args:
+        user_id: Employee user ID
+        signed_array: Employee signed array for authentication
+    
+    Returns:
+        List of project dictionaries with keys:
+            - project_id: str
+            - project_name: str
+            - project_type_id: str
+            - project_status: str (Active/In-Active)
+    """
+    endpoint = "/project/get_emp_projects"
+    payload = build_user_payload(user_id, signed_array)
+    
+    logger.info("Fetching projects for user_id=%s", user_id)
+    data = post_request(endpoint, payload, log=False)
+    
+    # Ensure data is a dictionary
+    if not isinstance(data, dict):
+        logger.error("Invalid response format: expected dict, got %s", type(data))
+        return []
+    
+    if "error" in data:
+        logger.error("Failed to fetch projects: %s", data["error"])
+        return []
+    
+    response_data = data.get("response_data", [])
+    
+    # Ensure response_data is a list
+    if not isinstance(response_data, list):
+        logger.error("Invalid response_data format: expected list, got %s", type(response_data))
+        return []
+    
+    logger.info("Retrieved %d projects", len(response_data))
     
     return response_data

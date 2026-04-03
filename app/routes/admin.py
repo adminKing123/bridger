@@ -366,6 +366,83 @@ def syncore_employee_logs(employee_id: int):
         }), 500
 
 
+@admin_bp.route("/syncore/employees/<int:employee_id>/projects")
+@superadmin_required
+def syncore_employee_projects(employee_id: int):
+    """View all projects assigned to a specific employee with pagination."""
+    employee = SynCoreEmployee.query.get_or_404(employee_id)
+    
+    try:
+        from app.services.util_syncore import get_emp_projects
+        
+        # Fetch all projects from API
+        all_projects = get_emp_projects(
+            user_id=employee.user_id,
+            signed_array=employee.signed_array
+        )
+        
+        # Pagination parameters
+        page = request.args.get("page", 1, type=int)
+        per_page = 20
+        
+        # Filter by status if provided
+        status_filter = request.args.get("status", "all")
+        
+        # Apply status filter
+        if status_filter == "active":
+            filtered_projects = [p for p in all_projects if p.get("project_status") == "Active"]
+        elif status_filter == "inactive":
+            filtered_projects = [p for p in all_projects if p.get("project_status") == "In-Active"]
+        else:
+            filtered_projects = all_projects
+        
+        # Calculate pagination
+        total = len(filtered_projects)
+        total_pages = (total + per_page - 1) // per_page if total > 0 else 1
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        
+        # Get projects for current page
+        projects = filtered_projects[start_idx:end_idx]
+        
+        # Build pagination object
+        pagination = {
+            "items": projects,
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "pages": total_pages,
+            "has_prev": page > 1,
+            "has_next": page < total_pages,
+            "prev_num": page - 1 if page > 1 else None,
+            "next_num": page + 1 if page < total_pages else None,
+        }
+        
+        # Count active and inactive projects
+        active_count = sum(1 for p in all_projects if p.get("project_status") == "Active")
+        inactive_count = len(all_projects) - active_count
+        
+        return render_template(
+            "admin/syncore_employee_projects.html",
+            employee=employee,
+            pagination=pagination,
+            status_filter=status_filter,
+            active_count=active_count,
+            inactive_count=inactive_count,
+            total_count=len(all_projects)
+        )
+        
+    except Exception as e:
+        logger.error(
+            "Error fetching projects for employee %s: %s",
+            employee_id,
+            str(e),
+            exc_info=True
+        )
+        flash(f"Failed to fetch projects: {str(e)}", "danger")
+        return redirect(url_for("admin.syncore_employee_detail", employee_id=employee_id))
+
+
 @admin_bp.route("/syncore/sync", methods=["POST"])
 @superadmin_required
 def syncore_sync():

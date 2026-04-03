@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% block title %}{{ employee.name }} - Projects — Admin{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+  <style>
+    .project-stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-xs);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .project-stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+    }
+    .project-stat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+    .project-stat-label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .project-stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+      margin: 0;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- ── Breadcrumb navigation ─────────────────────────── -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('admin.syncore_management') }}">SynCore</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('admin.syncore_employees') }}">Employees</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('admin.syncore_employee_detail', employee_id=employee.id) }}">{{ employee.name }}</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Projects</li>
+    </ol>
+  </nav>
+
+  <!-- ── Page header ───────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="dash-title mb-0">
+        <i class="bi bi-folder me-2"></i>{{ employee.name }}'s Projects
+      </h1>
+      <p class="dash-subtitle mb-0">
+        {{ pagination['total'] }} project{{ 's' if pagination['total'] != 1 else '' }}
+        {% if status_filter != 'all' %} • {{ status_filter|title }}{% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('admin.syncore_employee_detail', employee_id=employee.id) }}" class="btn-discard px-3 py-2 text-decoration-none">
+      <i class="bi bi-arrow-left me-1"></i>Back to Details
+    </a>
+  </div>
+
+  <!-- ── Stats row ─────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="project-stat-card">
+        <div class="d-flex align-items-center gap-3">
+          <div class="project-stat-icon text-white" style="background: var(--primary);">
+            <i class="bi bi-folder-fill"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="project-stat-label">Total Projects</div>
+            <div class="project-stat-value text-primary">{{ total_count }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="project-stat-card">
+        <div class="d-flex align-items-center gap-3">
+          <div class="project-stat-icon text-white" style="background: var(--success);">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="project-stat-label">Active Projects</div>
+            <div class="project-stat-value text-success">{{ active_count }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="project-stat-card">
+        <div class="d-flex align-items-center gap-3">
+          <div class="project-stat-icon text-white" style="background: var(--text-3);">
+            <i class="bi bi-x-circle-fill"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="project-stat-label">Inactive Projects</div>
+            <div class="project-stat-value" style="color: var(--text-2);">{{ inactive_count }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Status filter ─────────────────────────────────── -->
+  <div class="panel mb-3">
+    <div class="adm-status-tabs" style="padding: 1rem 1.25rem;">
+      {% for val, label in [('all','All Projects'), ('active','Active'), ('inactive','Inactive')] %}
+        <a
+          href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id, status=val) }}"
+          class="adm-status-tab {% if status_filter == val %}active{% endif %}"
+        >{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ── Projects table ────────────────────────────────── -->
+  <div class="panel">
+    {% if pagination['items'] %}
+    <div class="table-responsive">
+      <table class="adm-table">
+        <thead>
+          <tr>
+            <th>Project ID</th>
+            <th>Project Name</th>
+            <th>Type ID</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for project in pagination['items'] %}
+          <tr>
+            <!-- Project ID -->
+            <td>
+              <span class="adm-muted" style="font-family: monospace; font-size: 0.85em;">
+                {{ project.project_id }}
+              </span>
+            </td>
+
+            <!-- Project Name -->
+            <td>
+              <strong>{{ project.project_name }}</strong>
+            </td>
+
+            <!-- Type ID -->
+            <td class="adm-muted">
+              <span class="badge bg-secondary">Type {{ project.project_type_id }}</span>
+            </td>
+
+            <!-- Status -->
+            <td>
+              {% if project.project_status == 'Active' %}
+                <span class="adm-badge adm-badge-active">Active</span>
+              {% else %}
+                <span class="adm-badge adm-badge-blocked">Inactive</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Pagination ──────────────────────────────────── -->
+    {% if pagination['pages'] > 1 %}
+    <div class="adm-pagination">
+      <div class="adm-page-info">
+        Page {{ pagination['page'] }} of {{ pagination['pages'] }}
+      </div>
+      <div class="adm-page-nav">
+        {% if pagination['has_prev'] %}
+          <a href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id, status=status_filter, page=pagination['prev_num']) }}" 
+             class="adm-page-btn">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+        {% else %}
+          <span class="adm-page-btn adm-page-btn-disabled">
+            <i class="bi bi-chevron-left"></i>
+          </span>
+        {% endif %}
+
+        {% if pagination['has_next'] %}
+          <a href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id, status=status_filter, page=pagination['next_num']) }}" 
+             class="adm-page-btn">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        {% else %}
+          <span class="adm-page-btn adm-page-btn-disabled">
+            <i class="bi bi-chevron-right"></i>
+          </span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="adm-empty">
+      <i class="bi bi-folder-x adm-empty-icon"></i>
+      <div class="adm-empty-title">No projects found</div>
+      <p class="adm-empty-text">
+        {% if status_filter != 'all' %}
+          No {{ status_filter }} projects found for this employee.
+        {% else %}
+          This employee has no projects assigned.
+        {% endif %}
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+</div><!-- /.container -->
+{% endblock %}
