@@ -388,3 +388,45 @@ def get_emp_projects(user_id: Optional[str] = None, signed_array: Optional[str] 
     logger.info("Retrieved %d projects", len(response_data))
     
     return response_data
+
+
+def get_user_mail_setting(user_id: Optional[str] = None, signed_array: Optional[str] = None) -> Dict:
+    """
+    Fetch email notification settings for a specific employee.
+    
+    Args:
+        user_id: Employee user ID
+        signed_array: Employee signed array for authentication
+    
+    Returns:
+        Dictionary with email setting keys (various settings with 'true'/'false' values)
+        Example keys: daily_worklog, daily_attendlog, apply_leave_mail, 
+                     approve_leave_mail, passed_leave_action_mail, etc.
+    """
+    endpoint = "/setting/get_user_mail_setting"
+    payload = build_user_payload(user_id, signed_array)
+    
+    logger.info("Fetching email settings for user_id=%s", user_id)
+    data = post_request(endpoint, payload, log=False)
+    
+    # Ensure data is a dictionary
+    if not isinstance(data, dict):
+        logger.error("Invalid response format: expected dict, got %s", type(data))
+        return {}
+    
+    if "error" in data:
+        logger.error("Failed to fetch email settings: %s", data["error"])
+        return {}
+    
+    response_data = data.get("response_data", {})
+    
+    # Ensure response_data is a dictionary (could be a single dict or empty)
+    if isinstance(response_data, list) and len(response_data) > 0:
+        response_data = response_data[0]
+    elif not isinstance(response_data, dict):
+        logger.error("Invalid response_data format: expected dict, got %s", type(response_data))
+        return {}
+    
+    logger.info("Retrieved email settings with %d keys", len(response_data))
+    
+    return response_data

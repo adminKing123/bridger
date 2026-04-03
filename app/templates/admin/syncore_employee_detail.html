@@ -3,6 +3,239 @@
 
 {% block extra_head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+  <style>
+    .emp-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    @media (max-width: 992px) {
+      .emp-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Sidebar Card */
+    .emp-sidebar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem 1.5rem;
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+    
+    .emp-avatar-large {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-size: 2.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      border: 4px solid var(--primary-light);
+    }
+    
+    .emp-avatar-large.inactive {
+      background: var(--text-3);
+      border-color: var(--bg);
+    }
+    
+    .emp-name-card {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .emp-name-card h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .emp-name-card p {
+      font-size: 0.875rem;
+      color: var(--text-3);
+      margin: 0 0 0.75rem 0;
+    }
+    
+    .emp-quick-info {
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .emp-quick-info-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .emp-quick-info-item:last-child {
+      border-bottom: none;
+    }
+    
+    .emp-quick-info-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .emp-quick-info-text {
+      flex: 1;
+    }
+    
+    .emp-quick-info-label {
+      font-size: 0.75rem;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0;
+    }
+    
+    .emp-quick-info-value {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0;
+    }
+    
+    /* Action Buttons */
+    .emp-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+    }
+    
+    .emp-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    
+    .emp-action-btn:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      transform: translateX(4px);
+    }
+    
+    .emp-action-btn i {
+      font-size: 1.1rem;
+    }
+    
+    /* Main Content */
+    .emp-main-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      max-height: calc(100vh - 140px);
+      overflow-y: auto;
+    }
+    
+    .emp-content-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 1.5rem 0;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--border);
+    }
+    
+    .emp-info-section {
+      margin-bottom: 2.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .emp-info-section:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    
+    .emp-section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 1.25rem 0;
+      padding: 1rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--surface);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 2px solid var(--border);
+    }
+    
+    .emp-section-title i {
+      color: var(--primary);
+      font-size: 1.2rem;
+    }
+    
+    .emp-info-grid-2col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    
+    .emp-info-grid-3col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+    }
+    
+    /* Header Actions Dropdown */
+    .emp-dropdown-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    
+    .emp-dropdown-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -17,100 +250,169 @@
     <span>{{ employee.name }}</span>
   </nav>
 
-  <div class="row g-4">
+  <!-- ── Header with Actions Dropdown ──────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="dash-title mb-1">{{ employee.name }}</h1>
+      <p class="dash-subtitle mb-0">{{ employee.designation or 'No designation' }}</p>
+    </div>
+    <div class="emp-header-actions">
+      <div class="dropdown">
+        <button class="emp-dropdown-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-lightning-charge"></i>
+          Quick Actions
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <a class="dropdown-item" href="#" onclick="event.preventDefault(); viewTodayLogs();">
+              <i class="bi bi-clock-history me-2"></i>Today's Attendance
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="#" onclick="event.preventDefault(); viewEmailSettings();">
+              <i class="bi bi-gear me-2"></i>Email Settings
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item" href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id) }}">
+              <i class="bi bi-folder me-2"></i>View Projects
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
 
-    <!-- ── Left column: Employee info ─────────────────────── -->
-    <div class="col-lg-6">
-
-      <!-- Employee Profile panel -->
-      <div class="panel mb-4">
-        <div class="adm-detail-header">
-          <div class="adm-avatar adm-avatar-lg {% if not employee.is_active %}adm-avatar-blocked{% endif %}">
-            {{ employee.name[0]|upper if employee.name else '?' }}
+  <!-- ── Sidebar + Main Layout ─────────────────────────── -->
+  <div class="emp-layout">
+    
+    <!-- Left Sidebar -->
+    <div class="emp-sidebar">
+      <!-- Avatar -->
+      <div class="emp-avatar-large {% if not employee.is_active %}inactive{% endif %}">
+        {{ employee.name[0]|upper if employee.name else '?' }}
+      </div>
+      
+      <!-- Name & Designation -->
+      <div class="emp-name-card">
+        <h1>{{ employee.name }}</h1>
+        <p>{{ employee.designation or 'No designation' }}</p>
+        {% if employee.is_active %}
+          <span class="adm-badge adm-badge-active"><i class="bi bi-check-circle me-1"></i>Active</span>
+        {% else %}
+          <span class="adm-badge adm-badge-blocked"><i class="bi bi-slash-circle me-1"></i>Inactive</span>
+        {% endif %}
+      </div>
+      
+      <!-- Quick Info -->
+      <div class="emp-quick-info">
+        <div class="emp-quick-info-item">
+          <div class="emp-quick-info-icon">
+            <i class="bi bi-hash"></i>
           </div>
-          <div>
-            <div class="adm-username adm-username-lg">{{ employee.name }}</div>
-            <div class="adm-muted">{{ employee.email or '—' }}</div>
+          <div class="emp-quick-info-text">
+            <p class="emp-quick-info-label">Employee ID</p>
+            <p class="emp-quick-info-value">{{ employee.employee_id }}</p>
           </div>
         </div>
-
-        <hr class="adm-divider" />
-
-        <div class="adm-info-grid">
-          <div class="adm-info-row">
-            <span class="adm-info-label">Employee ID</span>
-            <span class="adm-info-val" style="font-family: monospace;">{{ employee.employee_id }}</span>
+        
+        <div class="emp-quick-info-item">
+          <div class="emp-quick-info-icon">
+            <i class="bi bi-envelope"></i>
           </div>
+          <div class="emp-quick-info-text">
+            <p class="emp-quick-info-label">Email</p>
+            <p class="emp-quick-info-value" style="font-size: 0.8rem;">{{ employee.email or '—' }}</p>
+          </div>
+        </div>
+        
+        <div class="emp-quick-info-item">
+          <div class="emp-quick-info-icon">
+            <i class="bi bi-building"></i>
+          </div>
+          <div class="emp-quick-info-text">
+            <p class="emp-quick-info-label">Firm</p>
+            <p class="emp-quick-info-value">{{ employee.firm_name or '—' }}</p>
+          </div>
+        </div>
+        
+        <div class="emp-quick-info-item">
+          <div class="emp-quick-info-icon">
+            <i class="bi bi-calendar-check"></i>
+          </div>
+          <div class="emp-quick-info-text">
+            <p class="emp-quick-info-label">Joined</p>
+            <p class="emp-quick-info-value">{{ employee.formatted_joining_date }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main Content with All Details -->
+    <div class="emp-main-content">
+      <h2 class="emp-content-title">Employee Details</h2>
+      
+      <!-- Personal Information -->
+      <div class="emp-info-section">
+        <h3 class="emp-section-title">
+          <i class="bi bi-person-badge"></i>
+          Personal Information
+        </h3>
+        <div class="emp-info-grid-2col">
           <div class="adm-info-row">
             <span class="adm-info-label">User ID</span>
             <span class="adm-info-val" style="font-family: monospace;">{{ employee.user_id }}</span>
-          </div>
-          <div class="adm-info-row">
-            <span class="adm-info-label">Designation</span>
-            <span class="adm-info-val">{{ employee.designation or '—' }}</span>
-          </div>
-          <div class="adm-info-row">
-            <span class="adm-info-label">User Type</span>
-            <span class="adm-info-val">{{ employee.user_type or '—' }}</span>
           </div>
           <div class="adm-info-row">
             <span class="adm-info-label">Gender</span>
             <span class="adm-info-val">{{ employee.gender or '—' }}</span>
           </div>
           <div class="adm-info-row">
-            <span class="adm-info-label">Status</span>
-            <span class="adm-info-val">
-              {% if employee.is_active %}
-                <span class="adm-badge adm-badge-active"><i class="bi bi-check-circle me-1"></i>Active</span>
-              {% else %}
-                <span class="adm-badge adm-badge-blocked"><i class="bi bi-slash-circle me-1"></i>Inactive</span>
-              {% endif %}
-            </span>
+            <span class="adm-info-label">User Type</span>
+            <span class="adm-info-val">{{ employee.user_type or '—' }}</span>
           </div>
         </div>
-      </div><!-- /.panel -->
-
+      </div>
+      
       <!-- Organization Details -->
-      <div class="panel mb-4">
-        <div class="adm-panel-header">
-          <h2 class="adm-panel-title"><i class="bi bi-building me-2"></i>Organization</h2>
-        </div>
-        <div class="adm-info-grid">
+      <div class="emp-info-section">
+        <h3 class="emp-section-title">
+          <i class="bi bi-building"></i>
+          Organization
+        </h3>
+        <div class="emp-info-grid-2col">
           <div class="adm-info-row">
             <span class="adm-info-label">Firm Name</span>
             <span class="adm-info-val">{{ employee.firm_name or '—' }}</span>
-          </div>
-          <div class="adm-info-row">
-            <span class="adm-info-label">Firm ID</span>
-            <span class="adm-info-val">{{ employee.firm_id or '—' }}</span>
           </div>
           <div class="adm-info-row">
             <span class="adm-info-label">Organization</span>
             <span class="adm-info-val">{{ employee.org_name or '—' }}</span>
           </div>
           <div class="adm-info-row">
-            <span class="adm-info-label">Organization Team ID</span>
-            <span class="adm-info-val">{{ employee.org_team_id or '—' }}</span>
-          </div>
-          <div class="adm-info-row">
-            <span class="adm-info-label">Organization Manager</span>
+            <span class="adm-info-label">Org Manager</span>
             <span class="adm-info-val">
               {% if employee.is_org_manager %}
-                <span class="adm-badge adm-badge-active"><i class="bi bi-check-lg me-1"></i>Yes</span>
+                <span class="adm-badge adm-badge-active">Yes</span>
               {% else %}
-                <span class="adm-badge adm-badge-pending"><i class="bi bi-x-lg me-1"></i>No</span>
+                <span class="adm-badge adm-badge-blocked">No</span>
               {% endif %}
             </span>
           </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Org Team ID</span>
+            <span class="adm-info-val">{{ employee.org_team_id or '—' }}</span>
+          </div>
         </div>
-      </div><!-- /.panel -->
-
+      </div>
+      
       <!-- Team & Reporting -->
-      <div class="panel mb-4">
-        <div class="adm-panel-header">
-          <h2 class="adm-panel-title"><i class="bi bi-people me-2"></i>Team & Reporting</h2>
-        </div>
-        <div class="adm-info-grid">
+      <div class="emp-info-section">
+        <h3 class="emp-section-title">
+          <i class="bi bi-people"></i>
+          Team & Reporting
+        </h3>
+        <div class="emp-info-grid-2col">
           <div class="adm-info-row">
             <span class="adm-info-label">Team Lead</span>
             <span class="adm-info-val">{{ employee.team_lead_name or '—' }}</span>
@@ -119,51 +421,46 @@
             <span class="adm-info-label">Team Lead ID</span>
             <span class="adm-info-val">{{ employee.team_lead_id or '—' }}</span>
           </div>
-        </div>
-      </div><!-- /.panel -->
-
-    </div><!-- /.col-lg-6 -->
-
-    <!-- ── Right column: Work details & dates ─────────────── -->
-    <div class="col-lg-6">
-
-      <!-- Important Dates -->
-      <div class="panel mb-4">
-        <div class="adm-panel-header">
-          <h2 class="adm-panel-title"><i class="bi bi-calendar-event me-2"></i>Important Dates</h2>
-        </div>
-        <div class="adm-info-grid">
-          <div class="adm-info-row">
-            <span class="adm-info-label">Joining Date</span>
-            <span class="adm-info-val">{{ employee.formatted_joining_date }}</span>
-          </div>
-          <div class="adm-info-row">
-            <span class="adm-info-label">Leaving Date</span>
-            <span class="adm-info-val">{{ employee.formatted_leaving_date }}</span>
-          </div>
-          <div class="adm-info-row">
-            <span class="adm-info-label">Training Completion</span>
-            <span class="adm-info-val">
-              {% if employee.training_completion_date %}
-                {{ employee.training_completion_date.strftime('%b %d, %Y') }}
-              {% else %}
-                —
-              {% endif %}
-            </span>
-          </div>
-        </div>
-      </div><!-- /.panel -->
-
-      <!-- Work Schedule -->
-      <div class="panel mb-4">
-        <div class="adm-panel-header">
-          <h2 class="adm-panel-title"><i class="bi bi-clock me-2"></i>Work Schedule</h2>
-        </div>
-        <div class="adm-info-grid">
           <div class="adm-info-row">
             <span class="adm-info-label">Reporting Time</span>
             <span class="adm-info-val">{{ employee.reporting_time or '—' }}</span>
           </div>
+        </div>
+      </div>
+      
+      <!-- Important Dates -->
+      <div class="emp-info-section">
+        <h3 class="emp-section-title">
+          <i class="bi bi-calendar-event"></i>
+          Important Dates
+        </h3>
+        <div class="emp-info-grid-2col">
+          <div class="adm-info-row">
+            <span class="adm-info-label">Joining Date</span>
+            <span class="adm-info-val">{{ employee.formatted_joining_date }}</span>
+          </div>
+          {% if employee.leaving_date %}
+          <div class="adm-info-row">
+            <span class="adm-info-label">Leaving Date</span>
+            <span class="adm-info-val">{{ employee.formatted_leaving_date }}</span>
+          </div>
+          {% endif %}
+          {% if employee.training_completion_date %}
+          <div class="adm-info-row">
+            <span class="adm-info-label">Training Completion</span>
+            <span class="adm-info-val">{{ employee.training_completion_date.strftime('%b %d, %Y') }}</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      
+      <!-- Work Schedule -->
+      <div class="emp-info-section">
+        <h3 class="emp-section-title">
+          <i class="bi bi-clock"></i>
+          Work Schedule
+        </h3>
+        <div class="emp-info-grid-2col">
           <div class="adm-info-row">
             <span class="adm-info-label">Working Hours (Daily)</span>
             <span class="adm-info-val">{{ employee.working_hours or '—' }} hours</span>
@@ -173,42 +470,44 @@
             <span class="adm-info-val">{{ employee.monthly_worklog_hours or '—' }} hours</span>
           </div>
         </div>
-      </div><!-- /.panel -->
-
+      </div>
+      
       <!-- Leave Balances -->
-      <div class="panel mb-4">
-        <div class="adm-panel-header">
-          <h2 class="adm-panel-title"><i class="bi bi-calendar-check me-2"></i>Leave Balances</h2>
-        </div>
-        <div class="adm-info-grid">
+      <div class="emp-info-section">
+        <h3 class="emp-section-title">
+          <i class="bi bi-calendar-check"></i>
+          Leave Balances
+        </h3>
+        <div class="emp-info-grid-3col">
           <div class="adm-info-row">
             <span class="adm-info-label">Casual Leave</span>
-            <span class="adm-info-val">{{ employee.casual_leave or '0' }} days</span>
+            <span class="adm-info-val"><strong>{{ employee.casual_leave or '0' }}</strong> days</span>
           </div>
           <div class="adm-info-row">
             <span class="adm-info-label">Emergency Leave</span>
-            <span class="adm-info-val">{{ employee.emergency_leave or '0' }} days</span>
+            <span class="adm-info-val"><strong>{{ employee.emergency_leave or '0' }}</strong> days</span>
           </div>
           <div class="adm-info-row">
             <span class="adm-info-label">Comp Off</span>
-            <span class="adm-info-val">{{ employee.comp_off or '0' }} days</span>
+            <span class="adm-info-val"><strong>{{ employee.comp_off or '0' }}</strong> days</span>
           </div>
           <div class="adm-info-row">
             <span class="adm-info-label">Extended Leave</span>
-            <span class="adm-info-val">{{ employee.extended_leave or '0' }} days</span>
+            <span class="adm-info-val"><strong>{{ employee.extended_leave or '0' }}</strong> days</span>
           </div>
         </div>
-      </div><!-- /.panel -->
-
+      </div>
+      
       <!-- Additional Details -->
-      <div class="panel mb-4">
-        <div class="adm-panel-header">
-          <h2 class="adm-panel-title"><i class="bi bi-info-circle me-2"></i>Additional Details</h2>
-        </div>
-        <div class="adm-info-grid">
+      <div class="emp-info-section">
+        <h3 class="emp-section-title">
+          <i class="bi bi-gear"></i>
+          Additional Details
+        </h3>
+        <div class="emp-info-grid-2col">
           <div class="adm-info-row">
-            <span class="adm-info-label">SynCoin</span>
-            <span class="adm-info-val">{{ employee.syn_coin or '—' }}</span>
+            <span class="adm-info-label">SynCoins</span>
+            <span class="adm-info-val">{{ employee.syn_coin or '0' }}</span>
           </div>
           <div class="adm-info-row">
             <span class="adm-info-label">Overrides</span>
@@ -223,51 +522,36 @@
             <span class="adm-info-val">{{ employee.modified_by or '—' }}</span>
           </div>
         </div>
-      </div><!-- /.panel -->
-
-      <!-- Sync Info -->
-      <div class="panel mb-4">
-        <div class="adm-panel-header">
-          <h2 class="adm-panel-title"><i class="bi bi-arrow-repeat me-2"></i>Sync Information</h2>
-        </div>
-        <div class="adm-info-grid">
+      </div>
+      
+      <!-- Sync Information -->
+      <div class="emp-info-section">
+        <h3 class="emp-section-title">
+          <i class="bi bi-arrow-repeat"></i>
+          Sync Information
+        </h3>
+        <div class="emp-info-grid-2col">
           <div class="adm-info-row">
             <span class="adm-info-label">Last Synced</span>
             <span class="adm-info-val">
-              {{ employee.last_synced_at.strftime('%b %d, %Y at %I:%M %p UTC') }}
+              {% if employee.last_synced_at %}
+                {{ employee.last_synced_at.strftime('%b %d, %Y at %I:%M %p UTC') }}
+              {% else %}
+                Never
+              {% endif %}
             </span>
           </div>
           <div class="adm-info-row">
-            <span class="adm-info-label">First Added</span>
+            <span class="adm-info-label">Created At</span>
             <span class="adm-info-val">
-              {{ employee.created_at.strftime('%b %d, %Y at %I:%M %p UTC') }}
-            </span>
-          </div>
-          <div class="adm-info-row">
-            <span class="adm-info-label">Signed Array</span>
-            <span class="adm-info-val" style="font-family: monospace; font-size: 0.75rem; word-break: break-all;">
-              {{ employee.signed_array or '—' }}
+              {{ employee.created_at.strftime('%b %d, %Y') if employee.created_at else '—' }}
             </span>
           </div>
         </div>
-      </div><!-- /.panel -->
-
-    </div><!-- /.col-lg-6 -->
-
-  </div><!-- /.row -->
-
-  <!-- ── Bottom action bar ─────────────────────────────── -->
-  <div class="mt-4 d-flex gap-2">
-    <button type="button" class="btn-save px-4 py-2" onclick="viewTodayLogs()">
-      <i class="bi bi-clock-history me-1"></i>View Today's Logs
-    </button>
-    <a href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id) }}" class="btn-save px-4 py-2 text-decoration-none">
-      <i class="bi bi-folder me-1"></i>View Projects
-    </a>
-    <a href="{{ url_for('admin.syncore_employees') }}" class="btn-discard px-4 py-2 text-decoration-none">
-      <i class="bi bi-arrow-left me-1"></i>Back to Employees
-    </a>
-  </div>
+      </div>
+    </div>
+    
+  </div><!-- /.emp-layout -->
 
 </div><!-- /.container -->
 
@@ -329,15 +613,114 @@
   </div>
 </div>
 
+<!-- Email Settings Modal -->
+<div class="modal fade" id="emailSettingsModal" tabindex="-1" aria-labelledby="emailSettingsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="emailSettingsModalLabel">
+          <i class="bi bi-envelope-gear me-2"></i>Email Notification Settings
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Loading State -->
+        <div id="settingsLoading" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2 text-muted">Fetching email settings...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="settingsError" class="alert alert-danger" style="display: none;">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <span id="settingsErrorMessage"></span>
+        </div>
+
+        <!-- Settings Content -->
+        <div id="settingsContent" style="display: none;">
+          <div class="mb-3">
+            <strong>Employee:</strong> <span id="settingsEmployeeName"></span>
+          </div>
+          
+          <!-- Parsed Settings -->
+          <div id="settingsParsed" class="mb-4">
+            <h6 class="mb-3">Email Notifications</h6>
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Setting</th>
+                    <th style="width: 100px; text-align: center;">Enabled</th>
+                  </tr>
+                </thead>
+                <tbody id="settingsTableBody">
+                  <!-- Rows will be inserted here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- Toggle for Raw JSON -->
+          <div class="mb-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleRawJson()">
+              <i class="bi bi-code-square me-1"></i>
+              <span id="rawJsonToggleText">View Raw JSON</span>
+            </button>
+          </div>
+          
+          <!-- Raw JSON Display -->
+          <div id="rawJsonContainer" style="display: none;">
+            <h6 class="mb-2">Raw JSON Response</h6>
+            <pre id="rawJsonContent" style="background: #f8f9fa; padding: 1rem; border-radius: 0.375rem; overflow-x: auto; font-size: 0.85rem;"></pre>
+          </div>
+          
+          <!-- Empty State -->
+          <div id="settingsEmpty" style="display: none;" class="text-center py-4">
+            <i class="bi bi-inbox" style="font-size: 3rem; color: var(--text-3);"></i>
+            <p class="mt-3 text-muted">No email settings found for this employee.</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-discard" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
   let logsModal;
+  let emailSettingsModal;
+  let rawJsonVisible = false;
   
   document.addEventListener('DOMContentLoaded', function() {
     logsModal = new bootstrap.Modal(document.getElementById('logsModal'));
+    emailSettingsModal = new bootstrap.Modal(document.getElementById('emailSettingsModal'));
   });
+  
+  // Tab switching function
+  function switchTab(evt, tabName) {
+    // Hide all tab contents
+    const tabContents = document.getElementsByClassName('emp-tab-content');
+    for (let i = 0; i < tabContents.length; i++) {
+      tabContents[i].classList.remove('active');
+    }
+    
+    // Remove active class from all tabs
+    const tabs = document.getElementsByClassName('emp-tab');
+    for (let i = 0; i < tabs.length; i++) {
+      tabs[i].classList.remove('active');
+    }
+    
+    // Show selected tab and mark button as active
+    document.getElementById(tabName).classList.add('active');
+    evt.currentTarget.classList.add('active');
+  }
   
   async function viewTodayLogs() {
     // Show modal
@@ -361,7 +744,7 @@
       if (data.success) {
         displayLogs(data.logs);
       } else {
-        showError(data.error || 'Failed to fetch logs');
+        showError(data.error || 'Failed to fetch attendance logs');
       }
     } catch (error) {
       console.error('Error fetching logs:', error);
@@ -423,6 +806,112 @@
     document.getElementById('logsLoading').style.display = 'none';
     document.getElementById('logsError').style.display = 'block';
     document.getElementById('logsErrorMessage').textContent = message;
+  }
+  
+  // === Email Settings Functions ===
+  
+  async function viewEmailSettings() {
+    // Show modal
+    emailSettingsModal.show();
+    
+    // Reset states
+    document.getElementById('settingsLoading').style.display = 'block';
+    document.getElementById('settingsError').style.display = 'none';
+    document.getElementById('settingsContent').style.display = 'none';
+    rawJsonVisible = false;
+    document.getElementById('rawJsonContainer').style.display = 'none';
+    document.getElementById('rawJsonToggleText').textContent = 'View Raw JSON';
+    
+    try {
+      const response = await fetch("{{ url_for('admin.syncore_employee_email_settings', employee_id=employee.id) }}", {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        displayEmailSettings(data.settings, data.employee_name);
+      } else {
+        showSettingsError(data.error || 'Failed to fetch email settings');
+      }
+    } catch (error) {
+      console.error('Error fetching email settings:', error);
+      showSettingsError('An error occurred while fetching email settings. Please try again.');
+    }
+  }
+  
+  function displayEmailSettings(settings, employeeName) {
+    document.getElementById('settingsLoading').style.display = 'none';
+    document.getElementById('settingsContent').style.display = 'block';
+    document.getElementById('settingsEmployeeName').textContent = employeeName;
+    
+    if (!settings || Object.keys(settings).length === 0) {
+      document.getElementById('settingsParsed').style.display = 'none';
+      document.getElementById('settingsEmpty').style.display = 'block';
+      return;
+    }
+    
+    document.getElementById('settingsEmpty').style.display = 'none';
+    document.getElementById('settingsParsed').style.display = 'block';
+    
+    // Parse and display settings
+    const tbody = document.getElementById('settingsTableBody');
+    tbody.innerHTML = '';
+    
+    // Convert snake_case to Title Case for display
+    function formatSettingName(key) {
+      return key
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+    
+    // Iterate through all settings
+    Object.entries(settings).forEach(([key, value]) => {
+      // Skip user_id as it's not a setting
+      if (key === 'user_id') return;
+      
+      const row = document.createElement('tr');
+      
+      // Determine if enabled
+      const isEnabled = value === 'true' || value === true || value === '1';
+      const statusBadge = isEnabled 
+        ? '<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Enabled</span>'
+        : '<span class="badge bg-secondary"><i class="bi bi-x-circle-fill me-1"></i>Disabled</span>';
+      
+      row.innerHTML = `
+        <td><strong>${formatSettingName(key)}</strong></td>
+        <td style="text-align: center;">${statusBadge}</td>
+      `;
+      
+      tbody.appendChild(row);
+    });
+    
+    // Store raw JSON for viewing
+    document.getElementById('rawJsonContent').textContent = JSON.stringify(settings, null, 2);
+  }
+  
+  function showSettingsError(message) {
+    document.getElementById('settingsLoading').style.display = 'none';
+    document.getElementById('settingsError').style.display = 'block';
+    document.getElementById('settingsErrorMessage').textContent = message;
+  }
+  
+  function toggleRawJson() {
+    rawJsonVisible = !rawJsonVisible;
+    const container = document.getElementById('rawJsonContainer');
+    const toggleText = document.getElementById('rawJsonToggleText');
+    
+    if (rawJsonVisible) {
+      container.style.display = 'block';
+      toggleText.textContent = 'Hide Raw JSON';
+    } else {
+      container.style.display = 'none';
+      toggleText.textContent = 'View Raw JSON';
+    }
   }
 </script>
 {% endblock %}

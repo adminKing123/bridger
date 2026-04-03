@@ -443,6 +443,39 @@ def syncore_employee_projects(employee_id: int):
         return redirect(url_for("admin.syncore_employee_detail", employee_id=employee_id))
 
 
+@admin_bp.route("/syncore/employees/<int:employee_id>/email-settings")
+@superadmin_required
+def syncore_employee_email_settings(employee_id: int):
+    """Fetch email notification settings for a specific employee."""
+    employee = SynCoreEmployee.query.get_or_404(employee_id)
+    
+    try:
+        from app.services.util_syncore import get_user_mail_setting
+        
+        settings = get_user_mail_setting(
+            user_id=employee.user_id,
+            signed_array=employee.signed_array
+        )
+        
+        return jsonify({
+            "success": True,
+            "settings": settings,
+            "employee_name": employee.name
+        })
+        
+    except Exception as e:
+        logger.error(
+            "Error fetching email settings for employee %s: %s",
+            employee_id,
+            str(e),
+            exc_info=True
+        )
+        return jsonify({
+            "success": False,
+            "error": f"Failed to fetch email settings: {str(e)}"
+        }), 500
+
+
 @admin_bp.route("/syncore/sync", methods=["POST"])
 @superadmin_required
 def syncore_sync():
