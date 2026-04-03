@@ -476,6 +476,108 @@ def syncore_employee_email_settings(employee_id: int):
         }), 500
 
 
+@admin_bp.route("/syncore/employees/<int:employee_id>/login", methods=["POST"])
+@superadmin_required
+def syncore_employee_login(employee_id: int):
+    """Mark employee login/attendance entry."""
+    employee = SynCoreEmployee.query.get_or_404(employee_id)
+    
+    try:
+        from app.services.util_syncore import login
+        
+        data = request.get_json() or {}
+        override_comment = data.get("override_comment", "")
+        
+        result = login(
+            user_id=employee.user_id,
+            signed_array=employee.signed_array,
+            override_comment=override_comment
+        )
+        
+        # Check if there's an error in the result
+        if "error" in result:
+            return jsonify({
+                "success": False,
+                "error": result.get("error", "Failed to mark login")
+            }), 400
+        
+        # Success - log and return the API message
+        logger.info(
+            "Admin %s marked login for employee %s (%s)",
+            current_user.username,
+            employee.name,
+            employee.employee_id
+        )
+        return jsonify({
+            "success": True,
+            "message": result.get("message", "Login marked successfully"),
+            "employee_name": employee.name
+        })
+        
+    except Exception as e:
+        logger.error(
+            "Error marking login for employee %s: %s",
+            employee_id,
+            str(e),
+            exc_info=True
+        )
+        return jsonify({
+            "success": False,
+            "error": f"Failed to mark login: {str(e)}"
+        }), 500
+
+
+@admin_bp.route("/syncore/employees/<int:employee_id>/logout", methods=["POST"])
+@superadmin_required
+def syncore_employee_logout(employee_id: int):
+    """Mark employee logout/attendance exit."""
+    employee = SynCoreEmployee.query.get_or_404(employee_id)
+    
+    try:
+        from app.services.util_syncore import logout
+        
+        data = request.get_json() or {}
+        override_comment = data.get("override_comment", "")
+        
+        result = logout(
+            user_id=employee.user_id,
+            signed_array=employee.signed_array,
+            override_comment=override_comment
+        )
+        
+        # Check if there's an error in the result
+        if "error" in result:
+            return jsonify({
+                "success": False,
+                "error": result.get("error", "Failed to mark logout")
+            }), 400
+        
+        # Success - log and return the API message
+        logger.info(
+            "Admin %s marked logout for employee %s (%s)",
+            current_user.username,
+            employee.name,
+            employee.employee_id
+        )
+        return jsonify({
+            "success": True,
+            "message": result.get("message", "Logout marked successfully"),
+            "employee_name": employee.name
+        })
+        
+    except Exception as e:
+        logger.error(
+            "Error marking logout for employee %s: %s",
+            employee_id,
+            str(e),
+            exc_info=True
+        )
+        return jsonify({
+            "success": False,
+            "error": f"Failed to mark logout: {str(e)}"
+        }), 500
+
+
 @admin_bp.route("/syncore/sync", methods=["POST"])
 @superadmin_required
 def syncore_sync():

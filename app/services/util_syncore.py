@@ -430,3 +430,77 @@ def get_user_mail_setting(user_id: Optional[str] = None, signed_array: Optional[
     logger.info("Retrieved email settings with %d keys", len(response_data))
     
     return response_data
+
+
+def login(user_id: Optional[str] = None, signed_array: Optional[str] = None, override_comment: str = "") -> Dict:
+    """
+    Mark employee login/attendance entry.
+    
+    Args:
+        user_id: Employee user ID
+        signed_array: Employee signed array for authentication
+        override_comment: Optional comment for the attendance override
+    
+    Returns:
+        Dictionary with:
+            - message: str (success/error message)
+            - any additional response data
+    """
+    endpoint = "/attendance/fill_attendance"
+    extra_fields = {"override_comment": override_comment}
+    payload = build_user_payload(user_id, signed_array, extra_fields)
+    
+    logger.info("Marking login for user_id=%s with comment=%s", user_id, override_comment[:50] if override_comment else "None")
+    data = post_request(endpoint, payload, log=False)
+    
+    # Ensure data is a dictionary
+    if not isinstance(data, dict):
+        logger.error("Invalid response format: expected dict, got %s", type(data))
+        return {"error": "Invalid response format"}
+    
+    # If there's an error from the API call, return it
+    if "error" in data:
+        return data
+    
+    # Otherwise return the response with message
+    result = data.get("response_data", {})
+    result["message"] = data.get("message", "")
+    
+    return result
+
+
+def logout(user_id: Optional[str] = None, signed_array: Optional[str] = None, override_comment: str = "") -> Dict:
+    """
+    Mark employee logout/attendance exit.
+    
+    Args:
+        user_id: Employee user ID
+        signed_array: Employee signed array for authentication
+        override_comment: Optional comment for the attendance override
+    
+    Returns:
+        Dictionary with:
+            - message: str (success/error message)
+            - any additional response data
+    """
+    endpoint = "/attendance/fill_attendance"
+    extra_fields = {"override_comment": override_comment}
+    payload = build_user_payload(user_id, signed_array, extra_fields)
+    
+    logger.info("Marking logout for user_id=%s with comment=%s", user_id, override_comment[:50] if override_comment else "None")
+    data = post_request(endpoint, payload, log=False)
+    
+    # Ensure data is a dictionary
+    if not isinstance(data, dict):
+        logger.error("Invalid response format: expected dict, got %s", type(data))
+        return {"error": "Invalid response format"}
+    
+    # If there's an error from the API call, return it
+    if "error" in data:
+        return data
+    
+    # Otherwise return the response with message
+    result = data.get("response_data", {})
+    result["message"] = data.get("message", "")
+    
+    return result
