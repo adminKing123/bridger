@@ -1,7 +1,7 @@
 """
 app/routes/syncore.py
 ---------------------
-SynCore — Organisational Synapses HRMS Data Panel.
+SynCore — Organisational SynCore HRMS Data Panel.
 
 All management routes require authentication plus the 'syncore' service
 permission (enforced via the before_request hook, same pattern as proxy and
