@@ -313,3 +313,36 @@ def sync_employees_to_db() -> Dict:
         stats["updated"] = 0
     
     return stats
+
+
+def get_today_log_status(user_id: Optional[str] = None, signed_array: Optional[str] = None) -> List[Dict]:
+    """
+    Fetch today's attendance log details for a specific employee.
+    
+    Args:
+        user_id: Employee user ID
+        signed_array: Employee signed array for authentication
+    
+    Returns:
+        List of attendance log dictionaries with keys:
+            - attendance_id: str
+            - total_time: str (hours)
+            - ip_address: str
+            - log_date: str (MM/DD/YYYY format)
+            - login: str (HH:MM format)
+            - logout: str (HH:MM format, "00:00" if not logged out)
+    """
+    endpoint = "/attendance/total_logs_detail"
+    payload = build_user_payload(user_id, signed_array)
+    
+    logger.info("Fetching today's log status for user_id=%s", user_id)
+    data = post_request(endpoint, payload, log=False)
+    
+    if "error" in data:
+        logger.error("Failed to fetch log status: %s", data["error"])
+        return []
+    
+    response_data = data.get("response_data", [])
+    logger.info("Retrieved %d log entries", len(response_data))
+    
+    return response_data

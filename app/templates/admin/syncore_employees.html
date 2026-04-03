@@ -263,6 +263,12 @@
                  title="View Details">
                 <i class="bi bi-eye"></i>
               </a>
+              <button type="button" 
+                      class="adm-btn-icon" 
+                      title="View Today's Logs"
+                      onclick="viewTodayLogs({{ emp.id }}, '{{ emp.name }}')">
+                <i class="bi bi-clock-history"></i>
+              </button>
             </td>
           </tr>
           {% endfor %}
@@ -318,11 +324,168 @@
     {% endif %}
   </div>
 
+</div><!-- /.container -->
+
+<!-- Attendance Logs Modal -->
+<div class="modal fade" id="logsModal" tabindex="-1" aria-labelledby="logsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="logsModalLabel">
+          <i class="bi bi-clock-history me-2"></i>Today's Attendance Logs
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Loading State -->
+        <div id="logsLoading" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2 text-muted">Fetching attendance logs...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="logsError" class="alert alert-danger" style="display: none;">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <span id="logsErrorMessage"></span>
+        </div>
+
+        <!-- Logs Table -->
+        <div id="logsContent" style="display: none;">
+          <div class="mb-3">
+            <strong>Employee:</strong> <span id="logsEmployeeName"></span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Login</th>
+                  <th>Logout</th>
+                  <th>Total Time</th>
+                  <th>IP Address</th>
+                </tr>
+              </thead>
+              <tbody id="logsTableBody">
+                <!-- Rows will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Empty State -->
+          <div id="logsEmpty" style="display: none;" class="text-center py-4">
+            <i class="bi bi-calendar-x" style="font-size: 3rem; color: var(--text-3);"></i>
+            <p class="mt-3 text-muted">No attendance logs found for today.</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-discard" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
 </div>
+
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
+  let logsModal;
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    logsModal = new bootstrap.Modal(document.getElementById('logsModal'));
+  });
+
+  async function viewTodayLogs(employeeId, employeeName) {
+    // Show modal
+    logsModal.show();
+    
+    // Set employee name
+    document.getElementById('logsEmployeeName').textContent = employeeName;
+    
+    // Reset states
+    document.getElementById('logsLoading').style.display = 'block';
+    document.getElementById('logsError').style.display = 'none';
+    document.getElementById('logsContent').style.display = 'none';
+    
+    try {
+      const response = await fetch(`/admin/syncore/employees/${employeeId}/logs`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        displayLogs(data.logs);
+      } else {
+        showLogsError(data.error || 'Failed to fetch logs');
+      }
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+      showLogsError('An error occurred while fetching logs. Please try again.');
+    }
+  }
+  
+  function displayLogs(logs) {
+    document.getElementById('logsLoading').style.display = 'none';
+    document.getElementById('logsContent').style.display = 'block';
+    
+    const tbody = document.getElementById('logsTableBody');
+    tbody.innerHTML = '';
+    
+    if (!logs || logs.length === 0) {
+      document.getElementById('logsEmpty').style.display = 'block';
+      return;
+    }
+    
+    document.getElementById('logsEmpty').style.display = 'none';
+    
+    logs.forEach(log => {
+      const row = document.createElement('tr');
+      
+      // Format total time (convert seconds to hours and minutes)
+      let totalTime = '—';
+      if (log.total_time && log.total_time !== '0') {
+        const totalSeconds = parseInt(log.total_time);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        
+        if (hours > 0 && minutes > 0) {
+          totalTime = `${hours}h ${minutes}m`;
+        } else if (hours > 0) {
+          totalTime = `${hours}h`;
+        } else if (minutes > 0) {
+          totalTime = `${minutes}m`;
+        }
+      }
+      
+      // Check if logged out
+      const logout = log.logout === '00:00' 
+        ? '<span class="badge bg-warning">In Progress</span>' 
+        : log.logout;
+      
+      row.innerHTML = `
+        <td>${log.log_date}</td>
+        <td><strong>${log.login}</strong></td>
+        <td>${logout}</td>
+        <td>${totalTime}</td>
+        <td><small class="text-muted">${log.ip_address}</small></td>
+      `;
+      
+      tbody.appendChild(row);
+    });
+  }
+  
+  function showLogsError(message) {
+    document.getElementById('logsLoading').style.display = 'none';
+    document.getElementById('logsError').style.display = 'block';
+    document.getElementById('logsErrorMessage').textContent = message;
+  }
+
   async function syncEmployees() {
     const btn = document.getElementById('syncBtn');
     const originalContent = btn.innerHTML;

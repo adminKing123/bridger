@@ -333,6 +333,39 @@ def syncore_employee_detail(employee_id: int):
     )
 
 
+@admin_bp.route("/syncore/employees/<int:employee_id>/logs")
+@superadmin_required
+def syncore_employee_logs(employee_id: int):
+    """Fetch today's attendance logs for a specific employee."""
+    employee = SynCoreEmployee.query.get_or_404(employee_id)
+    
+    try:
+        from app.services.util_syncore import get_today_log_status
+        
+        logs = get_today_log_status(
+            user_id=employee.user_id,
+            signed_array=employee.signed_array
+        )
+        
+        return jsonify({
+            "success": True,
+            "logs": logs,
+            "employee_name": employee.name
+        })
+        
+    except Exception as e:
+        logger.error(
+            "Error fetching logs for employee %s: %s",
+            employee_id,
+            str(e),
+            exc_info=True
+        )
+        return jsonify({
+            "success": False,
+            "error": f"Failed to fetch logs: {str(e)}"
+        }), 500
+
+
 @admin_bp.route("/syncore/sync", methods=["POST"])
 @superadmin_required
 def syncore_sync():
