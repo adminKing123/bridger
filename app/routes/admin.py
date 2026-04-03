@@ -5,11 +5,16 @@ Super-admin blueprint.  All routes require is_superadmin=True on the
 current user — enforced via the @superadmin_required decorator.
 
 Routes:
-    GET   /admin/                        — overview dashboard (stats + recent signups)
+    GET   /admin/                        — redirect to user management
+    GET   /admin/users/management        — user management dashboard
     GET   /admin/users                   — paginated user list with search + filter
     GET   /admin/users/<id>              — user detail (info, block status, services)
     POST  /admin/users/<id>/block        — toggle block / unblock
     POST  /admin/users/<id>/services     — update service permissions
+    GET   /admin/syncore/management      — syncore management dashboard
+    GET   /admin/syncore/employees       — paginated employee list
+    GET   /admin/syncore/employees/<id>  — employee detail view
+    POST  /admin/syncore/sync            — trigger employee sync
 """
 
 import logging
@@ -24,12 +29,14 @@ from flask import (
     render_template,
     request,
     url_for,
+    jsonify,
 )
 from flask_login import current_user, login_required
 
 from app import db
 from app.models.user import User
 from app.models.admin import UserServicePermission, SERVICES
+from app.models.syncore_employee import SynCoreEmployee
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +61,14 @@ def superadmin_required(f):
 @admin_bp.route("/")
 @superadmin_required
 def dashboard():
-    """Stats overview + recent signups."""
+    """Admin dashboard - redirect to user management."""
+    return redirect(url_for("admin.users_management"))
+
+
+@admin_bp.route("/users/management")
+@superadmin_required
+def users_management():
+    """User management dashboard with stats and recent signups."""
     regular = User.query.filter_by(is_superadmin=False)
     total_users   = regular.count()
     blocked_users = regular.filter_by(is_blocked=True).count()
@@ -100,7 +114,7 @@ def dashboard():
     )
 
     return render_template(
-        "admin/dashboard.html",
+        "admin/users_management.html",
         total_users=total_users,
         blocked_users=blocked_users,
         verified_users=verified_users,
@@ -226,3 +240,144 @@ def update_services(user_id: int):
         "Admin %s updated services for user %s", current_user.username, user.username
     )
     return redirect(url_for("admin.user_detail", user_id=user.id))
+
+
+# ── SynCore Employee Management ───────────────────────────────────────────────
+
+@admin_bp.route("/syncore/management")
+@superadmin_required
+def syncore_management():
+    """SynCore management dashboard."""
+    # Get employee statistics
+    total_employees = SynCoreEmployee.query.count()
+    active_employees = SynCoreEmployee.query.filter_by(status="Active").count()
+    
+    # Get last sync time
+    last_synced = (
+        db.session.query(db.func.max(SynCoreEmployee.last_synced_at))
+        .scalar()
+    )
+    
+    return render_template(
+        "admin/syncore_management.html",
+        total_employees=total_employees,
+        active_employees=active_employees,
+        last_synced=last_synced,
+    )
+
+
+@admin_bp.route("/syncore/employees")
+@superadmin_required
+def syncore_employees():
+    """Paginated, searchable SynCore employee list."""
+    q             = request.args.get("q", "").strip()
+    status_filter = request.args.get("status", "all")
+    page          = request.args.get("page", 1, type=int)
+
+    query = SynCoreEmployee.query
+
+    if q:
+        like  = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                SynCoreEmployee.name.ilike(like),
+                SynCoreEmployee.email.ilike(like),
+                SynCoreEmployee.employee_id.ilike(like),
+                SynCoreEmployee.designation.ilike(like)
+            )
+        )
+
+    if status_filter == "active":
+        query = query.filter_by(status="Active")
+    elif status_filter == "inactive":
+        query = query.filter(
+            db.or_(
+                SynCoreEmployee.status == "In-Active",
+                SynCoreEmployee.status == "Inactive"
+            )
+        )
+
+    # Get total counts for stats
+    total_employees = SynCoreEmployee.query.count()
+    active_employees = SynCoreEmployee.query.filter_by(status="Active").count()
+    
+    # Get last sync time
+    last_synced = (
+        db.session.query(db.func.max(SynCoreEmployee.last_synced_at))
+        .scalar()
+    )
+
+    pagination = query.order_by(SynCoreEmployee.name.asc()).paginate(
+        page=page, per_page=25, error_out=False
+    )
+
+    return render_template(
+        "admin/syncore_employees.html",
+        pagination=pagination,
+        q=q,
+        status_filter=status_filter,
+        total_employees=total_employees,
+        active_employees=active_employees,
+        last_synced=last_synced,
+    )
+
+
+@admin_bp.route("/syncore/employees/<int:employee_id>")
+@superadmin_required
+def syncore_employee_detail(employee_id: int):
+    """View detailed information for a specific SynCore employee."""
+    employee = SynCoreEmployee.query.get_or_404(employee_id)
+    return render_template(
+        "admin/syncore_employee_detail.html",
+        employee=employee,
+    )
+
+
+@admin_bp.route("/syncore/sync", methods=["POST"])
+@superadmin_required
+def syncore_sync():
+    """Trigger sync of employee data from SynCore HRMS API."""
+    try:
+        from app.services.util_syncore import sync_employees_to_db
+        
+        logger.info(
+            "Admin %s initiated SynCore employee sync",
+            current_user.username
+        )
+        
+        stats = sync_employees_to_db()
+        
+        if stats.get("errors", 0) > 0:
+            error_msg = f"Sync completed with {stats['errors']} errors."
+            if stats.get("error_details"):
+                error_msg += f" First error: {stats['error_details'][0]}"
+            flash(error_msg, "warning")
+        
+        success_msg = (
+            f"Sync complete! "
+            f"{stats.get('added', 0)} added, "
+            f"{stats.get('updated', 0)} updated out of "
+            f"{stats.get('total', 0)} total employees."
+        )
+        flash(success_msg, "success")
+        
+        logger.info(
+            "SynCore sync by %s: %s",
+            current_user.username,
+            success_msg
+        )
+        
+        return jsonify({
+            "success": True,
+            "stats": stats,
+            "message": success_msg
+        })
+        
+    except Exception as e:
+        error_msg = f"Sync failed: {str(e)}"
+        logger.error("SynCore sync error: %s", error_msg, exc_info=True)
+        flash(error_msg, "danger")
+        return jsonify({
+            "success": False,
+            "error": error_msg
+        }), 500

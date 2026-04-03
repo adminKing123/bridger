@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+{% block title %}SynCore Management — Admin{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+  <style>
+    .syncore-mgmt-hero {
+      background: linear-gradient(135deg, var(--primary-light) 0%, var(--info-bg) 100%);
+      border: 2px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .syncore-mgmt-icon {
+      width: 72px;
+      height: 72px;
+      background: var(--primary);
+      color: white;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+    .syncore-mgmt-body {
+      flex: 1;
+    }
+    .syncore-mgmt-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 0.5rem 0;
+    }
+    .syncore-mgmt-subtitle {
+      font-size: 1rem;
+      color: var(--text-2);
+      margin: 0;
+    }
+    .syncore-action-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .syncore-action-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      box-shadow: var(--shadow-xs);
+    }
+    .syncore-action-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .syncore-action-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .syncore-action-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0;
+    }
+    .syncore-action-desc {
+      font-size: 0.9rem;
+      color: var(--text-3);
+      margin-bottom: 1.25rem;
+      line-height: 1.5;
+    }
+    .syncore-stat-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .syncore-stat-item {
+      flex: 1;
+      padding: 0.75rem;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      text-align: center;
+    }
+    .syncore-stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: block;
+    }
+    .syncore-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .btn-sync {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      text-decoration: none;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn-sync:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+    .btn-sync:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-sync .spinner-border {
+      width: 1rem;
+      height: 1rem;
+      border-width: 2px;
+    }
+    .btn-view-employees {
+      background: var(--surface);
+      color: var(--primary);
+      border: 2px solid var(--primary);
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      text-decoration: none;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn-view-employees:hover {
+      background: var(--primary);
+      color: white;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 960px;">
+
+  <!-- ── Page header ───────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="dash-title mb-0"><i class="bi bi-building me-2"></i>SynCore Management</h1>
+      <p class="dash-subtitle mb-0">HRMS data synchronization and employee management</p>
+    </div>
+  </div>
+
+  <!-- ── Hero section ──────────────────────────────────── -->
+  <div class="syncore-mgmt-hero">
+    <div class="syncore-mgmt-icon">
+      <i class="bi bi-cloud-arrow-down-fill"></i>
+    </div>
+    <div class="syncore-mgmt-body">
+      <h2 class="syncore-mgmt-title">Organisational Synapses HRMS</h2>
+      <p class="syncore-mgmt-subtitle">
+        Sync employee data from the SynCore API and manage organizational workforce information
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Action cards ──────────────────────────────────── -->
+  <div class="syncore-action-cards">
+
+    <!-- Sync Card -->
+    <div class="syncore-action-card">
+      <div class="syncore-action-header">
+        <div class="syncore-action-icon" style="background: var(--primary-light); color: var(--primary);">
+          <i class="bi bi-arrow-repeat"></i>
+        </div>
+        <h3 class="syncore-action-title">Employee Sync</h3>
+      </div>
+      <p class="syncore-action-desc">
+        Fetch and synchronize the latest employee data from SynCore HRMS API. 
+        Existing records will be updated and new employees will be added.
+      </p>
+      
+      <div class="syncore-stat-row">
+        <div class="syncore-stat-item">
+          <span class="syncore-stat-value">{{ total_employees }}</span>
+          <span class="syncore-stat-label">Total</span>
+        </div>
+        <div class="syncore-stat-item">
+          <span class="syncore-stat-value">{{ active_employees }}</span>
+          <span class="syncore-stat-label">Active</span>
+        </div>
+      </div>
+
+      {% if last_synced %}
+      <div style="font-size: 0.8rem; color: var(--text-3); margin-bottom: 1rem; text-align: center;">
+        <i class="bi bi-clock-history me-1"></i>
+        Last synced: {{ last_synced.strftime('%b %d, %Y at %I:%M %p UTC') }}
+      </div>
+      {% else %}
+      <div style="font-size: 0.8rem; color: var(--text-3); margin-bottom: 1rem; text-align: center;">
+        <i class="bi bi-info-circle me-1"></i>
+        No sync performed yet
+      </div>
+      {% endif %}
+
+      <button type="button" class="btn-sync" id="syncBtn" onclick="syncEmployees()">
+        <i class="bi bi-arrow-repeat"></i>
+        Sync Now
+      </button>
+    </div>
+
+    <!-- View Employees Card -->
+    <div class="syncore-action-card">
+      <div class="syncore-action-header">
+        <div class="syncore-action-icon" style="background: var(--success-bg); color: var(--success);">
+          <i class="bi bi-people-fill"></i>
+        </div>
+        <h3 class="syncore-action-title">Employee Directory</h3>
+      </div>
+      <p class="syncore-action-desc">
+        View all synced employees in a searchable, paginated table. 
+        Access detailed employee information, including work schedules, leave balances, and organization details.
+      </p>
+
+      <div class="syncore-stat-row">
+        <div class="syncore-stat-item">
+          <span class="syncore-stat-value">{{ total_employees - active_employees }}</span>
+          <span class="syncore-stat-label">Inactive</span>
+        </div>
+        <div class="syncore-stat-item">
+          <span class="syncore-stat-value">{{ '%0.1f'|format((active_employees / total_employees * 100) if total_employees > 0 else 0) }}%</span>
+          <span class="syncore-stat-label">Active %</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1rem; height: 2.5rem;"></div>
+
+      <a href="{{ url_for('admin.syncore_employees') }}" class="btn-view-employees">
+        <i class="bi bi-list-ul"></i>
+        View All Employees
+      </a>
+    </div>
+
+  </div>
+
+</div><!-- /.container -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  async function syncEmployees() {
+    const btn = document.getElementById('syncBtn');
+    const originalContent = btn.innerHTML;
+    
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Syncing...';
+    
+    try {
+      const response = await fetch("{{ url_for('admin.syncore_sync') }}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token() }}'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Show success message
+        showFlash(data.message, 'success');
+        
+        // Reload page after a short delay to show updated data
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        showFlash(data.error || 'Sync failed', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+    } catch (error) {
+      console.error('Sync error:', error);
+      showFlash('An error occurred during sync. Please try again.', 'danger');
+      btn.disabled = false;
+      btn.innerHTML = originalContent;
+    }
+  }
+  
+  function showFlash(message, category) {
+    // Create flash message element
+    const flashContainer = document.createElement('div');
+    flashContainer.className = `alert alert-${category} alert-dismissible fade show`;
+    flashContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    flashContainer.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    document.body.appendChild(flashContainer);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      flashContainer.remove();
+    }, 5000);
+  }
+</script>
+{% endblock %}

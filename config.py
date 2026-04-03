@@ -36,6 +36,12 @@ class Config:
     # ── OTP ───────────────────────────────────────────────────────────────────
     OTP_EXPIRY_MINUTES: int = int(os.environ.get("OTP_EXPIRY_MINUTES", 10))
 
+    # ── SynCore HRMS Integration ──────────────────────────────────────────────
+    # JSON string with SynCore API configuration
+    # Format: {"HR_CODE": "...", "API_BASE": "...", "DEFAULT_USER_ID": "...", 
+    #          "DEFAULT_SIGNED_ARRAY": "...", "DATE_FMT": "%m/%d/%Y"}
+    SYN_CORE_CONFIG: str | None = os.environ.get("SYN_CORE_CONFIG")
+
     # ── Session / Cookie security ─────────────────────────────────────────────
     SESSION_COOKIE_HTTPONLY: bool = True
     SESSION_COOKIE_SAMESITE: str = "Lax"

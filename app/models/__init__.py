@@ -4,7 +4,7 @@ app/models/__init__.py
 Exposes all models for convenient importing:
     from app.models import User, OTP, ProxyConfig, WebexConfig,
                            WebexWebhook, WebexWebhookLog,
-                           UserServicePermission
+                           UserServicePermission, SynCoreEmployee
 """
 
 from app.models.user import User, OTP
@@ -13,6 +13,7 @@ from app.models.webex_config import WebexConfig
 from app.models.webex_webhook import WebexWebhook
 from app.models.webex_webhook_log import WebexWebhookLog
 from app.models.admin import UserServicePermission
+from app.models.syncore_employee import SynCoreEmployee
 
 __all__ = [
     "User", "OTP",
@@ -21,4 +22,5 @@ __all__ = [
     "WebexWebhook",
     "WebexWebhookLog",
     "UserServicePermission",
+    "SynCoreEmployee",
 ]

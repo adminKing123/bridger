@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+{% block title %}{{ employee.name }} — SynCore Employee{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- ── Breadcrumb ────────────────────────────────────── -->
+  <nav class="adm-breadcrumb mb-4">
+    <a href="{{ url_for('admin.syncore_management') }}"><i class="bi bi-building me-1"></i>SynCore</a>
+    <i class="bi bi-chevron-right mx-1"></i>
+    <a href="{{ url_for('admin.syncore_employees') }}">Employees</a>
+    <i class="bi bi-chevron-right mx-1"></i>
+    <span>{{ employee.name }}</span>
+  </nav>
+
+  <div class="row g-4">
+
+    <!-- ── Left column: Employee info ─────────────────────── -->
+    <div class="col-lg-6">
+
+      <!-- Employee Profile panel -->
+      <div class="panel mb-4">
+        <div class="adm-detail-header">
+          <div class="adm-avatar adm-avatar-lg {% if not employee.is_active %}adm-avatar-blocked{% endif %}">
+            {{ employee.name[0]|upper if employee.name else '?' }}
+          </div>
+          <div>
+            <div class="adm-username adm-username-lg">{{ employee.name }}</div>
+            <div class="adm-muted">{{ employee.email or '—' }}</div>
+          </div>
+        </div>
+
+        <hr class="adm-divider" />
+
+        <div class="adm-info-grid">
+          <div class="adm-info-row">
+            <span class="adm-info-label">Employee ID</span>
+            <span class="adm-info-val" style="font-family: monospace;">{{ employee.employee_id }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">User ID</span>
+            <span class="adm-info-val" style="font-family: monospace;">{{ employee.user_id }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Designation</span>
+            <span class="adm-info-val">{{ employee.designation or '—' }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">User Type</span>
+            <span class="adm-info-val">{{ employee.user_type or '—' }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Gender</span>
+            <span class="adm-info-val">{{ employee.gender or '—' }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Status</span>
+            <span class="adm-info-val">
+              {% if employee.is_active %}
+                <span class="adm-badge adm-badge-active"><i class="bi bi-check-circle me-1"></i>Active</span>
+              {% else %}
+                <span class="adm-badge adm-badge-blocked"><i class="bi bi-slash-circle me-1"></i>Inactive</span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div><!-- /.panel -->
+
+      <!-- Organization Details -->
+      <div class="panel mb-4">
+        <div class="adm-panel-header">
+          <h2 class="adm-panel-title"><i class="bi bi-building me-2"></i>Organization</h2>
+        </div>
+        <div class="adm-info-grid">
+          <div class="adm-info-row">
+            <span class="adm-info-label">Firm Name</span>
+            <span class="adm-info-val">{{ employee.firm_name or '—' }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Firm ID</span>
+            <span class="adm-info-val">{{ employee.firm_id or '—' }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Organization</span>
+            <span class="adm-info-val">{{ employee.org_name or '—' }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Organization Team ID</span>
+            <span class="adm-info-val">{{ employee.org_team_id or '—' }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Organization Manager</span>
+            <span class="adm-info-val">
+              {% if employee.is_org_manager %}
+                <span class="adm-badge adm-badge-active"><i class="bi bi-check-lg me-1"></i>Yes</span>
+              {% else %}
+                <span class="adm-badge adm-badge-pending"><i class="bi bi-x-lg me-1"></i>No</span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div><!-- /.panel -->
+
+      <!-- Team & Reporting -->
+      <div class="panel mb-4">
+        <div class="adm-panel-header">
+          <h2 class="adm-panel-title"><i class="bi bi-people me-2"></i>Team & Reporting</h2>
+        </div>
+        <div class="adm-info-grid">
+          <div class="adm-info-row">
+            <span class="adm-info-label">Team Lead</span>
+            <span class="adm-info-val">{{ employee.team_lead_name or '—' }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Team Lead ID</span>
+            <span class="adm-info-val">{{ employee.team_lead_id or '—' }}</span>
+          </div>
+        </div>
+      </div><!-- /.panel -->
+
+    </div><!-- /.col-lg-6 -->
+
+    <!-- ── Right column: Work details & dates ─────────────── -->
+    <div class="col-lg-6">
+
+      <!-- Important Dates -->
+      <div class="panel mb-4">
+        <div class="adm-panel-header">
+          <h2 class="adm-panel-title"><i class="bi bi-calendar-event me-2"></i>Important Dates</h2>
+        </div>
+        <div class="adm-info-grid">
+          <div class="adm-info-row">
+            <span class="adm-info-label">Joining Date</span>
+            <span class="adm-info-val">{{ employee.formatted_joining_date }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Leaving Date</span>
+            <span class="adm-info-val">{{ employee.formatted_leaving_date }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Training Completion</span>
+            <span class="adm-info-val">
+              {% if employee.training_completion_date %}
+                {{ employee.training_completion_date.strftime('%b %d, %Y') }}
+              {% else %}
+                —
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div><!-- /.panel -->
+
+      <!-- Work Schedule -->
+      <div class="panel mb-4">
+        <div class="adm-panel-header">
+          <h2 class="adm-panel-title"><i class="bi bi-clock me-2"></i>Work Schedule</h2>
+        </div>
+        <div class="adm-info-grid">
+          <div class="adm-info-row">
+            <span class="adm-info-label">Reporting Time</span>
+            <span class="adm-info-val">{{ employee.reporting_time or '—' }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Working Hours (Daily)</span>
+            <span class="adm-info-val">{{ employee.working_hours or '—' }} hours</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Monthly Worklog Hours</span>
+            <span class="adm-info-val">{{ employee.monthly_worklog_hours or '—' }} hours</span>
+          </div>
+        </div>
+      </div><!-- /.panel -->
+
+      <!-- Leave Balances -->
+      <div class="panel mb-4">
+        <div class="adm-panel-header">
+          <h2 class="adm-panel-title"><i class="bi bi-calendar-check me-2"></i>Leave Balances</h2>
+        </div>
+        <div class="adm-info-grid">
+          <div class="adm-info-row">
+            <span class="adm-info-label">Casual Leave</span>
+            <span class="adm-info-val">{{ employee.casual_leave or '0' }} days</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Emergency Leave</span>
+            <span class="adm-info-val">{{ employee.emergency_leave or '0' }} days</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Comp Off</span>
+            <span class="adm-info-val">{{ employee.comp_off or '0' }} days</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Extended Leave</span>
+            <span class="adm-info-val">{{ employee.extended_leave or '0' }} days</span>
+          </div>
+        </div>
+      </div><!-- /.panel -->
+
+      <!-- Additional Details -->
+      <div class="panel mb-4">
+        <div class="adm-panel-header">
+          <h2 class="adm-panel-title"><i class="bi bi-info-circle me-2"></i>Additional Details</h2>
+        </div>
+        <div class="adm-info-grid">
+          <div class="adm-info-row">
+            <span class="adm-info-label">SynCoin</span>
+            <span class="adm-info-val">{{ employee.syn_coin or '—' }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Overrides</span>
+            <span class="adm-info-val">{{ employee.overrides or '—' }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Created By</span>
+            <span class="adm-info-val">{{ employee.created_by or '—' }}</span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Modified By</span>
+            <span class="adm-info-val">{{ employee.modified_by or '—' }}</span>
+          </div>
+        </div>
+      </div><!-- /.panel -->
+
+      <!-- Sync Info -->
+      <div class="panel mb-4">
+        <div class="adm-panel-header">
+          <h2 class="adm-panel-title"><i class="bi bi-arrow-repeat me-2"></i>Sync Information</h2>
+        </div>
+        <div class="adm-info-grid">
+          <div class="adm-info-row">
+            <span class="adm-info-label">Last Synced</span>
+            <span class="adm-info-val">
+              {{ employee.last_synced_at.strftime('%b %d, %Y at %I:%M %p UTC') }}
+            </span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">First Added</span>
+            <span class="adm-info-val">
+              {{ employee.created_at.strftime('%b %d, %Y at %I:%M %p UTC') }}
+            </span>
+          </div>
+          <div class="adm-info-row">
+            <span class="adm-info-label">Signed Array</span>
+            <span class="adm-info-val" style="font-family: monospace; font-size: 0.75rem; word-break: break-all;">
+              {{ employee.signed_array or '—' }}
+            </span>
+          </div>
+        </div>
+      </div><!-- /.panel -->
+
+    </div><!-- /.col-lg-6 -->
+
+  </div><!-- /.row -->
+
+  <!-- ── Bottom action bar ─────────────────────────────── -->
+  <div class="mt-4">
+    <a href="{{ url_for('admin.syncore_employees') }}" class="btn-discard px-4 py-2 text-decoration-none">
+      <i class="bi bi-arrow-left me-1"></i>Back to Employees
+    </a>
+  </div>
+
+</div><!-- /.container -->
+{% endblock %}

@@ -91,11 +91,24 @@
           {% endif %}
 
           {% if current_user.is_superadmin %}
-          <!-- Admin link (superadmin only) -->
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
+          <!-- Admin dropdown (superadmin only) -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button"
+               data-bs-toggle="dropdown" aria-expanded="false">
               <i class="bi bi-shield-check me-1"></i>Admin
             </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <a class="dropdown-item" href="{{ url_for('admin.users_management') }}">
+                  <i class="bi bi-people me-2"></i>User Management
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('admin.syncore_management') }}">
+                  <i class="bi bi-building me-2"></i>SynCore
+                </a>
+              </li>
+            </ul>
           </li>
           {% endif %}
 

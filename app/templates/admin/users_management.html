@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Admin Dashboard — Bridger{% endblock %}
+{% block title %}User Management — Admin{% endblock %}
 
 {% block extra_head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
@@ -11,11 +11,11 @@
   <!-- ── Page header ───────────────────────────────────── -->
   <div class="d-flex align-items-center justify-content-between mb-4">
     <div>
-      <h1 class="dash-title mb-0"><i class="bi bi-shield-check me-2"></i>Admin Dashboard</h1>
-      <p class="dash-subtitle mb-0">Platform overview</p>
+      <h1 class="dash-title mb-0"><i class="bi bi-people me-2"></i>User Management</h1>
+      <p class="dash-subtitle mb-0">Platform user overview and statistics</p>
     </div>
     <a href="{{ url_for('admin.users') }}" class="btn-save px-4 py-2 text-decoration-none">
-      <i class="bi bi-people me-1"></i>Manage Users
+      <i class="bi bi-list-ul me-1"></i>View All Users
     </a>
   </div>
 
@@ -144,9 +144,12 @@
       </table>
     </div>
     {% else %}
-    <div class="dash-empty-panel py-4">
-      <div class="dash-empty-icon"><i class="bi bi-people"></i></div>
-      <p class="dash-empty-title">No users yet</p>
+    <div class="adm-empty">
+      <i class="bi bi-people adm-empty-icon"></i>
+      <div class="adm-empty-title">No users yet</div>
+      <p class="adm-empty-text">
+        No users have signed up yet. User accounts will appear here as they register.
+      </p>
     </div>
     {% endif %}
   </div><!-- /.panel -->

@@ -1,0 +1,384 @@
+{% extends 'base.html' %}
+{% block title %}SynCore Employees — Admin{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+  <style>
+    .syncore-sync-banner {
+      background: linear-gradient(135deg, var(--primary-light) 0%, var(--info-bg) 100%);
+      border: 1px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .syncore-sync-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--primary);
+      color: white;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .syncore-sync-body {
+      flex: 1;
+    }
+    .syncore-sync-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 0.25rem 0;
+    }
+    .syncore-sync-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-2);
+      margin: 0;
+    }
+    .syncore-last-sync {
+      font-size: 0.75rem;
+      color: var(--text-3);
+      margin-top: 0.25rem;
+    }
+    .btn-sync {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-sync:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+    .btn-sync:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-sync .spinner-border {
+      width: 1rem;
+      height: 1rem;
+      border-width: 2px;
+    }
+    .syncore-stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .syncore-stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+    }
+    .syncore-stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1;
+    }
+    .syncore-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-3);
+      margin-top: 0.25rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- ── Page header ───────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="dash-title mb-0">
+        <i class="bi bi-building me-2"></i>SynCore Employees
+      </h1>
+      <p class="dash-subtitle mb-0">
+        {{ pagination.total }} employee{{ 's' if pagination.total != 1 else '' }}
+        {% if q %} matching <strong>{{ q }}</strong>{% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('admin.syncore_management') }}" class="btn-discard px-3 py-2 text-decoration-none">
+      <i class="bi bi-arrow-left me-1"></i>Back to SynCore
+    </a>
+  </div>
+
+  <!-- ── Sync banner ───────────────────────────────────── -->
+  <div class="syncore-sync-banner">
+    <div class="syncore-sync-icon">
+      <i class="bi bi-cloud-arrow-down-fill"></i>
+    </div>
+    <div class="syncore-sync-body">
+      <h2 class="syncore-sync-title">Sync HRMS Data</h2>
+      <p class="syncore-sync-subtitle">
+        Fetch latest employee data from SynCore HRMS API and update the local database.
+      </p>
+      {% if last_synced %}
+      <div class="syncore-last-sync">
+        <i class="bi bi-clock-history me-1"></i>
+        Last synced: {{ last_synced.strftime('%b %d, %Y at %I:%M %p UTC') }}
+      </div>
+      {% else %}
+      <div class="syncore-last-sync">
+        <i class="bi bi-info-circle me-1"></i>
+        No sync performed yet
+      </div>
+      {% endif %}
+    </div>
+    <button type="button" class="btn-sync" id="syncBtn" onclick="syncEmployees()">
+      <i class="bi bi-arrow-repeat"></i>
+      Sync Now
+    </button>
+  </div>
+
+  <!-- ── Stats row ─────────────────────────────────────── -->
+  <div class="syncore-stats-row">
+    <div class="syncore-stat-card">
+      <div class="syncore-stat-value">{{ total_employees }}</div>
+      <div class="syncore-stat-label">Total Employees</div>
+    </div>
+    <div class="syncore-stat-card">
+      <div class="syncore-stat-value">{{ active_employees }}</div>
+      <div class="syncore-stat-label">Active</div>
+    </div>
+    <div class="syncore-stat-card">
+      <div class="syncore-stat-value">{{ total_employees - active_employees }}</div>
+      <div class="syncore-stat-label">Inactive</div>
+    </div>
+  </div>
+
+  <!-- ── Search + filter ───────────────────────────────── -->
+  <div class="panel mb-3">
+    <form method="get" action="{{ url_for('admin.syncore_employees') }}" class="adm-search-row">
+      <div class="adm-search-wrap">
+        <i class="bi bi-search adm-search-icon"></i>
+        <input
+          type="text"
+          name="q"
+          value="{{ q }}"
+          class="adm-search-input"
+          placeholder="Search name, email, employee ID, or designation…"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="adm-status-tabs">
+        {% for val, label in [('all','All'), ('active','Active'), ('inactive','Inactive')] %}
+          <a
+            href="{{ url_for('admin.syncore_employees', q=q, status=val) }}"
+            class="adm-status-tab {% if status_filter == val %}active{% endif %}"
+          >{{ label }}</a>
+        {% endfor %}
+      </div>
+    </form>
+  </div>
+
+  <!-- ── Employees table ───────────────────────────────── -->
+  <div class="panel">
+    {% if pagination.items %}
+    <div class="table-responsive">
+      <table class="adm-table">
+        <thead>
+          <tr>
+            <th>Employee ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Designation</th>
+            <th>Firm</th>
+            <th>Status</th>
+            <th>Joining Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in pagination.items %}
+          <tr>
+            <!-- Employee ID -->
+            <td>
+              <span class="adm-muted" style="font-family: monospace; font-size: 0.85em;">
+                {{ emp.employee_id }}
+              </span>
+            </td>
+
+            <!-- Name -->
+            <td>
+              <div class="adm-user-cell">
+                <div class="adm-avatar {% if not emp.is_active %}adm-avatar-blocked{% endif %}">
+                  {{ emp.name[0]|upper if emp.name else '?' }}
+                </div>
+                <div>
+                  <div class="adm-username">{{ emp.name }}</div>
+                  {% if emp.user_type %}
+                    <div class="adm-unverified-note">{{ emp.user_type }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+
+            <!-- Email -->
+            <td class="adm-muted">{{ emp.email or '—' }}</td>
+
+            <!-- Designation -->
+            <td>{{ emp.designation or '—' }}</td>
+
+            <!-- Firm -->
+            <td class="adm-muted">{{ emp.firm_name or '—' }}</td>
+
+            <!-- Status -->
+            <td>
+              {% if emp.is_active %}
+                <span class="adm-badge adm-badge-active">Active</span>
+              {% else %}
+                <span class="adm-badge adm-badge-blocked">Inactive</span>
+              {% endif %}
+            </td>
+
+            <!-- Joining Date -->
+            <td class="adm-muted">{{ emp.formatted_joining_date }}</td>
+
+            <!-- Actions -->
+            <td>
+              <a href="{{ url_for('admin.syncore_employee_detail', employee_id=emp.id) }}" 
+                 class="adm-btn-icon" 
+                 title="View Details">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Pagination ──────────────────────────────────── -->
+    {% if pagination.pages > 1 %}
+    <div class="adm-pagination">
+      <div class="adm-page-info">
+        Page {{ pagination.page }} of {{ pagination.pages }}
+      </div>
+      <div class="adm-page-nav">
+        {% if pagination.has_prev %}
+          <a href="{{ url_for('admin.syncore_employees', q=q, status=status_filter, page=pagination.prev_num) }}" 
+             class="adm-page-btn">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+        {% else %}
+          <span class="adm-page-btn adm-page-btn-disabled">
+            <i class="bi bi-chevron-left"></i>
+          </span>
+        {% endif %}
+
+        {% if pagination.has_next %}
+          <a href="{{ url_for('admin.syncore_employees', q=q, status=status_filter, page=pagination.next_num) }}" 
+             class="adm-page-btn">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        {% else %}
+          <span class="adm-page-btn adm-page-btn-disabled">
+            <i class="bi bi-chevron-right"></i>
+          </span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="adm-empty">
+      <i class="bi bi-people adm-empty-icon"></i>
+      <div class="adm-empty-title">No employees found</div>
+      <p class="adm-empty-text">
+        {% if q %}
+          No employees match your search query. Try a different search term.
+        {% else %}
+          Click "Sync Now" to fetch employee data from SynCore HRMS.
+        {% endif %}
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  async function syncEmployees() {
+    const btn = document.getElementById('syncBtn');
+    const originalContent = btn.innerHTML;
+    
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Syncing...';
+    
+    try {
+      const response = await fetch("{{ url_for('admin.syncore_sync') }}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token() }}'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Show success message
+        showFlash(data.message, 'success');
+        
+        // Reload page after a short delay to show updated data
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        showFlash(data.error || 'Sync failed', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+      }
+    } catch (error) {
+      console.error('Sync error:', error);
+      showFlash('An error occurred during sync. Please try again.', 'danger');
+      btn.disabled = false;
+      btn.innerHTML = originalContent;
+    }
+  }
+  
+  function showFlash(message, category) {
+    // Create flash message element
+    const flashContainer = document.createElement('div');
+    flashContainer.className = `alert alert-${category} alert-dismissible fade show`;
+    flashContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    flashContainer.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    document.body.appendChild(flashContainer);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      flashContainer.remove();
+    }, 5000);
+  }
+</script>
+{% endblock %}

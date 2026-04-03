@@ -123,6 +123,11 @@
   align-items: center;
   justify-content: center;
   font-size: 1rem;
+  color: white;
+}
+.dash-service-body {
+  flex: 1;
+  min-width: 0;
 }
 .dash-service-name {
   font-size: 0.9rem;
@@ -132,7 +137,23 @@
 .dash-service-desc {
   font-size: 0.75rem;
   color: var(--text-2);
-  margin: 0;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.5;
+}
+.dash-service-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.dash-service-arrow {
+  font-size: 1.2rem;
+  color: var(--text-3);
+  transition: transform var(--transition), color var(--transition);
+  flex-shrink: 0;
+}
+.dash-service-card:hover .dash-service-arrow {
+  transform: translateX(4px);
+  color: var(--primary);
 }
 
 /* Service section layout */
