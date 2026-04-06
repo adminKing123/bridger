@@ -728,3 +728,72 @@ def logout(user_id: Optional[str] = None, signed_array: Optional[str] = None, ov
     result["message"] = data.get("message", "")
     
     return result
+
+
+def fill_work_log(
+    project_id,
+    module_id,
+    activity_id,
+    work_desc: str,
+    hour_clocked,
+    user_id: Optional[str] = None,
+    signed_array: Optional[str] = None,
+) -> Dict:
+    """
+    Submit a daily work log entry for an employee.
+
+    Args:
+        project_id:    Project ID for this log entry
+        module_id:     Module ID within the project
+        activity_id:   Activity ID within the project
+        work_desc:     Work description / summary
+        hour_clocked:  Hours worked (numeric or string)
+        user_id:       Employee user ID
+        signed_array:  Employee signed array for authentication
+
+    Returns:
+        Dict with either:
+            {"token": <response_data>, "message": ...}  on success
+            {"error": <message>}                        on failure
+    """
+    endpoint = "/project/fill_daily_log"
+
+    extra_fields = {
+        "project_id1":       project_id,
+        "module_id1":        module_id,
+        "activity_id1":      activity_id,
+        "work_desc1":        work_desc,
+        "hour_clocked1":     hour_clocked,
+        "work_quantified11": "",
+        "work_quantified21": "",
+        "log_date1":         "",
+        "send_mail1":        "false",
+        "project_id2":       0,
+        "module_id2":        0,
+        "activity_id2":      0,
+        "work_quantified12": "",
+        "work_quantified22": "",
+        "log_date2":         "",
+        "send_mail2":        "false",
+    }
+    payload = build_user_payload(user_id, signed_array, extra_fields)
+
+    logger.info(
+        "Filling work log for user_id=%s project_id=%s module_id=%s activity_id=%s hours=%s",
+        user_id, project_id, module_id, activity_id, hour_clocked,
+    )
+    data = post_request(endpoint, payload, log=False)
+
+    if not isinstance(data, dict):
+        return {"error": "Invalid response format"}
+
+    if "error" in data:
+        return {"error": data["error"]}
+
+    if data.get("status") == "Success":
+        return {
+            "token":   data.get("response_data", data),
+            "message": data.get("message", "Work log submitted successfully."),
+        }
+
+    return {"error": data.get("message", "Failed to submit work log.")}

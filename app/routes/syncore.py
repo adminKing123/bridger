@@ -31,6 +31,7 @@ from flask import (
     abort,
     current_app,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -653,3 +654,108 @@ def employee_logout(access_id: int):
         logger.error("Logout error access %s: %s", access_id, e)
         flash(f"Logout failed: {e}", "danger")
     return redirect(url_for("syncore.employee_detail", access_id=access_id))
+
+
+# ── Work Log — Fill Log (User side: editor permission only) ───────────────────
+
+@syncore_bp.route("/employees/<int:employee_id>/worklog/projects")
+@login_required
+def user_worklog_projects(employee_id: int):
+    """AJAX: return the project list for the work-log modal (editor only)."""
+    access = UserEmployeeAccess.query.filter_by(
+        user_id=current_user.id,
+        employee_id=employee_id,
+        is_active=True,
+        permission=UserEmployeeAccess.PERMISSION_EDITOR,
+    ).first_or_404()
+    employee = access.employee
+    try:
+        from app.services.util_syncore import get_emp_projects
+        projects = get_emp_projects(
+            user_id=employee.user_id,
+            signed_array=employee.signed_array,
+        )
+        return jsonify({"success": True, "projects": projects})
+    except Exception as e:
+        logger.error("user_worklog_projects error employee %s: %s", employee_id, e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@syncore_bp.route("/employees/<int:employee_id>/worklog/project-details")
+@login_required
+def user_worklog_project_details(employee_id: int):
+    """AJAX: return modules + activities for a project (editor only, modal cascade)."""
+    access = UserEmployeeAccess.query.filter_by(
+        user_id=current_user.id,
+        employee_id=employee_id,
+        is_active=True,
+        permission=UserEmployeeAccess.PERMISSION_EDITOR,
+    ).first_or_404()
+    employee   = access.employee
+    project_id = request.args.get("project_id", "").strip()
+    if not project_id:
+        return jsonify({"success": False, "error": "project_id is required"}), 400
+    try:
+        from app.services.util_syncore import get_project_modules, get_project_activities
+        modules    = get_project_modules(
+            user_id=employee.user_id, signed_array=employee.signed_array,
+            project_id=project_id,
+        )
+        activities = get_project_activities(
+            user_id=employee.user_id, signed_array=employee.signed_array,
+            project_id=project_id,
+        )
+        return jsonify({"success": True, "modules": modules, "activities": activities})
+    except Exception as e:
+        logger.error("user_worklog_project_details error employee %s: %s", employee_id, e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@syncore_bp.route("/employees/<int:employee_id>/worklog/fill", methods=["POST"])
+@login_required
+def user_fill_work_log(employee_id: int):
+    """Submit a daily work log entry (editor permission required)."""
+    access = UserEmployeeAccess.query.filter_by(
+        user_id=current_user.id,
+        employee_id=employee_id,
+        is_active=True,
+        permission=UserEmployeeAccess.PERMISSION_EDITOR,
+    ).first_or_404()
+    employee = access.employee
+    try:
+        from app.services.util_syncore import fill_work_log
+
+        project_id   = request.form.get("project_id",   "").strip()
+        module_id    = request.form.get("module_id",    "").strip()
+        activity_id  = request.form.get("activity_id",  "").strip()
+        work_desc    = request.form.get("work_desc",    "").strip()
+        hour_clocked = request.form.get("hour_clocked", "").strip()
+
+        if not all([project_id, module_id, activity_id, work_desc, hour_clocked]):
+            flash("All fields are required to submit a work log.", "danger")
+            return redirect(url_for("syncore.employee_detail", access_id=access.id))
+
+        result = fill_work_log(
+            project_id=project_id,
+            module_id=module_id,
+            activity_id=activity_id,
+            work_desc=work_desc,
+            hour_clocked=hour_clocked,
+            user_id=employee.user_id,
+            signed_array=employee.signed_array,
+        )
+
+        if "error" in result:
+            flash(f"Work log submission failed: {result['error']}", "danger")
+        else:
+            flash(result.get("message", "Work log submitted successfully."), "success")
+            logger.info(
+                "User %s filled work log for employee %s (project=%s)",
+                current_user.username, employee.name, project_id,
+            )
+
+    except Exception as e:
+        logger.error("user_fill_work_log error employee %s: %s", employee_id, e, exc_info=True)
+        flash(f"Work log submission failed: {e}", "danger")
+
+    return redirect(url_for("syncore.employee_detail", access_id=access.id))

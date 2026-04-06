@@ -275,6 +275,12 @@
           </li>
           <li><hr class="dropdown-divider"></li>
           <li>
+            <a class="dropdown-item" href="#" onclick="event.preventDefault(); openWorkLogModal();">
+              <i class="bi bi-journal-plus me-2 text-primary"></i>Fill Work Log
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
             <a class="dropdown-item" href="#" onclick="event.preventDefault(); viewTodayLogs();">
               <i class="bi bi-clock-history me-2"></i>Today's Attendance
             </a>
@@ -762,6 +768,134 @@
   </div>
 </div>
 
+<!-- ════════════════════════════════════════════════════════════
+     Work Log Modal
+     ════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="workLogModal" tabindex="-1" aria-labelledby="workLogModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);background:var(--surface);">
+        <h5 class="modal-title" id="workLogModalLabel">
+          <i class="bi bi-journal-plus me-2 text-primary"></i>Fill Work Log — {{ employee.name }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" style="background:var(--bg);">
+
+        <!-- Feedback banner -->
+        <div id="wlFeedback" class="alert" style="display:none;"></div>
+
+        <!-- Step 1: Project -->
+        <div id="wlStep1">
+          <p class="mb-2" style="font-size:0.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);">
+            Step 1 — Select Project
+          </p>
+          <select id="wlProject" class="form-select form-select-sm mb-1" disabled onchange="onWlProjectChange()">
+            <option value="">Loading projects…</option>
+          </select>
+          <div id="wlProjectError" class="text-danger" style="font-size:0.8rem;display:none;"></div>
+        </div>
+
+        <!-- Step 2: Module + Activity (shown after project selected) -->
+        <div id="wlStep2" style="display:none;margin-top:1.25rem;">
+          <p class="mb-2" style="font-size:0.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);">
+            Step 2 — Select Module &amp; Activity
+          </p>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.82rem;">Module</label>
+              <select id="wlModule" class="form-select form-select-sm" disabled onchange="onWlModuleOrActivityChange()">
+                <option value="">Loading…</option>
+              </select>
+              <div id="wlModuleError" class="text-danger" style="font-size:0.8rem;display:none;"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label mb-1" style="font-size:0.82rem;">Activity</label>
+              <select id="wlActivity" class="form-select form-select-sm" disabled onchange="onWlModuleOrActivityChange()">
+                <option value="">Loading…</option>
+              </select>
+              <div id="wlActivityError" class="text-danger" style="font-size:0.8rem;display:none;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Hours + Description (shown after module+activity selected) -->
+        <div id="wlStep3" style="display:none;margin-top:1.25rem;">
+          <p class="mb-2" style="font-size:0.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);">
+            Step 3 — Work Details
+          </p>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label mb-1" style="font-size:0.82rem;">Hours Clocked</label>
+              <input type="number" id="wlHours" class="form-control form-control-sm"
+                     placeholder="e.g. 3.5" min="0.25" max="24" step="0.25">
+              <div id="wlHoursError" class="text-danger" style="font-size:0.8rem;display:none;">
+                Enter a valid number of hours (0.25–24).
+              </div>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label mb-1" style="font-size:0.82rem;">Work Description</label>
+              <textarea id="wlDesc" class="form-control form-control-sm" rows="3"
+                        placeholder="Describe the work done…"></textarea>
+              <div id="wlDescError" class="text-danger" style="font-size:0.8rem;display:none;">
+                Work description is required.
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 d-flex justify-content-end">
+            <button type="button" class="btn-save px-4 py-2" onclick="showWorkLogConfirm()">
+              <i class="bi bi-eye me-1"></i>Review &amp; Confirm
+            </button>
+          </div>
+        </div>
+
+        <!-- Confirmation summary -->
+        <div id="wlConfirmStep" style="display:none;margin-top:1.25rem;">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;">
+            <p style="font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:0.75rem;">
+              <i class="bi bi-check-circle me-2 text-success"></i>Confirm Work Log Submission
+            </p>
+            <table style="width:100%;font-size:0.875rem;border-collapse:collapse;">
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:0.4rem 0.5rem;color:var(--text-3);width:35%;">Project</td>
+                <td id="wlSummaryProject" style="padding:0.4rem 0.5rem;font-weight:600;color:var(--text);"></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:0.4rem 0.5rem;color:var(--text-3);">Module</td>
+                <td id="wlSummaryModule" style="padding:0.4rem 0.5rem;font-weight:600;color:var(--text);"></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:0.4rem 0.5rem;color:var(--text-3);">Activity</td>
+                <td id="wlSummaryActivity" style="padding:0.4rem 0.5rem;font-weight:600;color:var(--text);"></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:0.4rem 0.5rem;color:var(--text-3);">Hours Clocked</td>
+                <td id="wlSummaryHours" style="padding:0.4rem 0.5rem;font-weight:600;color:var(--primary);"></td>
+              </tr>
+              <tr>
+                <td style="padding:0.4rem 0.5rem;color:var(--text-3);vertical-align:top;">Description</td>
+                <td id="wlSummaryDesc" style="padding:0.4rem 0.5rem;color:var(--text-2);"></td>
+              </tr>
+            </table>
+          </div>
+          <div class="d-flex gap-2 justify-content-end mt-3">
+            <button type="button" class="btn-discard px-3 py-2" onclick="cancelWorkLogConfirm()">
+              <i class="bi bi-pencil me-1"></i>Edit
+            </button>
+            <button type="button" id="wlSubmitBtn" class="btn-save px-4 py-2" onclick="submitWorkLog()">
+              <i class="bi bi-check2-circle me-1"></i>Confirm &amp; Submit
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="background:var(--surface);border-top:1px solid var(--border);">
+        <button type="button" class="btn-discard" data-bs-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_scripts %}
@@ -1082,6 +1216,207 @@
   function showAttendanceError(message) {
     document.getElementById('attendanceError').style.display = 'block';
     document.getElementById('attendanceErrorMessage').textContent = message;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Work Log Modal
+  // ═══════════════════════════════════════════════════════════════
+
+  let workLogModal;
+  let wl = {}; // work log selections cache
+
+  document.addEventListener('DOMContentLoaded', function () {
+    workLogModal = new bootstrap.Modal(document.getElementById('workLogModal'));
+    document.getElementById('workLogModal').addEventListener('hidden.bs.modal', resetWorkLogModal);
+  });
+
+  function openWorkLogModal() {
+    resetWorkLogModal();
+    workLogModal.show();
+    loadWorkLogProjects();
+  }
+
+  function resetWorkLogModal() {
+    wl = {};
+    // Step visibility
+    document.getElementById('wlStep1').style.display = 'block';
+    document.getElementById('wlStep2').style.display = 'none';
+    document.getElementById('wlStep3').style.display = 'none';
+    document.getElementById('wlConfirmStep').style.display = 'none';
+    // Reset selects
+    ['wlProject','wlModule','wlActivity'].forEach(id => {
+      const el = document.getElementById(id);
+      el.innerHTML = '<option value="">Loading…</option>';
+      el.disabled = true;
+    });
+    document.getElementById('wlHours').value = '';
+    document.getElementById('wlHoursError').style.display = 'none';
+    document.getElementById('wlDesc').value = '';
+    document.getElementById('wlDescError').style.display = 'none';
+    document.getElementById('wlProjectError').style.display = 'none';
+    document.getElementById('wlModuleError').style.display = 'none';
+    document.getElementById('wlActivityError').style.display = 'none';
+    document.getElementById('wlFeedback').style.display = 'none';
+    document.getElementById('wlFeedback').className = 'alert';
+    setWlSubmitLoading(false);
+  }
+
+  async function loadWorkLogProjects() {
+    const sel = document.getElementById('wlProject');
+    sel.innerHTML = '<option value="">Loading projects…</option>';
+    sel.disabled = true;
+    try {
+      const r = await fetch("{{ url_for('admin.syncore_worklog_projects', employee_id=employee.id) }}");
+      const d = await r.json();
+      if (!d.success) throw new Error(d.error || 'Failed to load projects');
+      sel.innerHTML = '<option value="">— Select project —</option>' +
+        d.projects.map(p => `<option value="${p.project_id}">${p.project_name}</option>`).join('');
+      sel.disabled = false;
+    } catch (e) {
+      sel.innerHTML = '<option value="">Failed to load</option>';
+      document.getElementById('wlProjectError').textContent = e.message;
+      document.getElementById('wlProjectError').style.display = 'block';
+    }
+  }
+
+  async function onWlProjectChange() {
+    const pid = document.getElementById('wlProject').value;
+    document.getElementById('wlProjectError').style.display = 'none';
+    // Hide steps 2+3 until loaded
+    document.getElementById('wlStep2').style.display = 'none';
+    document.getElementById('wlStep3').style.display = 'none';
+    document.getElementById('wlConfirmStep').style.display = 'none';
+    if (!pid) return;
+    wl.projectId = pid;
+    wl.projectName = document.getElementById('wlProject').options[document.getElementById('wlProject').selectedIndex].text;
+
+    ['wlModule','wlActivity'].forEach(id => {
+      const el = document.getElementById(id);
+      el.innerHTML = '<option value="">Loading…</option>';
+      el.disabled = true;
+    });
+    document.getElementById('wlStep2').style.display = 'block';
+
+    try {
+      const r = await fetch(`{{ url_for('admin.syncore_worklog_project_details', employee_id=employee.id) }}?project_id=${encodeURIComponent(pid)}`);
+      const d = await r.json();
+      if (!d.success) throw new Error(d.error || 'Failed to load details');
+
+      const mSel = document.getElementById('wlModule');
+      mSel.innerHTML = '<option value="">— Select module —</option>' +
+        d.modules.map(m => `<option value="${m.module_id}">${m.module_name}</option>`).join('');
+      mSel.disabled = false;
+
+      const aSel = document.getElementById('wlActivity');
+      aSel.innerHTML = '<option value="">— Select activity —</option>' +
+        d.activities.map(a => `<option value="${a.activity_id}">${a.activity_name}</option>`).join('');
+      aSel.disabled = false;
+    } catch (e) {
+      document.getElementById('wlModuleError').textContent = e.message;
+      document.getElementById('wlModuleError').style.display = 'block';
+    }
+  }
+
+  function onWlModuleOrActivityChange() {
+    ['wlModuleError','wlActivityError'].forEach(id => document.getElementById(id).style.display = 'none');
+    const mid = document.getElementById('wlModule').value;
+    const aid = document.getElementById('wlActivity').value;
+    if (mid && aid) {
+      wl.moduleId   = mid;
+      wl.moduleName = document.getElementById('wlModule').options[document.getElementById('wlModule').selectedIndex].text;
+      wl.activityId = aid;
+      wl.activityName = document.getElementById('wlActivity').options[document.getElementById('wlActivity').selectedIndex].text;
+      document.getElementById('wlStep3').style.display = 'block';
+    } else {
+      document.getElementById('wlStep3').style.display = 'none';
+      document.getElementById('wlConfirmStep').style.display = 'none';
+    }
+  }
+
+  function showWorkLogConfirm() {
+    // Validate hours & description
+    let ok = true;
+    const hours = parseFloat(document.getElementById('wlHours').value);
+    if (!document.getElementById('wlHours').value || isNaN(hours) || hours <= 0 || hours > 24) {
+      document.getElementById('wlHoursError').style.display = 'block';
+      ok = false;
+    } else { document.getElementById('wlHoursError').style.display = 'none'; }
+
+    const desc = document.getElementById('wlDesc').value.trim();
+    if (!desc) {
+      document.getElementById('wlDescError').style.display = 'block';
+      ok = false;
+    } else { document.getElementById('wlDescError').style.display = 'none'; }
+
+    if (!wl.moduleId || !wl.activityId) {
+      ok = false;
+      document.getElementById('wlModuleError').textContent = 'Please select both module and activity.';
+      document.getElementById('wlModuleError').style.display = 'block';
+    }
+    if (!ok) return;
+
+    wl.hours = hours;
+    wl.desc  = desc;
+
+    // Render confirmation summary
+    document.getElementById('wlSummaryProject').textContent  = wl.projectName  || wl.projectId;
+    document.getElementById('wlSummaryModule').textContent   = wl.moduleName   || wl.moduleId;
+    document.getElementById('wlSummaryActivity').textContent = wl.activityName || wl.activityId;
+    document.getElementById('wlSummaryHours').textContent    = wl.hours + ' hrs';
+    document.getElementById('wlSummaryDesc').textContent     = wl.desc;
+    document.getElementById('wlConfirmStep').style.display   = 'block';
+    document.getElementById('wlConfirmStep').scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  function cancelWorkLogConfirm() {
+    document.getElementById('wlConfirmStep').style.display = 'none';
+  }
+
+  async function submitWorkLog() {
+    setWlSubmitLoading(true);
+    document.getElementById('wlFeedback').style.display = 'none';
+
+    const formData = new FormData();
+    formData.append('csrf_token', '{{ csrf_token() }}');
+    formData.append('project_id',   wl.projectId);
+    formData.append('module_id',    wl.moduleId);
+    formData.append('activity_id',  wl.activityId);
+    formData.append('work_desc',    wl.desc);
+    formData.append('hour_clocked', wl.hours);
+
+    try {
+      const r = await fetch("{{ url_for('admin.syncore_fill_work_log', employee_id=employee.id) }}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token() }}' },
+        body: formData,
+      });
+      // Route returns a redirect (302); just treat non-5xx as success
+      if (r.ok || r.redirected) {
+        showWlFeedback('Work log submitted successfully!', true);
+        setTimeout(() => { workLogModal.hide(); location.reload(); }, 1800);
+      } else {
+        showWlFeedback('Submission failed. Please try again.', false);
+        setWlSubmitLoading(false);
+      }
+    } catch (e) {
+      showWlFeedback('Network error: ' + e.message, false);
+      setWlSubmitLoading(false);
+    }
+  }
+
+  function setWlSubmitLoading(on) {
+    const btn = document.getElementById('wlSubmitBtn');
+    btn.disabled = on;
+    btn.innerHTML = on
+      ? '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Submitting…'
+      : '<i class="bi bi-check2-circle me-1"></i>Confirm & Submit';
+  }
+
+  function showWlFeedback(msg, success) {
+    const el = document.getElementById('wlFeedback');
+    el.className = 'alert ' + (success ? 'alert-success' : 'alert-danger');
+    el.textContent = msg;
+    el.style.display = 'block';
   }
 </script>
 {% endblock %}

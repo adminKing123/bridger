@@ -1109,3 +1109,90 @@ def syncore_revoke_access(access_id: int):
     )
     next_url = request.form.get("next") or url_for("admin.syncore_employee_requests")
     return redirect(next_url)
+
+
+# ── Work Log — Fill Log (Admin: all employees, no permission restriction) ──────
+
+@admin_bp.route("/syncore/employees/<int:employee_id>/worklog/projects")
+@superadmin_required
+def syncore_worklog_projects(employee_id: int):
+    """AJAX: return the project list for the work-log modal."""
+    employee = SynCoreEmployee.query.get_or_404(employee_id)
+    try:
+        from app.services.util_syncore import get_emp_projects
+        projects = get_emp_projects(
+            user_id=employee.user_id,
+            signed_array=employee.signed_array,
+        )
+        return jsonify({"success": True, "projects": projects})
+    except Exception as e:
+        logger.error("worklog_projects admin error emp %s: %s", employee_id, e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@admin_bp.route("/syncore/employees/<int:employee_id>/worklog/project-details")
+@superadmin_required
+def syncore_worklog_project_details(employee_id: int):
+    """AJAX: return modules + activities for a given project (work-log modal cascade)."""
+    employee   = SynCoreEmployee.query.get_or_404(employee_id)
+    project_id = request.args.get("project_id", "").strip()
+    if not project_id:
+        return jsonify({"success": False, "error": "project_id is required"}), 400
+    try:
+        from app.services.util_syncore import get_project_modules, get_project_activities
+        modules    = get_project_modules(
+            user_id=employee.user_id, signed_array=employee.signed_array,
+            project_id=project_id,
+        )
+        activities = get_project_activities(
+            user_id=employee.user_id, signed_array=employee.signed_array,
+            project_id=project_id,
+        )
+        return jsonify({"success": True, "modules": modules, "activities": activities})
+    except Exception as e:
+        logger.error("worklog_project_details admin error emp %s: %s", employee_id, e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@admin_bp.route("/syncore/employees/<int:employee_id>/worklog/fill", methods=["POST"])
+@superadmin_required
+def syncore_fill_work_log(employee_id: int):
+    """Submit a daily work log entry for an employee (admin, unrestricted)."""
+    employee = SynCoreEmployee.query.get_or_404(employee_id)
+    try:
+        from app.services.util_syncore import fill_work_log
+
+        project_id  = request.form.get("project_id",  "").strip()
+        module_id   = request.form.get("module_id",   "").strip()
+        activity_id = request.form.get("activity_id", "").strip()
+        work_desc   = request.form.get("work_desc",   "").strip()
+        hour_clocked = request.form.get("hour_clocked", "").strip()
+
+        if not all([project_id, module_id, activity_id, work_desc, hour_clocked]):
+            flash("All fields are required to submit a work log.", "danger")
+            return redirect(url_for("admin.syncore_employee_detail", employee_id=employee_id))
+
+        result = fill_work_log(
+            project_id=project_id,
+            module_id=module_id,
+            activity_id=activity_id,
+            work_desc=work_desc,
+            hour_clocked=hour_clocked,
+            user_id=employee.user_id,
+            signed_array=employee.signed_array,
+        )
+
+        if "error" in result:
+            flash(f"Work log submission failed: {result['error']}", "danger")
+        else:
+            flash(result.get("message", "Work log submitted successfully."), "success")
+            logger.info(
+                "Admin %s filled work log for employee %s (project=%s)",
+                current_user.username, employee.name, project_id,
+            )
+
+    except Exception as e:
+        logger.error("fill_work_log admin error emp %s: %s", employee_id, e, exc_info=True)
+        flash(f"Work log submission failed: {e}", "danger")
+
+    return redirect(url_for("admin.syncore_employee_detail", employee_id=employee_id))
