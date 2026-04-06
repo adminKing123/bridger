@@ -29,6 +29,8 @@ from sqlalchemy import func
 from app import db
 from app.models.proxy import ProxyConfig
 from app.models.proxy_log import ProxyLog
+from app.models.syncore_access import SynCoreEmployeeRequest, UserEmployeeAccess
+from app.models.syncore_employee import SynCoreEmployee
 from app.models.webex_config import WebexConfig
 from app.models.webex_webhook import WebexWebhook
 from app.models.webex_webhook_log import WebexWebhookLog
@@ -279,7 +281,56 @@ def api_webex_stats():
 @login_required
 def api_syncore_stats():
     """
-    SynCore statistics stub.
-    Returns a coming_soon status — real data will be wired once SynCore ships.
+    Return SynCore statistics for the current user.
+    Counts active accesses, permissions, and pending requests.
     """
-    return jsonify({"status": "coming_soon"})
+    user_id = current_user.id
+
+    # Active employee accesses
+    accesses = (
+        UserEmployeeAccess.query
+        .filter_by(user_id=user_id, is_active=True)
+        .all()
+    )
+    total_accesses = len(accesses)
+    editor_count   = sum(1 for a in accesses if a.permission == UserEmployeeAccess.PERMISSION_EDITOR)
+    viewer_count   = total_accesses - editor_count
+
+    # Request counts
+    all_requests = SynCoreEmployeeRequest.query.filter_by(user_id=user_id).all()
+    pending_count  = sum(1 for r in all_requests if r.status == SynCoreEmployeeRequest.STATUS_PENDING)
+    approved_count = sum(1 for r in all_requests if r.status == SynCoreEmployeeRequest.STATUS_APPROVED)
+    rejected_count = sum(1 for r in all_requests if r.status == SynCoreEmployeeRequest.STATUS_REJECTED)
+
+    # Recent 5 employees (most recently granted)
+    recent_accesses = (
+        UserEmployeeAccess.query
+        .filter_by(user_id=user_id, is_active=True)
+        .order_by(UserEmployeeAccess.granted_at.desc())
+        .limit(5)
+        .all()
+    )
+    recent_employees = [
+        {
+            "access_id":   a.id,
+            "employee_id": a.employee_id,
+            "name":        a.employee.name,
+            "designation": a.employee.designation or "",
+            "firm":        a.employee.firm_name or "",
+            "permission":  a.permission,
+            "is_active":   a.employee.is_active,
+            "granted_at":  a.granted_at.strftime("%b %d, %Y"),
+        }
+        for a in recent_accesses
+    ]
+
+    return jsonify({
+        "total_accesses":  total_accesses,
+        "editor_count":    editor_count,
+        "viewer_count":    viewer_count,
+        "pending_count":   pending_count,
+        "approved_count":  approved_count,
+        "rejected_count":  rejected_count,
+        "total_requests":  len(all_requests),
+        "recent_employees": recent_employees,
+    })

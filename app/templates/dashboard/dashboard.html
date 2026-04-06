@@ -327,10 +327,19 @@
         </div>
         {% endfor %}
       </div>
+      <div class="panel" style="margin:0;"><div class="panel-body"><div class="skel skel-chart" style="height:120px;"></div></div></div>
+    </div>
+
+    <div id="syncore-error" style="display:none;">
+      <div class="dash-service-empty">
+        <i class="bi bi-exclamation-circle"></i>
+        <p>Could not load SynCore stats. <button type="button" class="btn-link-inline" id="syncoreRetryBtn">Try again</button></p>
+      </div>
     </div>
 
     <div id="syncore-content" style="display:none;">
-      <!-- filled by JS once API responds with coming_soon -->
+      <div class="row g-3 mb-3" id="syncore-kpis"></div>
+      <div id="syncore-employees-section"></div>
     </div>
 
   </div>
@@ -817,11 +826,18 @@
 
   /* ── SynCore stats loader ─────────────────────────────────── */
   var syncoreLoaded = false;
+  var URL_SYNCORE      = '{{ url_for("syncore.index") }}';
+  var URL_SYNCORE_REQS = '{{ url_for("syncore.requests") }}';
+
+  function showSyncoreState(state) {
+    document.getElementById('syncore-loading').style.display = state === 'loading' ? '' : 'none';
+    document.getElementById('syncore-error').style.display   = state === 'error'   ? '' : 'none';
+    document.getElementById('syncore-content').style.display = state === 'content' ? '' : 'none';
+  }
 
   function loadSyncoreStats() {
     if (syncoreLoaded) return;
-    document.getElementById('syncore-loading').style.display = '';
-    document.getElementById('syncore-content').style.display = 'none';
+    showSyncoreState('loading');
 
     fetch('{{ url_for("dashboard.api_syncore_stats") }}', { credentials: 'same-origin' })
       .then(function (r) {
@@ -830,23 +846,103 @@
       })
       .then(function (d) {
         syncoreLoaded = true;
-        document.getElementById('syncore-loading').style.display = 'none';
-        var el = document.getElementById('syncore-content');
-        el.innerHTML =
-          '<div class="dash-service-empty">'
-          + '<i class="bi bi-building-gear" style="color:var(--primary);font-size:2.2rem;"></i>'
-          + '<p style="font-weight:600;font-size:1rem;margin:.75rem 0 .4rem;">Coming Soon</p>'
-          + '<p style="font-size:.83rem;color:' + text2 + ';max-width:400px;">SynCore features are actively in development. '
-          + 'Check back soon for your HRMS data panel.</p>'
-          + '<a href="{{ url_for("syncore.index") }}" class="btn-save text-decoration-none"'
-          + ' style="font-size:.83rem;padding:.45rem 1.2rem;margin-top:.5rem;">'
-          + '<i class="bi bi-building me-1"></i>Learn More</a>'
-          + '</div>';
-        el.style.display = '';
+        renderSyncoreStats(d);
+        showSyncoreState('content');
       })
-      .catch(function () {
-        document.getElementById('syncore-loading').style.display = 'none';
-      });
+      .catch(function () { showSyncoreState('error'); });
+  }
+
+  var syncoreRetryBtn = document.getElementById('syncoreRetryBtn');
+  if (syncoreRetryBtn) syncoreRetryBtn.addEventListener('click', function () {
+    syncoreLoaded = false;
+    loadSyncoreStats();
+  });
+
+  function renderSyncoreStats(d) {
+    var purpleColor = '#7c3aed';
+
+    /* ── KPI cards ────────────────────────────────────────── */
+    var kpis = [
+      { val: d.total_accesses, label: 'Employees',       sub: 'active accesses', color: d.total_accesses > 0 ? purpleColor : null },
+      { val: d.editor_count,   label: 'Editor Access',   sub: 'can mark login/logout' },
+      { val: d.viewer_count,   label: 'Viewer Access',   sub: 'read-only access' },
+      { val: d.pending_count,  label: 'Pending Requests',sub: d.total_requests + ' total requests',
+        color: d.pending_count > 0 ? warning : null },
+    ];
+
+    var kpiRow = document.getElementById('syncore-kpis');
+    kpiRow.innerHTML = kpis.map(function (k) {
+      return '<div class="col-6 col-md-3">'
+        + '<div class="dash-kpi-card">'
+        + '<span class="dash-kpi-val"' + (k.color ? ' style="color:' + k.color + ';"' : '') + '>' + k.val + '</span>'
+        + '<span class="dash-kpi-label">' + k.label + '</span>'
+        + '<span class="dash-kpi-sub">' + (k.sub || '') + '</span>'
+        + '</div></div>';
+    }).join('');
+
+    /* ── Recent employees or empty state ─────────────────── */
+    var empSection = document.getElementById('syncore-employees-section');
+
+    if (d.total_accesses === 0) {
+      empSection.innerHTML =
+        '<div class="dash-service-empty">'
+        + '<i class="bi bi-building" style="color:' + purpleColor + ';font-size:2.2rem;"></i>'
+        + '<p style="font-weight:600;font-size:1rem;margin:.75rem 0 .4rem;">No employees yet</p>'
+        + '<p style="font-size:.83rem;color:' + text2 + ';max-width:380px;">'
+        + 'Request access to a SynCore employee profile to get started.</p>'
+        + '<a href="' + URL_SYNCORE + '" class="btn-save text-decoration-none"'
+        + ' style="font-size:.83rem;padding:.45rem 1.2rem;margin-top:.5rem;">'
+        + '<i class="bi bi-person-plus me-1"></i>Request Access</a>'
+        + '</div>';
+      return;
+    }
+
+    var rows = d.recent_employees.map(function (e, i) {
+      var permBadge = e.permission === 'editor'
+        ? '<span style="font-size:.7rem;font-weight:600;padding:.15rem .5rem;border-radius:4px;background:rgba(111,66,193,.12);color:#6f42c1;">Editor</span>'
+        : '<span style="font-size:.7rem;font-weight:600;padding:.15rem .5rem;border-radius:4px;background:var(--primary-light);color:var(--primary);">Viewer</span>';
+      var statusDot = e.is_active
+        ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;margin-right:.4rem;"></span>'
+        : '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#94a3b8;margin-right:.4rem;"></span>';
+      return '<tr>'
+        + '<td><span style="color:var(--text-3);font-size:.75rem;margin-right:.5rem;">#' + (i + 1) + '</span>'
+        + statusDot
+        + '<a href="/syncore/employees/' + e.access_id + '/" style="font-weight:600;color:var(--text);text-decoration:none;">'
+        + _esc(e.name) + '</a>'
+        + (e.designation ? '<span style="font-size:.76rem;color:' + text3 + ';margin-left:.4rem;">' + _esc(e.designation) + '</span>' : '')
+        + '</td>'
+        + '<td style="font-size:.8rem;color:var(--text-2);">' + _esc(e.firm || '—') + '</td>'
+        + '<td>' + permBadge + '</td>'
+        + '<td style="font-size:.78rem;color:' + text3 + ';white-space:nowrap;">' + e.granted_at + '</td>'
+        + '</tr>';
+    }).join('');
+
+    empSection.innerHTML =
+      '<div class="panel" style="margin:0;">'
+      + '<div class="panel-head">'
+      + '<i class="bi bi-people" style="color:' + purpleColor + ';font-size:.9rem;"></i>'
+      + '<span class="panel-head-title">Recent Employees</span>'
+      + '<a href="' + URL_SYNCORE + '" class="btn-dash-section-link ms-auto" style="font-size:.75rem;">'
+      + 'View all <i class="bi bi-arrow-right"></i></a>'
+      + '</div>'
+      + '<div class="proxy-table-wrap">'
+      + '<table class="proxy-table">'
+      + '<thead><tr>'
+      + '<th style="width:40%">Employee</th>'
+      + '<th>Firm</th>'
+      + '<th>Access</th>'
+      + '<th>Granted</th>'
+      + '</tr></thead>'
+      + '<tbody>' + rows + '</tbody>'
+      + '</table></div>'
+      + (d.pending_count > 0
+        ? '<div style="padding:.6rem 1.25rem;font-size:.8rem;background:rgba(180,83,9,.06);border-top:1px solid var(--border);">'
+          + '<i class="bi bi-hourglass-split me-1" style="color:#b45309;"></i>'
+          + '<strong>' + d.pending_count + '</strong> pending request' + (d.pending_count > 1 ? 's' : '') + ' awaiting admin review. '
+          + '<a href="' + URL_SYNCORE_REQS + '" style="color:var(--primary);">View requests</a>'
+          + '</div>'
+        : '')
+      + '</div>';  
   }
 
   /* ── Init ─────────────────────────────────────────────────── */
