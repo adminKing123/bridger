@@ -603,6 +603,124 @@ def syncore_project_detail(employee_id: int, project_id: str):
         return redirect(url_for("admin.syncore_employee_projects", employee_id=employee_id))
 
 
+@admin_bp.route("/syncore/employees/<int:employee_id>/project-logs")
+@superadmin_required
+def syncore_employee_project_logs(employee_id: int):
+    """View work logs for an employee, filterable by project/module/activity and date."""
+    employee = SynCoreEmployee.query.get_or_404(employee_id)
+
+    try:
+        from app.services.util_syncore import (
+            get_emp_projects, get_project_modules, get_project_activities, get_emp_project_log
+        )
+        import datetime as _dt
+
+        # ── Date defaults: current month ──────────────────────────────────────
+        today = datetime.now()
+        default_start = today.replace(day=1).strftime("%m/%d/%Y")
+        if today.month == 12:
+            last_day = today.replace(year=today.year + 1, month=1, day=1) - _dt.timedelta(days=1)
+        else:
+            last_day = today.replace(month=today.month + 1, day=1) - _dt.timedelta(days=1)
+        default_end = last_day.strftime("%m/%d/%Y")
+
+        start_date  = request.args.get("start_date", default_start).strip()
+        end_date    = request.args.get("end_date",   default_end).strip()
+        project_id  = request.args.get("project_id",  "").strip()
+        module_id   = request.args.get("module_id",   "").strip()
+        activity_id = request.args.get("activity_id", "").strip()
+        page        = request.args.get("page", 1, type=int)
+        per_page    = 20
+
+        # ── Fetch all projects for the dropdown ───────────────────────────────
+        all_projects = get_emp_projects(
+            user_id=employee.user_id,
+            signed_array=employee.signed_array
+        )
+
+        # ── If a project is selected, fetch its modules & activities ──────────
+        project_modules    = []
+        project_activities = []
+        if project_id:
+            project_modules = get_project_modules(
+                user_id=employee.user_id,
+                signed_array=employee.signed_array,
+                project_id=project_id
+            )
+            project_activities = get_project_activities(
+                user_id=employee.user_id,
+                signed_array=employee.signed_array,
+                project_id=project_id
+            )
+
+        # ── Fetch logs ────────────────────────────────────────────────────────
+        logs = get_emp_project_log(
+            start_date=start_date,
+            end_date=end_date,
+            user_id=employee.user_id,
+            signed_array=employee.signed_array,
+            project_id=int(project_id)  if project_id  else 0,
+            module_id=int(module_id)    if module_id    else 0,
+            activity_id=int(activity_id) if activity_id else 0,
+        )
+
+        # Sort newest first
+        try:
+            logs.sort(
+                key=lambda r: datetime.strptime(r.get("log_date", "01/01/1970"), "%m/%d/%Y"),
+                reverse=True
+            )
+        except (ValueError, TypeError):
+            pass
+
+        # ── Summary stats ─────────────────────────────────────────────────────
+        total_hours = sum(
+            float(r.get("hour_clocked", 0) or 0) for r in logs
+        )
+
+        # ── Pagination ────────────────────────────────────────────────────────
+        total      = len(logs)
+        total_pages = max((total + per_page - 1) // per_page, 1)
+        page       = max(1, min(page, total_pages))
+        records    = logs[(page - 1) * per_page : page * per_page]
+
+        pagination = {
+            "items":    records,
+            "page":     page,
+            "per_page": per_page,
+            "total":    total,
+            "pages":    total_pages,
+            "has_prev": page > 1,
+            "has_next": page < total_pages,
+            "prev_num": page - 1 if page > 1 else None,
+            "next_num": page + 1 if page < total_pages else None,
+        }
+
+        return render_template(
+            "admin/syncore_employee_project_logs.html",
+            employee=employee,
+            pagination=pagination,
+            start_date=start_date,
+            end_date=end_date,
+            project_id=project_id,
+            module_id=module_id,
+            activity_id=activity_id,
+            all_projects=all_projects,
+            project_modules=project_modules,
+            project_activities=project_activities,
+            total_hours=total_hours,
+            total_logs=total,
+        )
+
+    except Exception as e:
+        logger.error(
+            "Error fetching project logs for employee %s: %s",
+            employee_id, str(e), exc_info=True
+        )
+        flash(f"Failed to fetch project logs: {str(e)}", "danger")
+        return redirect(url_for("admin.syncore_employee_projects", employee_id=employee_id))
+
+
 @admin_bp.route("/syncore/employees/<int:employee_id>/email-settings")
 @superadmin_required
 def syncore_employee_email_settings(employee_id: int):

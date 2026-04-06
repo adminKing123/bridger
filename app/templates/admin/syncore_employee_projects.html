@@ -199,11 +199,17 @@
             </td>
 
             <!-- Actions -->
-            <td style="width: 80px;">
-              <a href="{{ url_for('admin.syncore_project_detail', employee_id=employee.id, project_id=project.project_id) }}"
-                 class="btn-save px-2 py-1 text-decoration-none" style="font-size: 0.78rem;">
-                <i class="bi bi-layers me-1"></i>Details
-              </a>
+            <td style="width: 130px;">
+              <div class="d-flex gap-1">
+                <a href="{{ url_for('admin.syncore_project_detail', employee_id=employee.id, project_id=project.project_id) }}"
+                   class="btn-save px-2 py-1 text-decoration-none" style="font-size: 0.78rem;">
+                  <i class="bi bi-layers me-1"></i>Details
+                </a>
+                <a href="{{ url_for('admin.syncore_employee_project_logs', employee_id=employee.id, project_id=project.project_id) }}"
+                   class="btn-discard px-2 py-1 text-decoration-none" style="font-size: 0.78rem;">
+                  <i class="bi bi-journal-text me-1"></i>Logs
+                </a>
+              </div>
             </td>
           </tr>
           {% endfor %}

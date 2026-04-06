@@ -577,6 +577,85 @@ def get_project_activities(
     return response_data
 
 
+def get_emp_project_log(
+    start_date: str = "",
+    end_date: str = "",
+    user_id: Optional[str] = None,
+    signed_array: Optional[str] = None,
+    project_id: int = 0,
+    module_id: int = 0,
+    activity_id: int = 0,
+) -> List[Dict]:
+    """
+    Fetch work log entries for an employee, optionally filtered by project/module/activity.
+
+    Args:
+        start_date: Start date in MM/DD/YYYY format
+        end_date: End date in MM/DD/YYYY format
+        user_id: Employee user ID
+        signed_array: Employee signed array for authentication
+        project_id: Filter by project (0 = all projects)
+        module_id: Filter by module (0 = all modules)
+        activity_id: Filter by activity (0 = all activities)
+
+    Returns:
+        List of log dictionaries with keys:
+            - id: str
+            - user_id: str
+            - project_id: str
+            - project_name: str
+            - user_name: str
+            - module_id: str
+            - module_name: str
+            - activity_id: str
+            - activity_name: str
+            - work_desc: str
+            - log_date: str (MM/DD/YYYY)
+            - hour_clocked: str
+    """
+    endpoint = "/project/get_emp_project_log"
+    payload = {
+        "hrcode": CONFIG["HR_CODE"],
+        "project_id": project_id,
+        "emp_id": user_id or CONFIG["DEFAULT_USER_ID"],
+        "module_id": module_id,
+        "activity_id": activity_id,
+        "start_date": start_date,
+        "end_date": end_date,
+        "groupby": "none",
+        "sortby": "ASC",
+        "signed_array": signed_array or CONFIG["DEFAULT_SIGNED_ARRAY"],
+    }
+
+    logger.info(
+        "Fetching project logs for user_id=%s project_id=%s %s to %s",
+        user_id, project_id, start_date, end_date
+    )
+    encoded_payload = encode(payload)
+    try:
+        resp = requests.post(
+            f"{CONFIG['API_BASE']}{endpoint}",
+            json=encoded_payload,
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+        if resp.status_code == 200:
+            data = decode(resp.json())
+        else:
+            logger.error("Project log request failed: status=%s", resp.status_code)
+            return []
+    except Exception as e:
+        logger.error("Project log request exception: %s", str(e))
+        return []
+
+    response_data = data.get("response_data", [])
+    if not isinstance(response_data, list):
+        response_data = [response_data] if response_data else []
+
+    logger.info("Retrieved %d log entries", len(response_data))
+    return response_data
+
+
 def login(user_id: Optional[str] = None, signed_array: Optional[str] = None, override_comment: str = "") -> Dict:
     """
     Mark employee login/attendance entry.
