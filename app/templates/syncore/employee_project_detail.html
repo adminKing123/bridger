@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block title %}{{ project_name }} — SynCore{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('syncore.index') }}">SynCore</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('syncore.employees') }}">Employees</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('syncore.employee_detail', access_id=access.id) }}">{{ employee.name }}</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('syncore.employee_projects', access_id=access.id) }}">Projects</a></li>
+      <li class="breadcrumb-item active">{{ project_name }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <h1 class="dash-title mb-0"><i class="bi bi-layers me-2"></i>{{ project_name }}</h1>
+      <p class="dash-subtitle mb-0">Project ID: {{ project_id }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('syncore.employee_project_logs', access_id=access.id, project_id=project_id) }}"
+         class="btn-save px-3 py-2 text-decoration-none">
+        <i class="bi bi-journal-text me-1"></i>Work Logs
+      </a>
+      <a href="{{ url_for('syncore.employee_projects', access_id=access.id) }}"
+         class="btn-discard px-3 py-2 text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i>Back
+      </a>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:700;color:var(--primary);">{{ modules|length }}</div>
+        <div style="font-size:.75rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-top:.25rem;">Modules</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:700;color:var(--success);">{{ activities|length }}</div>
+        <div style="font-size:.75rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-top:.25rem;">Activities</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Modules -->
+    <div class="col-12 col-lg-6">
+      <div class="panel">
+        <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+          <h5 style="margin:0;font-size:.9rem;font-weight:700;color:var(--text);">
+            <i class="bi bi-puzzle me-2 text-primary"></i>Modules
+          </h5>
+        </div>
+        {% if modules %}
+        <div class="table-responsive">
+          <table class="adm-table">
+            <thead><tr><th>#</th><th>Module Name</th><th>ID</th></tr></thead>
+            <tbody>
+              {% for mod in modules %}
+              <tr>
+                <td class="text-muted" style="font-size:.82rem;">{{ loop.index }}</td>
+                <td style="font-weight:500;">{{ mod.module_name or '—' }}</td>
+                <td><code style="font-size:.8rem;">{{ mod.module_id }}</code></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+          <i class="bi bi-puzzle" style="font-size:2rem;color:var(--text-3);"></i>
+          <p class="mt-2 mb-0" style="font-size:.875rem;color:var(--text-3);">No modules</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Activities -->
+    <div class="col-12 col-lg-6">
+      <div class="panel">
+        <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+          <h5 style="margin:0;font-size:.9rem;font-weight:700;color:var(--text);">
+            <i class="bi bi-lightning me-2 text-success"></i>Activities
+          </h5>
+        </div>
+        {% if activities %}
+        <div class="table-responsive">
+          <table class="adm-table">
+            <thead><tr><th>#</th><th>Activity Name</th><th>ID</th></tr></thead>
+            <tbody>
+              {% for act in activities %}
+              <tr>
+                <td class="text-muted" style="font-size:.82rem;">{{ loop.index }}</td>
+                <td style="font-weight:500;">{{ act.activity_name or '—' }}</td>
+                <td><code style="font-size:.8rem;">{{ act.activity_id }}</code></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+          <i class="bi bi-lightning" style="font-size:2rem;color:var(--text-3);"></i>
+          <p class="mt-2 mb-0" style="font-size:.875rem;color:var(--text-3);">No activities</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

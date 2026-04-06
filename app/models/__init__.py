@@ -14,6 +14,7 @@ from app.models.webex_webhook import WebexWebhook
 from app.models.webex_webhook_log import WebexWebhookLog
 from app.models.admin import UserServicePermission
 from app.models.syncore_employee import SynCoreEmployee
+from app.models.syncore_access import SynCoreEmployeeRequest, UserEmployeeAccess
 
 __all__ = [
     "User", "OTP",
@@ -23,4 +24,6 @@ __all__ = [
     "WebexWebhookLog",
     "UserServicePermission",
     "SynCoreEmployee",
+    "SynCoreEmployeeRequest",
+    "UserEmployeeAccess",
 ]

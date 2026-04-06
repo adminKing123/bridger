@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+{% block title %}Access Request #{{ emp_request.id }} — Admin{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+  <style>
+    .req-detail-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      box-shadow: var(--shadow-xs);
+    }
+    .req-info-row {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      align-items: flex-start;
+    }
+    .req-info-row:last-child { border-bottom: none; }
+    .req-info-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      width: 140px;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+    .req-info-value {
+      font-size: 0.9rem;
+      color: var(--text);
+      flex: 1;
+    }
+    .req-status-badge {
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .req-status-pending  { background: rgba(255,193,7,.15); color: #b45309; }
+    .req-status-approved { background: rgba(25,135,84,.12); color: #198754; }
+    .req-status-rejected { background: rgba(220,53,69,.12); color: #dc3545; }
+    .req-perm-badge {
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .req-perm-viewer { background: var(--primary-light); color: var(--primary); }
+    .req-perm-editor { background: rgba(111,66,193,.1); color: #6f42c1; }
+    .emp-info-mini {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .emp-avatar-mini {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .emp-avatar-mini.inactive { background: var(--text-3); }
+    .action-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-xs);
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 860px;">
+
+  <!-- ── Breadcrumb ─────────────────────────────────────── -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('admin.syncore_management') }}">SynCore</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('admin.syncore_employee_requests') }}">Employee Requests</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Request #{{ emp_request.id }}</li>
+    </ol>
+  </nav>
+
+  <!-- ── Page header ────────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="dash-title mb-0">
+        <i class="bi bi-person-check me-2"></i>Access Request #{{ emp_request.id }}
+      </h1>
+      <p class="dash-subtitle mb-0">
+        Submitted {{ emp_request.requested_at.strftime('%B %d, %Y at %H:%M UTC') }}
+      </p>
+    </div>
+    <span class="req-status-badge req-status-{{ emp_request.status }}">
+      {% if emp_request.status == 'pending' %}
+        <i class="bi bi-hourglass-split"></i> Pending Review
+      {% elif emp_request.status == 'approved' %}
+        <i class="bi bi-check-circle-fill"></i> Approved
+      {% else %}
+        <i class="bi bi-x-circle-fill"></i> Rejected
+      {% endif %}
+    </span>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ── Left: Request details ───────────────────────── -->
+    <div class="col-lg-7">
+
+      <!-- Requester -->
+      <div class="req-detail-card mb-3">
+        <h5 style="font-size:1rem;font-weight:700;margin:0 0 1rem 0;color:var(--text);">
+          <i class="bi bi-person me-2 text-primary"></i>Requester
+        </h5>
+        <div class="req-info-row">
+          <div class="req-info-label">Username</div>
+          <div class="req-info-value">
+            <a href="{{ url_for('admin.user_detail', user_id=emp_request.user.id) }}"
+               class="text-decoration-none" style="color:var(--primary);font-weight:600;">
+              {{ emp_request.user.username }}
+            </a>
+          </div>
+        </div>
+        <div class="req-info-row">
+          <div class="req-info-label">Email</div>
+          <div class="req-info-value">{{ emp_request.user.email }}</div>
+        </div>
+        <div class="req-info-row">
+          <div class="req-info-label">Requested</div>
+          <div class="req-info-value">
+            <span class="req-perm-badge req-perm-{{ emp_request.requested_permission }}">
+              <i class="bi bi-{% if emp_request.requested_permission == 'editor' %}pencil{% else %}eye{% endif %} me-1"></i>
+              {{ emp_request.requested_permission|capitalize }} access
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Employee -->
+      <div class="req-detail-card mb-3">
+        <h5 style="font-size:1rem;font-weight:700;margin:0 0 1rem 0;color:var(--text);">
+          <i class="bi bi-building me-2 text-primary"></i>Requested Employee
+        </h5>
+        <div class="emp-info-mini mb-3">
+          <div class="emp-avatar-mini {% if not emp_request.employee.is_active %}inactive{% endif %}">
+            {{ emp_request.employee.name[0]|upper }}
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:1rem;">{{ emp_request.employee.name }}</div>
+            <div style="font-size:0.82rem;color:var(--text-3);">{{ emp_request.employee.designation or 'No designation' }}</div>
+            <div style="font-size:0.8rem;color:var(--text-3);">{{ emp_request.employee.org_name or '' }}</div>
+          </div>
+        </div>
+        <div class="req-info-row">
+          <div class="req-info-label">Searched Email</div>
+          <div class="req-info-value">{{ emp_request.employee_email }}</div>
+        </div>
+        <div class="req-info-row">
+          <div class="req-info-label">Employee ID</div>
+          <div class="req-info-value">
+            <code style="font-size:0.82rem;">{{ emp_request.employee.employee_id }}</code>
+          </div>
+        </div>
+        <div class="req-info-row">
+          <div class="req-info-label">Status</div>
+          <div class="req-info-value">
+            {% if emp_request.employee.is_active %}
+              <span class="badge-ontime">Active</span>
+            {% else %}
+              <span class="badge-late">Inactive</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="req-info-row" style="border-bottom:none;">
+          <div class="req-info-label"></div>
+          <div class="req-info-value">
+            <a href="{{ url_for('admin.syncore_employee_detail', employee_id=emp_request.employee.id) }}"
+               class="btn-discard px-2 py-1 text-decoration-none" style="font-size:0.8rem;">
+              <i class="bi bi-eye me-1"></i>View Employee Profile
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current access (if any) -->
+      {% if existing_access %}
+      <div class="req-detail-card"
+           style="border-color: {% if existing_access.is_active %}var(--success){% else %}var(--border){% endif %};">
+        <h5 style="font-size:1rem;font-weight:700;margin:0 0 1rem 0;color:var(--text);">
+          <i class="bi bi-key me-2" style="color:var(--success);"></i>Existing Access Record
+        </h5>
+        <div class="req-info-row">
+          <div class="req-info-label">Permission</div>
+          <div class="req-info-value">
+            <span class="req-perm-badge req-perm-{{ existing_access.permission }}">
+              {{ existing_access.permission|capitalize }}
+            </span>
+          </div>
+        </div>
+        <div class="req-info-row">
+          <div class="req-info-label">Active</div>
+          <div class="req-info-value">
+            {% if existing_access.is_active %}
+              <span style="color:var(--success);font-weight:600;"><i class="bi bi-check-circle me-1"></i>Yes</span>
+            {% else %}
+              <span style="color:var(--text-3);"><i class="bi bi-x-circle me-1"></i>Revoked</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="req-info-row">
+          <div class="req-info-label">Granted</div>
+          <div class="req-info-value" style="font-size:0.84rem;">
+            {{ existing_access.granted_at.strftime('%b %d, %Y') }}
+            {% if existing_access.granted_by %}
+              by {{ existing_access.granted_by.username }}
+            {% endif %}
+          </div>
+        </div>
+        {% if existing_access.is_active %}
+        <div class="req-info-row" style="border-bottom:none;">
+          <div class="req-info-label"></div>
+          <div class="req-info-value">
+            <form method="POST"
+                  action="{{ url_for('admin.syncore_revoke_access', access_id=existing_access.id) }}"
+                  onsubmit="return confirm('Revoke this user\'s access?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="next"
+                     value="{{ url_for('admin.syncore_employee_request_detail', request_id=emp_request.id) }}">
+              <button type="submit" class="btn-discard px-3 py-1" style="font-size:0.82rem;">
+                <i class="bi bi-slash-circle me-1"></i>Revoke Access
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- ── Right: Action panel ─────────────────────────── -->
+    <div class="col-lg-5">
+      {% if emp_request.is_pending %}
+      <!-- Approve -->
+      <div class="action-section mb-3">
+        <h5 style="font-size:1rem;font-weight:700;color:var(--success);margin:0 0 1rem 0;">
+          <i class="bi bi-check-circle me-2"></i>Approve Request
+        </h5>
+        <p style="font-size:0.875rem;color:var(--text-2);margin-bottom:1rem;">
+          Grant access with the selected permission level.
+          The user will receive an email notification.
+        </p>
+        <form method="POST"
+              action="{{ url_for('admin.syncore_approve_request', request_id=emp_request.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label"
+                   style="font-size:0.78rem;font-weight:600;text-transform:uppercase;
+                          letter-spacing:0.05em;color:var(--text-2);">
+              Permission Level
+            </label>
+            <select name="permission" class="form-select form-select-sm"
+                    style="background:var(--bg);border-color:var(--border);color:var(--text);">
+              <option value="viewer"
+                {% if emp_request.requested_permission == 'viewer' %}selected{% endif %}>
+                👁 Viewer — Read-only access
+              </option>
+              <option value="editor"
+                {% if emp_request.requested_permission == 'editor' %}selected{% endif %}>
+                ✏️ Editor — View + Login/Logout actions
+              </option>
+            </select>
+          </div>
+          <button type="submit" class="btn-save px-4 py-2 w-100">
+            <i class="bi bi-check-circle me-1"></i>Approve Access
+          </button>
+        </form>
+      </div>
+
+      <!-- Reject -->
+      <div class="action-section">
+        <h5 style="font-size:1rem;font-weight:700;color:#dc3545;margin:0 0 1rem 0;">
+          <i class="bi bi-x-circle me-2"></i>Reject Request
+        </h5>
+        <form method="POST"
+              action="{{ url_for('admin.syncore_reject_request', request_id=emp_request.id) }}"
+              onsubmit="return confirm('Reject this request?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label"
+                   style="font-size:0.78rem;font-weight:600;text-transform:uppercase;
+                          letter-spacing:0.05em;color:var(--text-2);">
+              Rejection Reason <span style="font-weight:400;color:var(--text-3);">(optional)</span>
+            </label>
+            <textarea name="rejection_reason" rows="3"
+                      class="form-control form-control-sm"
+                      style="background:var(--bg);border-color:var(--border);
+                             color:var(--text);resize:none;"
+                      placeholder="Provide a reason for the requester…"></textarea>
+          </div>
+          <button type="submit" class="btn-discard px-4 py-2 w-100">
+            <i class="bi bi-x-circle me-1"></i>Reject Request
+          </button>
+        </form>
+      </div>
+
+      {% else %}
+      <!-- Already reviewed -->
+      <div class="action-section">
+        <h5 style="font-size:1rem;font-weight:700;margin:0 0 1rem 0;color:var(--text);">
+          <i class="bi bi-clock-history me-2 text-primary"></i>Review Details
+        </h5>
+        <div class="req-info-row">
+          <div class="req-info-label">Reviewed</div>
+          <div class="req-info-value" style="font-size:0.84rem;">
+            {{ emp_request.reviewed_at.strftime('%b %d, %Y') if emp_request.reviewed_at else '—' }}
+          </div>
+        </div>
+        <div class="req-info-row">
+          <div class="req-info-label">Reviewed By</div>
+          <div class="req-info-value" style="font-size:0.84rem;">
+            {{ emp_request.reviewed_by.username if emp_request.reviewed_by else '—' }}
+          </div>
+        </div>
+        {% if emp_request.rejection_reason %}
+        <div class="req-info-row" style="border-bottom:none;">
+          <div class="req-info-label">Reason</div>
+          <div class="req-info-value" style="font-size:0.84rem;color:var(--text-2);">
+            {{ emp_request.rejection_reason }}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

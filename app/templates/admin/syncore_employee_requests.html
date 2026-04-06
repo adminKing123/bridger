@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% block title %}Employee Access Requests — Admin{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+  <style>
+    .req-status-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.22rem 0.6rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      white-space: nowrap;
+    }
+    .req-status-pending  { background: rgba(255,193,7,.15); color: #b45309; }
+    .req-status-approved { background: rgba(25,135,84,.12); color: #198754; }
+    .req-status-rejected { background: rgba(220,53,69,.12); color: #dc3545; }
+    .req-perm-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.18rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .req-perm-viewer { background: var(--primary-light); color: var(--primary); }
+    .req-perm-editor { background: rgba(111,66,193,.1); color: #6f42c1; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- ── Page header ────────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="dash-title mb-0">
+        <i class="bi bi-person-check me-2"></i>Employee Access Requests
+      </h1>
+      <p class="dash-subtitle mb-0">
+        Manage user requests to access SynCore employee profiles
+      </p>
+    </div>
+    <a href="{{ url_for('admin.syncore_management') }}"
+       class="btn-discard px-3 py-2 text-decoration-none">
+      <i class="bi bi-arrow-left me-1"></i>SynCore
+    </a>
+  </div>
+
+  <!-- ── Status filter tabs ─────────────────────────────── -->
+  <div class="panel mb-3">
+    <div class="adm-search-row" style="flex-wrap:wrap;">
+      <div class="adm-status-tabs" style="flex-wrap:wrap;">
+        {% for val, label, count in [
+            ('pending',  'Pending',  counts.pending),
+            ('approved', 'Approved', counts.approved),
+            ('rejected', 'Rejected', counts.rejected),
+            ('all',      'All',      counts.all),
+        ] %}
+          <a href="{{ url_for('admin.syncore_employee_requests', status=val) }}"
+             class="adm-status-tab {% if status_filter == val %}active{% endif %}">
+            {{ label }}
+            {% if count > 0 %}
+              <span style="background:{% if val=='pending' %}#ffc107{% elif val=='approved' %}#198754{% elif val=='rejected' %}#dc3545{% else %}var(--text-3){% endif %};
+                           color:#fff;font-size:0.68rem;font-weight:700;padding:0.1rem 0.4rem;
+                           border-radius:999px;margin-left:0.35rem;">{{ count }}</span>
+            {% endif %}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Requests table ─────────────────────────────────── -->
+  <div class="panel">
+    {% if pagination.items %}
+    <div class="table-responsive">
+      <table class="adm-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Requested By</th>
+            <th>Employee</th>
+            <th>Permission</th>
+            <th>Status</th>
+            <th>Requested</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in pagination.items %}
+          {% set row_num = (pagination.page - 1) * pagination.per_page + loop.index %}
+          <tr>
+            <td class="text-muted" style="font-size:0.82rem;">{{ row_num }}</td>
+
+            <!-- Requested by -->
+            <td>
+              <div class="adm-user-cell">
+                <div class="adm-avatar">
+                  {{ req.user.first_name[0]|upper if req.user.first_name else req.user.username[0]|upper }}
+                </div>
+                <div>
+                  <div class="adm-username">{{ req.user.username }}</div>
+                  <div style="font-size:0.78rem;color:var(--text-3);">{{ req.user.email }}</div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Employee -->
+            <td>
+              <div style="font-weight:600;font-size:0.9rem;">{{ req.employee.name }}</div>
+              <div style="font-size:0.78rem;color:var(--text-3);">{{ req.employee_email }}</div>
+            </td>
+
+            <!-- Permission requested -->
+            <td>
+              <span class="req-perm-badge req-perm-{{ req.requested_permission }}">
+                <i class="bi bi-{% if req.requested_permission == 'editor' %}pencil{% else %}eye{% endif %} me-1"></i>
+                {{ req.requested_permission|capitalize }}
+              </span>
+            </td>
+
+            <!-- Status -->
+            <td>
+              {% if req.status == 'approved' %}
+                {% set acc = access_by_request.get(req.id) %}
+                {% if acc and not acc.is_active %}
+                  <span class="req-status-badge" style="background:rgba(100,116,139,.12);color:#64748b;">
+                    <i class="bi bi-slash-circle"></i> Revoked
+                  </span>
+                {% else %}
+                  <span class="req-status-badge req-status-approved">
+                    <i class="bi bi-check-circle-fill"></i> Approved
+                  </span>
+                {% endif %}
+              {% elif req.status == 'pending' %}
+                <span class="req-status-badge req-status-pending">
+                  <i class="bi bi-hourglass-split"></i> Pending
+                </span>
+              {% else %}
+                <span class="req-status-badge req-status-rejected">
+                  <i class="bi bi-x-circle-fill"></i> Rejected
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Date -->
+            <td style="font-size:0.84rem;white-space:nowrap;">
+              {{ req.requested_at.strftime('%b %d, %Y') }}
+            </td>
+
+            <!-- Actions -->
+            <td>
+              <a href="{{ url_for('admin.syncore_employee_request_detail', request_id=req.id) }}"
+                 class="btn-save px-2 py-1 text-decoration-none" style="font-size:0.78rem;">
+                <i class="bi bi-eye me-1"></i>Review
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Pagination ──────────────────────────────────── -->
+    {% if pagination.pages > 1 %}
+    <div class="d-flex justify-content-center mt-3 pb-2">
+      <div class="adm-pagination">
+        {% if pagination.has_prev %}
+          <a href="{{ url_for('admin.syncore_employee_requests', status=status_filter, page=pagination.prev_num) }}"
+             class="adm-page-btn"><i class="bi bi-chevron-left"></i></a>
+        {% else %}
+          <span class="adm-page-btn adm-page-btn-disabled"><i class="bi bi-chevron-left"></i></span>
+        {% endif %}
+
+        {% set cur = pagination.page %}{% set tot = pagination.pages %}
+        {% for p in range(1, tot + 1) %}
+          {% if p == 1 or p == tot or (p >= cur - 2 and p <= cur + 2) %}
+            {% if not loop.first %}
+              {% set prev_shown = namespace(v=0) %}
+              {% for q in range(1, p) %}{% if q==1 or q==tot or (q>=cur-2 and q<=cur+2) %}{% set prev_shown.v = q %}{% endif %}{% endfor %}
+              {% if prev_shown.v < p - 1 %}<span class="adm-page-btn adm-page-btn-disabled">…</span>{% endif %}
+            {% endif %}
+            {% if p == cur %}
+              <span class="adm-page-btn adm-page-btn-active">{{ p }}</span>
+            {% else %}
+              <a href="{{ url_for('admin.syncore_employee_requests', status=status_filter, page=p) }}"
+                 class="adm-page-btn">{{ p }}</a>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+
+        {% if pagination.has_next %}
+          <a href="{{ url_for('admin.syncore_employee_requests', status=status_filter, page=pagination.next_num) }}"
+             class="adm-page-btn"><i class="bi bi-chevron-right"></i></a>
+        {% else %}
+          <span class="adm-page-btn adm-page-btn-disabled"><i class="bi bi-chevron-right"></i></span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5">
+      <i class="bi bi-person-check" style="font-size:2.5rem;color:var(--text-3);"></i>
+      <p class="mt-3 mb-0" style="color:var(--text-2);font-weight:500;">
+        No {{ status_filter if status_filter != 'all' else '' }} requests
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

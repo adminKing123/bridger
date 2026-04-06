@@ -148,3 +148,56 @@
   color: var(--text-3);
   line-height: 1.5;
 }
+
+/* ── Employee cards (dashboard grid) ───────────────────────── */
+.syncore-emp-card {
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+.syncore-emp-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,.10);
+  border-color: var(--primary);
+}
+
+/* ── Employee avatar circle ─────────────────────────────────── */
+.syncore-emp-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.syncore-emp-avatar.inactive { background: var(--text-3); }
+
+/* ── Status badges (Active / Inactive) ──────────────────────── */
+.syncore-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.syncore-status-badge.active   { background: rgba(25,135,84,.12);  color: #198754; }
+.syncore-status-badge.inactive { background: rgba(220,53,69,.12);  color: #dc3545; }
+
+/* ── Permission badges (Viewer / Editor) ────────────────────── */
+.syncore-perm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.syncore-perm-badge.viewer { background: var(--primary-light); color: var(--primary); }
+.syncore-perm-badge.editor { background: rgba(111,66,193,.1);  color: #6f42c1; }

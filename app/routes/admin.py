@@ -261,12 +261,16 @@ def syncore_management():
         db.session.query(db.func.max(SynCoreEmployee.last_synced_at))
         .scalar()
     )
-    
+
+    from app.models.syncore_access import SynCoreEmployeeRequest
+    pending_requests = SynCoreEmployeeRequest.query.filter_by(status="pending").count()
+
     return render_template(
         "admin/syncore_management.html",
         total_employees=total_employees,
         active_employees=active_employees,
         last_synced=last_synced,
+        pending_requests=pending_requests,
     )
 
 
@@ -904,3 +908,204 @@ def syncore_sync():
             "success": False,
             "error": error_msg
         }), 500
+
+
+# ── SynCore Employee Access Requests ──────────────────────────────────────────
+
+@admin_bp.route("/syncore/employee-requests")
+@superadmin_required
+def syncore_employee_requests():
+    """
+    Paginated list of all SynCore employee access requests, filterable by status.
+    """
+    from app.models.syncore_access import SynCoreEmployeeRequest
+
+    status_filter = request.args.get("status", "pending")
+    page          = request.args.get("page", 1, type=int)
+
+    query = SynCoreEmployeeRequest.query
+    if status_filter in ("pending", "approved", "rejected"):
+        query = query.filter_by(status=status_filter)
+
+    pagination = query.order_by(
+        SynCoreEmployeeRequest.requested_at.desc()
+    ).paginate(page=page, per_page=20, error_out=False)
+
+    counts = {
+        "all":      SynCoreEmployeeRequest.query.count(),
+        "pending":  SynCoreEmployeeRequest.query.filter_by(status="pending").count(),
+        "approved": SynCoreEmployeeRequest.query.filter_by(status="approved").count(),
+        "rejected": SynCoreEmployeeRequest.query.filter_by(status="rejected").count(),
+    }
+
+    # Build a dict of request_id -> UserEmployeeAccess so the template can
+    # flag approved-but-revoked rows (is_active == False) differently.
+    from app.models.syncore_access import UserEmployeeAccess
+    approved_ids = [r.id for r in pagination.items if r.is_approved]
+    access_by_request: dict = {}
+    if approved_ids:
+        accesses = UserEmployeeAccess.query.filter(
+            UserEmployeeAccess.request_id.in_(approved_ids)
+        ).all()
+        access_by_request = {a.request_id: a for a in accesses}
+
+    return render_template(
+        "admin/syncore_employee_requests.html",
+        pagination=pagination,
+        status_filter=status_filter,
+        counts=counts,
+        access_by_request=access_by_request,
+    )
+
+
+@admin_bp.route("/syncore/employee-requests/<int:request_id>")
+@superadmin_required
+def syncore_employee_request_detail(request_id: int):
+    """View a single employee access request with approve / reject actions."""
+    from app.models.syncore_access import SynCoreEmployeeRequest, UserEmployeeAccess
+
+    emp_request     = SynCoreEmployeeRequest.query.get_or_404(request_id)
+    existing_access = UserEmployeeAccess.query.filter_by(
+        user_id=emp_request.user_id,
+        employee_id=emp_request.employee_id,
+    ).first()
+
+    return render_template(
+        "admin/syncore_employee_request_detail.html",
+        emp_request=emp_request,
+        existing_access=existing_access,
+    )
+
+
+@admin_bp.route("/syncore/employee-requests/<int:request_id>/approve", methods=["POST"])
+@superadmin_required
+def syncore_approve_request(request_id: int):
+    """Approve an employee access request and create/update a UserEmployeeAccess record."""
+    from app.models.syncore_access import SynCoreEmployeeRequest, UserEmployeeAccess
+    from app.services.email_service import send_request_approved_email
+
+    emp_request = SynCoreEmployeeRequest.query.get_or_404(request_id)
+
+    if not emp_request.is_pending:
+        flash("This request has already been reviewed.", "warning")
+        return redirect(url_for("admin.syncore_employee_request_detail", request_id=request_id))
+
+    permission = request.form.get("permission", "viewer")
+    if permission not in ("viewer", "editor"):
+        permission = "viewer"
+
+    # Upsert the access record for this user+employee pair
+    existing = UserEmployeeAccess.query.filter_by(
+        user_id=emp_request.user_id,
+        employee_id=emp_request.employee_id,
+    ).first()
+
+    if existing:
+        existing.permission    = permission
+        existing.is_active     = True
+        existing.granted_at    = datetime.now(timezone.utc)
+        existing.granted_by_id = current_user.id
+        existing.request_id    = emp_request.id
+    else:
+        db.session.add(UserEmployeeAccess(
+            user_id=emp_request.user_id,
+            employee_id=emp_request.employee_id,
+            permission=permission,
+            is_active=True,
+            request_id=emp_request.id,
+            granted_at=datetime.now(timezone.utc),
+            granted_by_id=current_user.id,
+        ))
+
+    emp_request.status        = SynCoreEmployeeRequest.STATUS_APPROVED
+    emp_request.reviewed_at   = datetime.now(timezone.utc)
+    emp_request.reviewed_by_id = current_user.id
+    db.session.commit()
+
+    try:
+        send_request_approved_email(
+            to_email=emp_request.user.email,
+            username=emp_request.user.username,
+            employee_name=emp_request.employee.name,
+            permission=permission,
+        )
+    except Exception as e:
+        logger.warning("Could not send approval email: %s", e)
+
+    flash(
+        f"Access approved — {emp_request.user.username} → "
+        f"{emp_request.employee.name} ({permission}).",
+        "success",
+    )
+    logger.info(
+        "Admin %s approved request #%s: user %s → employee %s (%s)",
+        current_user.username, request_id,
+        emp_request.user.username, emp_request.employee.name, permission,
+    )
+    return redirect(url_for("admin.syncore_employee_requests"))
+
+
+@admin_bp.route("/syncore/employee-requests/<int:request_id>/reject", methods=["POST"])
+@superadmin_required
+def syncore_reject_request(request_id: int):
+    """Reject an employee access request with an optional reason."""
+    from app.models.syncore_access import SynCoreEmployeeRequest
+    from app.services.email_service import send_request_rejected_email
+
+    emp_request = SynCoreEmployeeRequest.query.get_or_404(request_id)
+
+    if not emp_request.is_pending:
+        flash("This request has already been reviewed.", "warning")
+        return redirect(url_for("admin.syncore_employee_request_detail", request_id=request_id))
+
+    reason                      = request.form.get("rejection_reason", "").strip()
+    emp_request.status          = SynCoreEmployeeRequest.STATUS_REJECTED
+    emp_request.rejection_reason = reason or None
+    emp_request.reviewed_at     = datetime.now(timezone.utc)
+    emp_request.reviewed_by_id  = current_user.id
+    db.session.commit()
+
+    try:
+        send_request_rejected_email(
+            to_email=emp_request.user.email,
+            username=emp_request.user.username,
+            employee_name=emp_request.employee.name,
+            reason=reason,
+        )
+    except Exception as e:
+        logger.warning("Could not send rejection email: %s", e)
+
+    flash(
+        f"Request from {emp_request.user.username} for "
+        f"{emp_request.employee.name} has been rejected.",
+        "success",
+    )
+    logger.info(
+        "Admin %s rejected request #%s from user %s for employee %s",
+        current_user.username, request_id,
+        emp_request.user.username, emp_request.employee.name,
+    )
+    return redirect(url_for("admin.syncore_employee_requests"))
+
+
+@admin_bp.route("/syncore/user-employee-access/<int:access_id>/revoke", methods=["POST"])
+@superadmin_required
+def syncore_revoke_access(access_id: int):
+    """Revoke (deactivate) a user's approved access to a SynCore employee."""
+    from app.models.syncore_access import UserEmployeeAccess
+
+    access            = UserEmployeeAccess.query.get_or_404(access_id)
+    access.is_active  = False
+    db.session.commit()
+
+    flash(
+        f"Access revoked for {access.user.username} to {access.employee.name}.",
+        "success",
+    )
+    logger.info(
+        "Admin %s revoked access #%s: user %s → employee %s",
+        current_user.username, access_id,
+        access.user.username, access.employee.name,
+    )
+    next_url = request.form.get("next") or url_for("admin.syncore_employee_requests")
+    return redirect(next_url)

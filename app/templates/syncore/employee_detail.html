@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% block title %}{{ employee.name }} — SynCore{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+  <style>
+    .emp-layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 992px) { .emp-layout { grid-template-columns: 1fr; } }
+    .emp-sidebar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem 1.5rem;
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+    .emp-avatar-large {
+      width: 90px; height: 90px; border-radius: 50%;
+      background: var(--primary); color: white;
+      font-size: 2.2rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.25rem;
+      border: 4px solid var(--primary-light);
+    }
+    .emp-avatar-large.inactive { background: var(--text-3); border-color: var(--bg); }
+    .emp-name-card { text-align: center; margin-bottom: 1.25rem; }
+    .emp-name-card h1 { font-size: 1.35rem; font-weight: 700; color: var(--text); margin: 0 0 0.4rem; }
+    .emp-name-card p  { font-size: 0.85rem; color: var(--text-3); margin: 0 0 0.6rem; }
+    .emp-quick-info { border-top: 1px solid var(--border); padding-top: 1.25rem; }
+    .emp-qi-item {
+      display: flex; align-items: center; gap: 0.65rem;
+      padding: 0.6rem 0; border-bottom: 1px solid var(--border);
+    }
+    .emp-qi-item:last-child { border-bottom: none; }
+    .emp-qi-icon {
+      width: 32px; height: 32px; border-radius: var(--radius-sm);
+      background: var(--primary-light); color: var(--primary);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .emp-qi-label { font-size: 0.72rem; color: var(--text-3); text-transform: uppercase; letter-spacing:.05em; margin:0; }
+    .emp-qi-value { font-size: 0.875rem; font-weight: 600; color: var(--text); margin: 0; }
+    /* Main content */
+    .emp-main { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .emp-section { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+    .emp-section:last-child { border-bottom: none; }
+    .emp-section-title {
+      font-size: 0.82rem; font-weight: 700; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: .06em;
+      margin: 0 0 0.875rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .emp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.5rem; }
+    @media (max-width: 600px) { .emp-grid { grid-template-columns: 1fr; } }
+    .emp-row { padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
+    .emp-row:last-child { border-bottom: none; }
+    .emp-label { font-size: 0.75rem; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; }
+    .emp-value { font-size: 0.875rem; font-weight: 500; color: var(--text); margin-top: 0.15rem; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- ── Breadcrumb ─────────────────────────────────────── -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('syncore.index') }}">SynCore</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('syncore.employees') }}">Employees</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ employee.name }}</li>
+    </ol>
+  </nav>
+
+  <!-- ── Page header ────────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <h1 class="dash-title mb-1">{{ employee.name }}</h1>
+      <p class="dash-subtitle mb-0">{{ employee.designation or 'No designation' }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if access.can_edit %}
+      <!-- Editor: Login / Logout forms -->
+      <form method="POST"
+            action="{{ url_for('syncore.employee_login', access_id=access.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-save px-3 py-2">
+          <i class="bi bi-box-arrow-in-right me-1"></i>Mark Login
+        </button>
+      </form>
+      <form method="POST"
+            action="{{ url_for('syncore.employee_logout', access_id=access.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-discard px-3 py-2">
+          <i class="bi bi-box-arrow-left me-1"></i>Mark Logout
+        </button>
+      </form>
+      {% endif %}
+      <a href="{{ url_for('syncore.employees') }}"
+         class="btn-discard px-3 py-2 text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i>Back
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Permission badge ───────────────────────────────── -->
+  <div class="mb-3">
+    <span style="font-size:0.78rem;font-weight:600;padding:0.3rem 0.75rem;border-radius:4px;
+                 background:{% if access.permission == 'editor' %}rgba(111,66,193,.1){% else %}var(--primary-light){% endif %};
+                 color:{% if access.permission == 'editor' %}#6f42c1{% else %}var(--primary){% endif %};">
+      <i class="bi bi-{% if access.permission == 'editor' %}pencil{% else %}eye{% endif %} me-1"></i>
+      {{ access.permission|capitalize }} Access
+    </span>
+    <span class="ms-2" style="font-size:0.78rem;color:var(--text-3);">
+      Granted {{ access.granted_at.strftime('%b %d, %Y') }}
+    </span>
+  </div>
+
+  <!-- ── Layout ─────────────────────────────────────────── -->
+  <div class="emp-layout">
+
+    <!-- Sidebar -->
+    <div class="emp-sidebar">
+      <div class="emp-avatar-large {% if not employee.is_active %}inactive{% endif %}">
+        {{ employee.name[0]|upper }}
+      </div>
+      <div class="emp-name-card">
+        <h1>{{ employee.name }}</h1>
+        <p>{{ employee.designation or 'No designation' }}</p>
+        {% if employee.is_active %}
+          <span class="adm-badge adm-badge-active"><i class="bi bi-check-circle me-1"></i>Active</span>
+        {% else %}
+          <span class="adm-badge adm-badge-blocked"><i class="bi bi-slash-circle me-1"></i>Inactive</span>
+        {% endif %}
+      </div>
+      <div class="emp-quick-info">
+        <div class="emp-qi-item">
+          <div class="emp-qi-icon"><i class="bi bi-hash"></i></div>
+          <div>
+            <p class="emp-qi-label">Employee ID</p>
+            <p class="emp-qi-value">{{ employee.employee_id }}</p>
+          </div>
+        </div>
+        <div class="emp-qi-item">
+          <div class="emp-qi-icon"><i class="bi bi-envelope"></i></div>
+          <div>
+            <p class="emp-qi-label">Email</p>
+            <p class="emp-qi-value" style="font-size:0.8rem;">{{ employee.email or '—' }}</p>
+          </div>
+        </div>
+        <div class="emp-qi-item">
+          <div class="emp-qi-icon"><i class="bi bi-building"></i></div>
+          <div>
+            <p class="emp-qi-label">Firm</p>
+            <p class="emp-qi-value">{{ employee.firm_name or '—' }}</p>
+          </div>
+        </div>
+        <div class="emp-qi-item">
+          <div class="emp-qi-icon"><i class="bi bi-calendar-check"></i></div>
+          <div>
+            <p class="emp-qi-label">Joined</p>
+            <p class="emp-qi-value">
+              {% if employee.joining_date %}{{ employee.joining_date.strftime('%b %d, %Y') }}{% else %}—{% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation to sub-pages -->
+      <div style="border-top:1px solid var(--border);padding-top:1.25rem;margin-top:0.5rem;">
+        <p style="font-size:0.72rem;font-weight:700;text-transform:uppercase;
+                  letter-spacing:.06em;color:var(--text-3);margin-bottom:0.6rem;">
+          Quick Links
+        </p>
+        <a href="{{ url_for('syncore.employee_attendance', access_id=access.id) }}"
+           class="d-flex align-items-center gap-2 text-decoration-none py-2"
+           style="color:var(--text-2);font-size:0.875rem;border-bottom:1px solid var(--border);">
+          <i class="bi bi-calendar3 text-primary"></i>Attendance
+        </a>
+        <a href="{{ url_for('syncore.employee_projects', access_id=access.id) }}"
+           class="d-flex align-items-center gap-2 text-decoration-none py-2"
+           style="color:var(--text-2);font-size:0.875rem;border-bottom:1px solid var(--border);">
+          <i class="bi bi-folder text-primary"></i>Projects
+        </a>
+        <a href="{{ url_for('syncore.employee_project_logs', access_id=access.id) }}"
+           class="d-flex align-items-center gap-2 text-decoration-none py-2"
+           style="color:var(--text-2);font-size:0.875rem;">
+          <i class="bi bi-journal-text text-primary"></i>Work Logs
+        </a>
+      </div>
+    </div>
+
+    <!-- Main Details -->
+    <div class="emp-main">
+
+      <!-- Personal -->
+      <div class="emp-section">
+        <div class="emp-section-title"><i class="bi bi-person-badge"></i>Personal Information</div>
+        <div class="emp-grid">
+          <div class="emp-row"><div class="emp-label">User ID</div><div class="emp-value"><code>{{ employee.user_id }}</code></div></div>
+          <div class="emp-row"><div class="emp-label">Gender</div><div class="emp-value">{{ employee.gender or '—' }}</div></div>
+          <div class="emp-row"><div class="emp-label">User Type</div><div class="emp-value">{{ employee.user_type or '—' }}</div></div>
+          <div class="emp-row"><div class="emp-label">Status</div>
+            <div class="emp-value">
+              {% if employee.is_active %}<span class="badge-ontime">Active</span>{% else %}<span class="badge-late">Inactive</span>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Organisation -->
+      <div class="emp-section">
+        <div class="emp-section-title"><i class="bi bi-building"></i>Organisation</div>
+        <div class="emp-grid">
+          <div class="emp-row"><div class="emp-label">Firm</div><div class="emp-value">{{ employee.firm_name or '—' }}</div></div>
+          <div class="emp-row"><div class="emp-label">Organisation</div><div class="emp-value">{{ employee.org_name or '—' }}</div></div>
+          <div class="emp-row"><div class="emp-label">Team Lead</div><div class="emp-value">{{ employee.team_lead_name or '—' }}</div></div>
+          <div class="emp-row"><div class="emp-label">Org Manager</div>
+            <div class="emp-value">{{ 'Yes' if employee.is_org_manager else 'No' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Work Hours -->
+      <div class="emp-section">
+        <div class="emp-section-title"><i class="bi bi-clock"></i>Work Schedule</div>
+        <div class="emp-grid">
+          <div class="emp-row"><div class="emp-label">Reporting Time</div><div class="emp-value">{{ employee.reporting_time or '—' }}</div></div>
+          <div class="emp-row"><div class="emp-label">Working Hours</div><div class="emp-value">{{ employee.working_hours or '—' }}</div></div>
+          <div class="emp-row"><div class="emp-label">Monthly Worklog</div><div class="emp-value">{{ employee.monthly_worklog_hours or '—' }}</div></div>
+        </div>
+      </div>
+
+      <!-- Dates -->
+      <div class="emp-section">
+        <div class="emp-section-title"><i class="bi bi-calendar-event"></i>Important Dates</div>
+        <div class="emp-grid">
+          <div class="emp-row">
+            <div class="emp-label">Joining Date</div>
+            <div class="emp-value">{% if employee.joining_date %}{{ employee.joining_date.strftime('%B %d, %Y') }}{% else %}—{% endif %}</div>
+          </div>
+          <div class="emp-row">
+            <div class="emp-label">Leaving Date</div>
+            <div class="emp-value">{% if employee.leaving_date %}{{ employee.leaving_date.strftime('%B %d, %Y') }}{% else %}—{% endif %}</div>
+          </div>
+          <div class="emp-row">
+            <div class="emp-label">Training Completion</div>
+            <div class="emp-value">{% if employee.training_completion_date %}{{ employee.training_completion_date.strftime('%B %d, %Y') }}{% else %}—{% endif %}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leave Balances -->
+      <div class="emp-section">
+        <div class="emp-section-title"><i class="bi bi-umbrella"></i>Leave Balances</div>
+        <div class="emp-grid">
+          <div class="emp-row"><div class="emp-label">Casual Leave</div><div class="emp-value">{{ employee.casual_leave or '—' }}</div></div>
+          <div class="emp-row"><div class="emp-label">Emergency Leave</div><div class="emp-value">{{ employee.emergency_leave or '—' }}</div></div>
+          <div class="emp-row"><div class="emp-label">Comp Off</div><div class="emp-value">{{ employee.comp_off or '—' }}</div></div>
+          <div class="emp-row"><div class="emp-label">Extended Leave</div><div class="emp-value">{{ employee.extended_leave or '—' }}</div></div>
+        </div>
+      </div>
+
+      <!-- Other -->
+      <div class="emp-section">
+        <div class="emp-section-title"><i class="bi bi-info-circle"></i>Other</div>
+        <div class="emp-grid">
+          <div class="emp-row"><div class="emp-label">Syn Coin</div><div class="emp-value">{{ employee.syn_coin or '—' }}</div></div>
+          <div class="emp-row"><div class="emp-label">Overrides</div><div class="emp-value">{{ employee.overrides or '—' }}</div></div>
+          <div class="emp-row">
+            <div class="emp-label">Last Synced</div>
+            <div class="emp-value">{{ employee.last_synced_at.strftime('%b %d, %Y %H:%M') }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

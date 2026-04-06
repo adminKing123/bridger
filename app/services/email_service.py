@@ -175,3 +175,188 @@ def send_password_reset_otp_email(to_email: str, username: str, otp_code: str) -
         f"If you did not request a reset, please ignore this email."
     )
     return send_email(to_email, subject, html_body, text_body)
+
+
+# ── SynCore employee access request emails ────────────────────────────────────
+
+def send_employee_access_request_email(
+    admin_email: str,
+    requester_username: str,
+    requester_email: str,
+    employee_name: str,
+    employee_email: str,
+    requested_permission: str,
+    review_url: str,
+) -> bool:
+    """
+    Notify the admin about a new SynCore employee access request.
+
+    Args:
+        admin_email:           Admin's email address (from SMTP_USER / ADMIN_EMAIL env).
+        requester_username:    The user who submitted the request.
+        requester_email:       The requester's account email.
+        employee_name:         Name of the employee being requested.
+        employee_email:        Email of the requested employee.
+        requested_permission:  'viewer' or 'editor'.
+        review_url:            Absolute URL to the admin review page.
+
+    Returns:
+        True if the email was sent successfully.
+    """
+    subject = f"[Bridger] New SynCore Access Request from {requester_username}"
+    permission_label = requested_permission.capitalize()
+    html_body = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head><meta charset="UTF-8"></head>
+    <body style="font-family: Arial, sans-serif; background:#f8f9fa; padding:30px;">
+      <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:8px;
+                  padding:32px;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+        <h2 style="color:#4361ee;margin-top:0;">New Employee Access Request</h2>
+        <p>A user has requested access to a SynCore employee profile.</p>
+        <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+          <tr>
+            <td style="padding:8px 12px;background:#f8f9fa;font-weight:600;border-radius:4px 0 0 4px;width:40%;">Requested By</td>
+            <td style="padding:8px 12px;background:#f0f4ff;border-radius:0 4px 4px 0;">{requester_username} &lt;{requester_email}&gt;</td>
+          </tr>
+          <tr><td colspan="2" style="height:4px;"></td></tr>
+          <tr>
+            <td style="padding:8px 12px;background:#f8f9fa;font-weight:600;border-radius:4px 0 0 4px;">Employee</td>
+            <td style="padding:8px 12px;background:#f0f4ff;border-radius:0 4px 4px 0;">{employee_name} &lt;{employee_email}&gt;</td>
+          </tr>
+          <tr><td colspan="2" style="height:4px;"></td></tr>
+          <tr>
+            <td style="padding:8px 12px;background:#f8f9fa;font-weight:600;border-radius:4px 0 0 4px;">Permission</td>
+            <td style="padding:8px 12px;background:#f0f4ff;border-radius:0 4px 4px 0;">{permission_label}</td>
+          </tr>
+        </table>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="{review_url}"
+             style="display:inline-block;background:#4361ee;color:#fff;padding:12px 28px;
+                    border-radius:6px;font-weight:600;text-decoration:none;">
+            Review Request
+          </a>
+        </div>
+        <hr style="border:none;border-top:1px solid #e9ecef;margin:24px 0;">
+        <p style="color:#adb5bd;font-size:12px;text-align:center;">
+          &copy; 2026 Bridger &mdash; This is an automated message, please do not reply.
+        </p>
+      </div>
+    </body>
+    </html>
+    """
+    text_body = (
+        f"New SynCore access request from {requester_username} ({requester_email}).\n\n"
+        f"Employee: {employee_name} ({employee_email})\n"
+        f"Permission: {permission_label}\n\n"
+        f"Review: {review_url}"
+    )
+    return send_email(admin_email, subject, html_body, text_body)
+
+
+def send_request_approved_email(
+    to_email: str,
+    username: str,
+    employee_name: str,
+    permission: str,
+) -> bool:
+    """
+    Notify a user that their SynCore employee access request was approved.
+
+    Args:
+        to_email:     Recipient address.
+        username:     User's display name.
+        employee_name: Name of the employee access was granted for.
+        permission:   'viewer' or 'editor'.
+
+    Returns:
+        True if the email was sent successfully.
+    """
+    subject = f"[Bridger] SynCore Access Approved — {employee_name}"
+    permission_label = permission.capitalize()
+    html_body = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head><meta charset="UTF-8"></head>
+    <body style="font-family: Arial, sans-serif; background:#f8f9fa; padding:30px;">
+      <div style="max-width:500px;margin:0 auto;background:#fff;border-radius:8px;
+                  padding:32px;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+        <h2 style="color:#198754;margin-top:0;">&#10003; Access Approved</h2>
+        <p>Hi <strong>{username}</strong>,</p>
+        <p>
+          Your request to access the SynCore profile for
+          <strong>{employee_name}</strong> has been approved with
+          <strong>{permission_label}</strong> permission.
+        </p>
+        <p>You can now view this employee's details, attendance, and project logs
+           from the SynCore section of your Bridger account.</p>
+        <hr style="border:none;border-top:1px solid #e9ecef;margin:24px 0;">
+        <p style="color:#adb5bd;font-size:12px;text-align:center;">
+          &copy; 2026 Bridger &mdash; This is an automated message, please do not reply.
+        </p>
+      </div>
+    </body>
+    </html>
+    """
+    text_body = (
+        f"Hi {username},\n\n"
+        f"Your request to access {employee_name} has been approved ({permission_label}).\n"
+        f"Log in to Bridger to view their profile."
+    )
+    return send_email(to_email, subject, html_body, text_body)
+
+
+def send_request_rejected_email(
+    to_email: str,
+    username: str,
+    employee_name: str,
+    reason: str = "",
+) -> bool:
+    """
+    Notify a user that their SynCore employee access request was rejected.
+
+    Args:
+        to_email:     Recipient address.
+        username:     User's display name.
+        employee_name: Name of the requested employee.
+        reason:       Optional rejection reason from admin.
+
+    Returns:
+        True if the email was sent successfully.
+    """
+    subject = f"[Bridger] SynCore Access Request — {employee_name}"
+    reason_html = (
+        f"<p><strong>Reason:</strong> {reason}</p>" if reason else ""
+    )
+    reason_text = f"\nReason: {reason}" if reason else ""
+    html_body = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head><meta charset="UTF-8"></head>
+    <body style="font-family: Arial, sans-serif; background:#f8f9fa; padding:30px;">
+      <div style="max-width:500px;margin:0 auto;background:#fff;border-radius:8px;
+                  padding:32px;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+        <h2 style="color:#dc3545;margin-top:0;">Access Request Not Approved</h2>
+        <p>Hi <strong>{username}</strong>,</p>
+        <p>
+          Your request to access the SynCore profile for
+          <strong>{employee_name}</strong> was not approved at this time.
+        </p>
+        {reason_html}
+        <p style="color:#6c757d;font-size:14px;">
+          You may contact your administrator for further information or submit a new request.
+        </p>
+        <hr style="border:none;border-top:1px solid #e9ecef;margin:24px 0;">
+        <p style="color:#adb5bd;font-size:12px;text-align:center;">
+          &copy; 2026 Bridger &mdash; This is an automated message, please do not reply.
+        </p>
+      </div>
+    </body>
+    </html>
+    """
+    text_body = (
+        f"Hi {username},\n\n"
+        f"Your request to access {employee_name} was not approved.{reason_text}\n"
+        f"Contact your administrator for more information."
+    )
+    return send_email(to_email, subject, html_body, text_body)

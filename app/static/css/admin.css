@@ -505,3 +505,23 @@
   cursor: not-allowed;
   pointer-events: none;
 }
+
+/* ── Shared attendance / status badges (syncore + admin pages) ── */
+.badge-ontime {
+  background: rgba(25,135,84,.12);
+  color: #198754;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.badge-late {
+  background: rgba(220,53,69,.12);
+  color: #dc3545;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}

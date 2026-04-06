@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}My Employees — SynCore{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- ── Page header ────────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="dash-title mb-0"><i class="bi bi-people me-2"></i>My Employees</h1>
+      <p class="dash-subtitle mb-0">
+        {{ total }} employee{{ 's' if total != 1 else '' }} you have access to
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('syncore.request_employee') }}"
+         class="btn-save px-3 py-2 text-decoration-none">
+        <i class="bi bi-person-plus me-1"></i>Request Employee
+      </a>
+      <a href="{{ url_for('syncore.index') }}"
+         class="btn-discard px-3 py-2 text-decoration-none">
+        <i class="bi bi-arrow-left me-1"></i>SynCore
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Search ─────────────────────────────────────────── -->
+  <div class="panel mb-3">
+    <form method="get" action="{{ url_for('syncore.employees') }}" class="adm-search-row">
+      <div class="adm-search-wrap">
+        <i class="bi bi-search adm-search-icon"></i>
+        <input type="text" name="q" value="{{ q }}" class="adm-search-input"
+               placeholder="Search name, email or designation…" autocomplete="off">
+      </div>
+    </form>
+  </div>
+
+  <!-- ── Table ──────────────────────────────────────────── -->
+  <div class="panel">
+    {% if pagination['items'] %}
+    <div class="table-responsive">
+      <table class="adm-table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Designation</th>
+            <th>Organisation</th>
+            <th>Status</th>
+            <th>Permission</th>
+            <th>Granted</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for access in pagination['items'] %}
+          {% set emp = access.employee %}
+          <tr>
+            <td>
+              <div class="adm-user-cell">
+                <div class="adm-avatar {% if not emp.is_active %}adm-avatar-blocked{% endif %}">
+                  {{ emp.name[0]|upper }}
+                </div>
+                <div>
+                  <div class="adm-username">{{ emp.name }}</div>
+                  <div style="font-size:0.78rem;color:var(--text-3);">{{ emp.email or '' }}</div>
+                </div>
+              </div>
+            </td>
+            <td style="font-size:0.85rem;">{{ emp.designation or '—' }}</td>
+            <td style="font-size:0.85rem;color:var(--text-2);">{{ emp.org_name or '—' }}</td>
+            <td>
+              {% if emp.is_active %}
+                <span class="badge-ontime">Active</span>
+              {% else %}
+                <span class="badge-late">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              <span style="font-size:0.72rem;font-weight:600;padding:0.2rem 0.5rem;border-radius:4px;
+                           background:{% if access.permission == 'editor' %}rgba(111,66,193,.1){% else %}var(--primary-light){% endif %};
+                           color:{% if access.permission == 'editor' %}#6f42c1{% else %}var(--primary){% endif %};">
+                <i class="bi bi-{% if access.permission == 'editor' %}pencil{% else %}eye{% endif %} me-1"></i>
+                {{ access.permission|capitalize }}
+              </span>
+            </td>
+            <td style="font-size:0.82rem;white-space:nowrap;">
+              {{ access.granted_at.strftime('%b %d, %Y') }}
+            </td>
+            <td>
+              <div class="adm-action-row">
+                <a href="{{ url_for('syncore.employee_detail', access_id=access.id) }}"
+                   class="btn-save px-2 py-1 text-decoration-none" style="font-size:0.78rem;">
+                  <i class="bi bi-eye me-1"></i>View
+                </a>
+                <a href="{{ url_for('syncore.request_employee', email=emp.email) }}"
+                   class="adm-btn-icon" style="font-size:0.82rem;"
+                   title="Request permission change">
+                  <i class="bi bi-arrow-repeat"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagination['pages'] > 1 %}
+    <div class="d-flex justify-content-center mt-3 pb-2">
+      <div class="adm-pagination">
+        {% if pagination['has_prev'] %}
+          <a href="{{ url_for('syncore.employees', page=pagination['prev_num'], q=q) }}" class="adm-page-btn"><i class="bi bi-chevron-left"></i></a>
+        {% else %}<span class="adm-page-btn adm-page-btn-disabled"><i class="bi bi-chevron-left"></i></span>{% endif %}
+        {% set cur = pagination['page'] %}{% set tot = pagination['pages'] %}
+        {% for p in range(1, tot + 1) %}
+          {% if p == 1 or p == tot or (p >= cur - 2 and p <= cur + 2) %}
+            {% if not loop.first %}{% set pv = namespace(v=0) %}{% for q in range(1,p) %}{% if q==1 or q==tot or (q>=cur-2 and q<=cur+2) %}{% set pv.v=q %}{% endif %}{% endfor %}{% if pv.v < p-1 %}<span class="adm-page-btn adm-page-btn-disabled">…</span>{% endif %}{% endif %}
+            {% if p == cur %}<span class="adm-page-btn adm-page-btn-active">{{ p }}</span>
+            {% else %}<a href="{{ url_for('syncore.employees', page=p, q=q) }}" class="adm-page-btn">{{ p }}</a>{% endif %}
+          {% endif %}
+        {% endfor %}
+        {% if pagination['has_next'] %}
+          <a href="{{ url_for('syncore.employees', page=pagination['next_num'], q=q) }}" class="adm-page-btn"><i class="bi bi-chevron-right"></i></a>
+        {% else %}<span class="adm-page-btn adm-page-btn-disabled"><i class="bi bi-chevron-right"></i></span>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="text-center py-5">
+      <i class="bi bi-people" style="font-size:2.5rem;color:var(--text-3);"></i>
+      <p class="mt-3 mb-1" style="color:var(--text-2);font-weight:500;">No employees found</p>
+      {% if q %}
+        <p style="font-size:0.85rem;color:var(--text-3);">Try a different search.</p>
+      {% else %}
+        <a href="{{ url_for('syncore.request_employee') }}"
+           class="btn-save px-3 py-2 text-decoration-none mt-2">
+          <i class="bi bi-person-plus me-1"></i>Request Employee Access
+        </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

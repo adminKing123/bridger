@@ -1,80 +1,157 @@
 {% extends 'base.html' %}
-
 {% block title %}SynCore — Bridger{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/syncore.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
 {% endblock %}
 
 {% block content %}
 <div class="container py-4" style="max-width:960px;">
 
-  <!-- ── Hero bar ──────────────────────────────────────────────── -->
+  <!-- ── Hero bar ───────────────────────────────────────── -->
   <div class="syncore-hero mb-4">
-    <div class="syncore-hero-icon">
-      <i class="bi bi-building"></i>
-    </div>
+    <div class="syncore-hero-icon"><i class="bi bi-building"></i></div>
     <div class="syncore-hero-body">
       <h1 class="syncore-hero-name">SynCore</h1>
-      <p class="syncore-hero-sub">Organisational SynCore · HRMS Data Panel</p>
+      <p class="syncore-hero-sub">Organisational HRMS Data Panel</p>
     </div>
-    <div class="syncore-hero-badge">
-      <span class="syncore-badge coming-soon">
-        <i class="bi bi-hourglass-split me-1"></i>Coming Soon
-      </span>
-    </div>
-  </div>
-
-  <!-- ── Coming-soon panel ─────────────────────────────────────── -->
-  <div class="panel syncore-coming-panel">
-    <div class="syncore-cs-inner">
-      <div class="syncore-cs-icon-wrap">
-        <i class="bi bi-building-gear"></i>
-      </div>
-      <h2 class="syncore-cs-title">We're building something great</h2>
-      <p class="syncore-cs-body">
-        SynCore is Bridger's upcoming HRMS Data Panel — giving your organisation a
-        unified view of people, departments, and workforce analytics. Features are
-        actively in development and will be rolled out soon.
-      </p>
-
-      <!-- Feature preview cards -->
-      <div class="syncore-preview-grid">
-        <div class="syncore-preview-card">
-          <div class="syncore-preview-icon" style="background:#ede9fe;color:#7c3aed;">
-            <i class="bi bi-people-fill"></i>
-          </div>
-          <div class="syncore-preview-label">Employee Directory</div>
-          <div class="syncore-preview-desc">Centralised employee profiles and org structure</div>
-        </div>
-        <div class="syncore-preview-card">
-          <div class="syncore-preview-icon" style="background:#dcfce7;color:#16a34a;">
-            <i class="bi bi-calendar2-week-fill"></i>
-          </div>
-          <div class="syncore-preview-label">Attendance & Leave</div>
-          <div class="syncore-preview-desc">Track attendance, leaves, and time-off requests</div>
-        </div>
-        <div class="syncore-preview-card">
-          <div class="syncore-preview-icon" style="background:#e0f2fe;color:#0369a1;">
-            <i class="bi bi-bar-chart-line-fill"></i>
-          </div>
-          <div class="syncore-preview-label">Workforce Analytics</div>
-          <div class="syncore-preview-desc">Headcount trends, department breakdowns and insights</div>
-        </div>
-        <div class="syncore-preview-card">
-          <div class="syncore-preview-icon" style="background:#fef9c3;color:#a16207;">
-            <i class="bi bi-shield-lock-fill"></i>
-          </div>
-          <div class="syncore-preview-label">Role Management</div>
-          <div class="syncore-preview-desc">Manage roles, access levels and team hierarchies</div>
-        </div>
-      </div>
-
-      <a href="{{ url_for('dashboard.dashboard') }}" class="btn-discard text-decoration-none mt-2">
-        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('syncore.request_employee') }}"
+         class="btn-save px-3 py-2 text-decoration-none">
+        <i class="bi bi-person-plus me-1"></i>Request Employee
+      </a>
+      <a href="{{ url_for('syncore.requests') }}"
+         class="btn-discard px-3 py-2 text-decoration-none position-relative">
+        <i class="bi bi-clock-history me-1"></i>My Requests
+        {% if pending_count > 0 %}
+          <span style="position:absolute;top:-6px;right:-6px;background:#ffc107;color:#000;
+                       font-size:0.65rem;font-weight:700;padding:0.15rem 0.4rem;
+                       border-radius:999px;">{{ pending_count }}</span>
+        {% endif %}
       </a>
     </div>
   </div>
+
+  {% if total > 0 %}
+
+  <!-- ── Approved employees table ─────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="dash-title mb-0" style="font-size:1.1rem;">
+      <i class="bi bi-people me-2"></i>Your Employees
+      <span style="font-size:0.8rem;font-weight:400;color:var(--text-3);margin-left:0.5rem;">
+        {{ total }} employee{{ 's' if total != 1 else '' }}
+      </span>
+    </h2>
+    <a href="{{ url_for('syncore.employees') }}"
+       class="btn-discard px-3 py-2 text-decoration-none" style="font-size:0.82rem;">
+      <i class="bi bi-list me-1"></i>Full List
+    </a>
+  </div>
+
+  <div class="panel mb-4">
+    <div class="table-responsive">
+      <table class="adm-table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Designation</th>
+            <th>Status</th>
+            <th>Permission</th>
+            <th>Granted</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for access in pagination['items'] %}
+          {% set emp = access.employee %}
+          <tr>
+            <td>
+              <div class="adm-user-cell">
+                <div class="adm-avatar {% if not emp.is_active %}adm-avatar-blocked{% endif %}">
+                  {{ emp.name[0]|upper }}
+                </div>
+                <div>
+                  <div class="adm-username">{{ emp.name }}</div>
+                  <div style="font-size:0.78rem;color:var(--text-3);">{{ emp.email or '' }}</div>
+                </div>
+              </div>
+            </td>
+            <td style="font-size:0.85rem;">{{ emp.designation or '—' }}</td>
+            <td>
+              <span class="syncore-status-badge {% if emp.is_active %}active{% else %}inactive{% endif %}">
+                {{ emp.status or 'Unknown' }}
+              </span>
+            </td>
+            <td>
+              <span class="syncore-perm-badge {{ access.permission }}">
+                <i class="bi bi-{% if access.permission == 'editor' %}pencil{% else %}eye{% endif %} me-1"></i>
+                {{ access.permission|capitalize }}
+              </span>
+            </td>
+            <td style="font-size:0.82rem;white-space:nowrap;color:var(--text-3);">
+              {{ access.granted_at.strftime('%b %d, %Y') }}
+            </td>
+            <td>
+              <a href="{{ url_for('syncore.employee_detail', access_id=access.id) }}"
+                 class="btn-save px-2 py-1 text-decoration-none" style="font-size:0.78rem;">
+                <i class="bi bi-eye me-1"></i>View
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pagination['pages'] > 1 %}
+    <div class="d-flex justify-content-center mt-3 pb-2">
+      <div class="adm-pagination">
+        {% if pagination['has_prev'] %}
+          <a href="{{ url_for('syncore.index', page=pagination['prev_num']) }}" class="adm-page-btn"><i class="bi bi-chevron-left"></i></a>
+        {% else %}<span class="adm-page-btn adm-page-btn-disabled"><i class="bi bi-chevron-left"></i></span>{% endif %}
+        {% set cur = pagination['page'] %}{% set tot = pagination['pages'] %}
+        {% for p in range(1, tot + 1) %}
+          {% if p == 1 or p == tot or (p >= cur - 2 and p <= cur + 2) %}
+            {% if not loop.first %}{% set pv = namespace(v=0) %}{% for q in range(1,p) %}{% if q==1 or q==tot or (q>=cur-2 and q<=cur+2) %}{% set pv.v=q %}{% endif %}{% endfor %}{% if pv.v < p-1 %}<span class="adm-page-btn adm-page-btn-disabled">…</span>{% endif %}{% endif %}
+            {% if p == cur %}<span class="adm-page-btn adm-page-btn-active">{{ p }}</span>
+            {% else %}<a href="{{ url_for('syncore.index', page=p) }}" class="adm-page-btn">{{ p }}</a>{% endif %}
+          {% endif %}
+        {% endfor %}
+        {% if pagination['has_next'] %}
+          <a href="{{ url_for('syncore.index', page=pagination['next_num']) }}" class="adm-page-btn"><i class="bi bi-chevron-right"></i></a>
+        {% else %}<span class="adm-page-btn adm-page-btn-disabled"><i class="bi bi-chevron-right"></i></span>{% endif %}
+      </div>
+    </div>
+    {% endif %}  </div>
+
+  {% else %}
+
+  <!-- ── Empty state ────────────────────────────────────── -->
+  <div class="panel text-center py-5">
+    <i class="bi bi-people" style="font-size:2.5rem;color:var(--text-3);"></i>
+    <h3 class="mt-3 mb-1" style="font-size:1.1rem;font-weight:600;color:var(--text-2);">
+      No employees yet
+    </h3>
+    <p style="color:var(--text-3);font-size:0.875rem;max-width:380px;margin:0 auto 1.5rem;">
+      Request access to an employee profile by searching for their email address.
+      An admin will review and approve your request.
+    </p>
+    <a href="{{ url_for('syncore.request_employee') }}"
+       class="btn-save px-4 py-2 text-decoration-none">
+      <i class="bi bi-person-plus me-1"></i>Request Your First Employee
+    </a>
+    {% if pending_count > 0 %}
+    <div class="mt-3">
+      <a href="{{ url_for('syncore.requests') }}" class="text-decoration-none"
+         style="font-size:0.875rem;color:var(--primary);">
+        <i class="bi bi-hourglass-split me-1"></i>
+        {{ pending_count }} pending request{{ 's' if pending_count != 1 else '' }} awaiting review
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  {% endif %}
 
 </div>
 {% endblock %}

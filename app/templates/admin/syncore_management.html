@@ -261,9 +261,39 @@
       </a>
     </div>
 
-  </div>
+    <!-- Access Requests Card -->
+    <div class="syncore-action-card">
+      <div class="syncore-action-header">
+        <div class="syncore-action-icon" style="background: rgba(255,193,7,.15); color: #b45309;">
+          <i class="bi bi-person-check-fill"></i>
+        </div>
+        <h3 class="syncore-action-title">Access Requests</h3>
+      </div>
+      <p class="syncore-action-desc">
+        Review and manage user requests to access SynCore employee profiles.
+        Approve with Viewer or Editor permission, or reject with an optional reason.
+      </p>
 
-</div><!-- /.container -->
+      <div style="margin-bottom: 1rem; height: 2.5rem; display:flex; align-items:center; justify-content:center;">
+        {% if pending_requests > 0 %}
+          <span style="background:rgba(255,193,7,.15);color:#b45309;font-size:0.875rem;font-weight:600;
+                       padding:0.4rem 1rem;border-radius:999px;">
+            <i class="bi bi-hourglass-split me-1"></i>{{ pending_requests }} pending review
+          </span>
+        {% else %}
+          <span style="font-size:0.85rem;color:var(--text-3);">
+            <i class="bi bi-check-circle me-1"></i>No pending requests
+          </span>
+        {% endif %}
+      </div>
+
+      <a href="{{ url_for('admin.syncore_employee_requests') }}" class="btn-view-employees">
+        <i class="bi bi-person-check"></i>
+        Manage Requests
+      </a>
+    </div>
+
+  </div>
 {% endblock %}
 
 {% block extra_scripts %}
