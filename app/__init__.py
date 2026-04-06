@@ -73,6 +73,16 @@ def create_app(config_class=DevelopmentConfig) -> Flask:
     # Intercept subdomain-mode proxy requests before normal routing
     app.before_request(handle_subdomain_proxy)
 
+    # ── Custom Jinja2 filters ─────────────────────────────────────────────────
+    @app.template_filter('to_date_input')
+    def to_date_input(value: str) -> str:
+        """Convert MM/DD/YYYY date string to YYYY-MM-DD for HTML date inputs."""
+        try:
+            from datetime import datetime
+            return datetime.strptime(value, "%m/%d/%Y").strftime("%Y-%m-%d")
+        except (ValueError, TypeError):
+            return value or ""
+
     # ── Force-logout blocked users on every request ───────────────────────────
     @app.before_request
     def _check_blocked_user():

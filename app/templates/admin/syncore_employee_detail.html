@@ -285,6 +285,11 @@
             </a>
           </li>
           <li>
+            <a class="dropdown-item" href="{{ url_for('admin.syncore_employee_attendance', employee_id=employee.id) }}">
+              <i class="bi bi-calendar3 me-2"></i>View Attendance
+            </a>
+          </li>
+          <li>
             <a class="dropdown-item" href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id) }}">
               <i class="bi bi-folder me-2"></i>View Projects
             </a>

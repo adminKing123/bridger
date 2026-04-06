@@ -5,16 +5,20 @@ Super-admin blueprint.  All routes require is_superadmin=True on the
 current user — enforced via the @superadmin_required decorator.
 
 Routes:
-    GET   /admin/                        — redirect to user management
-    GET   /admin/users/management        — user management dashboard
-    GET   /admin/users                   — paginated user list with search + filter
-    GET   /admin/users/<id>              — user detail (info, block status, services)
-    POST  /admin/users/<id>/block        — toggle block / unblock
-    POST  /admin/users/<id>/services     — update service permissions
-    GET   /admin/syncore/management      — syncore management dashboard
-    GET   /admin/syncore/employees       — paginated employee list
-    GET   /admin/syncore/employees/<id>  — employee detail view
-    POST  /admin/syncore/sync            — trigger employee sync
+    GET   /admin/                                           — redirect to user management
+    GET   /admin/users/management                           — user management dashboard
+    GET   /admin/users                                      — paginated user list with search + filter
+    GET   /admin/users/<id>                                 — user detail (info, block status, services)
+    POST  /admin/users/<id>/block                           — toggle block / unblock
+    POST  /admin/users/<id>/services                        — update service permissions
+    GET   /admin/syncore/management                         — syncore management dashboard
+    GET   /admin/syncore/employees                          — paginated employee list
+    GET   /admin/syncore/employees/<id>                     — employee detail view
+    GET   /admin/syncore/employees/<id>/attendance          — employee attendance with date filter
+    GET   /admin/syncore/employees/<id>/projects            — employee projects
+    POST  /admin/syncore/employees/<id>/login               — mark employee login
+    POST  /admin/syncore/employees/<id>/logout              — mark employee logout
+    POST  /admin/syncore/sync                               — trigger employee sync
 """
 
 import logging
@@ -366,12 +370,108 @@ def syncore_employee_logs(employee_id: int):
         }), 500
 
 
+@admin_bp.route("/syncore/employees/<int:employee_id>/attendance")
+@superadmin_required
+def syncore_employee_attendance(employee_id: int):
+    """View attendance records for a specific employee with date filtering and pagination."""
+    employee = SynCoreEmployee.query.get_or_404(employee_id)
+
+    try:
+        from app.services.util_syncore import get_attendance
+
+        # Default date range: first to last day of current month
+        today = datetime.now()
+        default_start = today.replace(day=1).strftime("%m/%d/%Y")
+        # Last day of month: first day of next month minus one day
+        if today.month == 12:
+            default_end = today.replace(year=today.year + 1, month=1, day=1)
+        else:
+            default_end = today.replace(month=today.month + 1, day=1)
+        default_end = (default_end - __import__("datetime").timedelta(days=1)).strftime("%m/%d/%Y")
+
+        start_date = request.args.get("start_date", default_start).strip()
+        end_date = request.args.get("end_date", default_end).strip()
+        page = request.args.get("page", 1, type=int)
+        per_page = 50
+
+        # Fetch all attendance records for the date range
+        all_records = get_attendance(
+            start_date=start_date,
+            end_date=end_date,
+            user_id=employee.user_id,
+            signed_array=employee.signed_array
+        )
+
+        # Sort by log_date descending (most recent first)
+        try:
+            all_records.sort(
+                key=lambda r: datetime.strptime(r.get("log_date", "01/01/1970"), "%m/%d/%Y"),
+                reverse=True
+            )
+        except (ValueError, TypeError):
+            pass
+
+        # Pagination
+        total = len(all_records)
+        total_pages = max((total + per_page - 1) // per_page, 1)
+        page = max(1, min(page, total_pages))
+        start_idx = (page - 1) * per_page
+        records = all_records[start_idx:start_idx + per_page]
+
+        # Summary stats
+        late_count = sum(1 for r in all_records if r.get("is_came_late", "-") not in ("-", None, ""))
+        total_logged = 0.0
+        for r in all_records:
+            lh = r.get("logged_hours", "") or ""
+            parts = lh.split(":")
+            try:
+                total_logged += int(parts[0]) + int(parts[1]) / 60 if len(parts) == 2 else 0
+            except (ValueError, IndexError):
+                pass
+        total_hours_int = int(total_logged)
+        total_minutes_int = round((total_logged - total_hours_int) * 60)
+
+        pagination = {
+            "items": records,
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "pages": total_pages,
+            "has_prev": page > 1,
+            "has_next": page < total_pages,
+            "prev_num": page - 1 if page > 1 else None,
+            "next_num": page + 1 if page < total_pages else None,
+        }
+
+        return render_template(
+            "admin/syncore_employee_attendance.html",
+            employee=employee,
+            pagination=pagination,
+            start_date=start_date,
+            end_date=end_date,
+            late_count=late_count,
+            total_hours=total_hours_int,
+            total_minutes=total_minutes_int,
+            total_days=total,
+        )
+
+    except Exception as e:
+        logger.error(
+            "Error fetching attendance for employee %s: %s",
+            employee_id,
+            str(e),
+            exc_info=True
+        )
+        flash(f"Failed to fetch attendance: {str(e)}", "danger")
+        return redirect(url_for("admin.syncore_employee_detail", employee_id=employee_id))
+
+
 @admin_bp.route("/syncore/employees/<int:employee_id>/projects")
 @superadmin_required
 def syncore_employee_projects(employee_id: int):
     """View all projects assigned to a specific employee with pagination."""
     employee = SynCoreEmployee.query.get_or_404(employee_id)
-    
+
     try:
         from app.services.util_syncore import get_emp_projects
         

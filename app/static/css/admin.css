@@ -248,6 +248,7 @@
 
 .adm-page-btn:hover:not(.disabled) { background: var(--bg); color: var(--primary); border-color: var(--primary); }
 .adm-page-btn.disabled { opacity: .45; cursor: not-allowed; }
+.adm-page-btn-active { background: var(--primary); color: #fff !important; border-color: var(--primary); cursor: default; pointer-events: none; }
 .adm-page-info { font-size: .8rem; color: var(--text-3); padding: 0 .25rem; }
 
 /* ── Search row ────────────────────────────────────────────── */

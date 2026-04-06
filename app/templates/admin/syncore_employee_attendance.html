@@ -1,0 +1,434 @@
+{% extends 'base.html' %}
+{% block title %}{{ employee.name }} — Attendance — Admin{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+  <style>
+    /* ── Stat Cards ───────────────────────────── */
+    .att-stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-xs);
+    }
+    .att-stat-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .att-stat-label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+    }
+    .att-stat-value {
+      font-size: 1.9rem;
+      font-weight: 700;
+      line-height: 1;
+      margin: 0;
+    }
+
+    /* ── Date Filter Panel ────────────────────── */
+    .att-filter-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .att-filter-form {
+      display: flex;
+      align-items: flex-end;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .att-filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .att-filter-group label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .att-filter-group input[type="date"] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      height: 38px;
+    }
+    .att-filter-group input[type="date"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+    }
+
+    /* ── Late badge ───────────────────────────── */
+    .badge-late {
+      background: rgba(220, 53, 69, 0.12);
+      color: #dc3545;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .badge-ontime {
+      background: rgba(25, 135, 84, 0.12);
+      color: #198754;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    /* ── Override comment ─────────────────────── */
+    .att-comment {
+      font-size: 0.8rem;
+      color: var(--text-3);
+      font-style: italic;
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- ── Breadcrumb ─────────────────────────────────────── -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('admin.syncore_management') }}">SynCore</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('admin.syncore_employees') }}">Employees</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('admin.syncore_employee_detail', employee_id=employee.id) }}">{{ employee.name }}</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Attendance</li>
+    </ol>
+  </nav>
+
+  <!-- ── Page Header ────────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="dash-title mb-0">
+        <i class="bi bi-calendar3 me-2"></i>{{ employee.name }}'s Attendance
+      </h1>
+      <p class="dash-subtitle mb-0">
+        {{ start_date }} — {{ end_date }}
+        {% if total_days > 0 %} &middot; {{ total_days }} record{{ 's' if total_days != 1 else '' }}{% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('admin.syncore_employee_detail', employee_id=employee.id) }}"
+       class="btn-discard px-3 py-2 text-decoration-none">
+      <i class="bi bi-arrow-left me-1"></i>Back to Details
+    </a>
+  </div>
+
+  <!-- ── Summary Stats ──────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="att-stat-card">
+        <div class="d-flex align-items-center gap-3">
+          <div class="att-stat-icon text-white" style="background: var(--primary);">
+            <i class="bi bi-calendar-check-fill"></i>
+          </div>
+          <div>
+            <div class="att-stat-label">Days Attended</div>
+            <div class="att-stat-value text-primary">{{ total_days }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="att-stat-card">
+        <div class="d-flex align-items-center gap-3">
+          <div class="att-stat-icon text-white" style="background: var(--success);">
+            <i class="bi bi-clock-fill"></i>
+          </div>
+          <div>
+            <div class="att-stat-label">Total Hours</div>
+            <div class="att-stat-value text-success">
+              {{ total_hours }}<span style="font-size: 1rem; font-weight:500;">h {{ '%02d'|format(total_minutes) }}m</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="att-stat-card">
+        <div class="d-flex align-items-center gap-3">
+          <div class="att-stat-icon text-white" style="background: var(--warning);">
+            <i class="bi bi-alarm-fill"></i>
+          </div>
+          <div>
+            <div class="att-stat-label">Late Arrivals</div>
+            <div class="att-stat-value" style="color: var(--warning);">{{ late_count }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="att-stat-card">
+        <div class="d-flex align-items-center gap-3">
+          <div class="att-stat-icon text-white" style="background: var(--text-3);">
+            <i class="bi bi-bar-chart-fill"></i>
+          </div>
+          <div>
+            <div class="att-stat-label">Avg Hours/Day</div>
+            <div class="att-stat-value" style="color: var(--text-2);">
+              {% if total_days > 0 %}
+                {% set avg = (total_hours * 60 + total_minutes) / total_days %}
+                {{ (avg // 60)|int }}<span style="font-size: 1rem; font-weight:500;">h {{ '%02d'|format((avg % 60)|int) }}m</span>
+              {% else %}—{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Date Filter ────────────────────────────────────── -->
+  <div class="att-filter-panel">
+    <form id="attendanceFilterForm" method="GET" action="{{ url_for('admin.syncore_employee_attendance', employee_id=employee.id) }}"
+          class="att-filter-form">
+      <div class="att-filter-group">
+        <label for="start_date">Start Date</label>
+        <input type="date" id="start_date" name="start_date"
+               value="{{ start_date | to_date_input }}"
+               max="{{ end_date | to_date_input }}">
+      </div>
+      <div class="att-filter-group">
+        <label for="end_date">End Date</label>
+        <input type="date" id="end_date" name="end_date"
+               value="{{ end_date | to_date_input }}"
+               min="{{ start_date | to_date_input }}">
+      </div>
+      <button type="submit" id="applyBtn" class="btn-save px-4" style="height: 38px;">
+        <i class="bi bi-search me-1" id="applyIcon"></i><span id="applyText">Apply</span>
+      </button>
+      <a href="{{ url_for('admin.syncore_employee_attendance', employee_id=employee.id) }}"
+         id="resetBtn" class="btn-discard px-4" style="height: 38px; line-height: 1;">
+        <i class="bi bi-arrow-counterclockwise me-1" id="resetIcon"></i><span id="resetText">Reset</span>
+      </a>
+    </form>
+  </div>
+
+  <!-- ── Attendance Table ───────────────────────────────── -->
+  <div class="panel">
+    {% if pagination['items'] %}
+    <div class="table-responsive">
+      <table class="adm-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Attendance ID</th>
+            <th>Name</th>
+            <th>User ID</th>
+            <th>Date</th>
+            <th>Logged Hours</th>
+            <th>Status</th>
+            <th>Out-of-Office</th>
+            <th>Override Comment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set offset = (pagination['page'] - 1) * pagination['per_page'] %}
+          {% for record in pagination['items'] %}
+          <tr>
+            <!-- Row number -->
+            <td class="adm-muted" style="width: 50px;">
+              <small>{{ offset + loop.index }}</small>
+            </td>
+
+            <!-- Attendance ID -->
+            <td>
+              <span class="adm-muted" style="font-family: monospace; font-size: 0.82rem;">
+                {{ record.attendance_id or '—' }}
+              </span>
+            </td>
+
+            <!-- Name -->
+            <td>
+              <strong>{{ record.name or '—' }}</strong>
+            </td>
+
+            <!-- User ID -->
+            <td>
+              <span class="adm-muted" style="font-family: monospace; font-size: 0.82rem;">
+                {{ record.user_id or '—' }}
+              </span>
+            </td>
+
+            <!-- Date -->
+            <td>
+              <strong>{{ record.log_date }}</strong>
+            </td>
+
+            <!-- Logged Hours -->
+            <td>
+              <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold"
+                    style="font-size: 0.85rem; padding: 0.35rem 0.65rem;">
+                <i class="bi bi-clock me-1"></i>{{ record.logged_hours or '—' }}
+              </span>
+            </td>
+
+            <!-- Status (Late / On Time) -->
+            <td>
+              {% if record.is_came_late and record.is_came_late not in ('-', '', None) %}
+                <span class="badge-late"><i class="bi bi-clock-history me-1"></i>Late</span>
+              {% else %}
+                <span class="badge-ontime"><i class="bi bi-check me-1"></i>On Time</span>
+              {% endif %}
+            </td>
+
+            <!-- Out-of-Office -->
+            <td>
+              {% if record.out_office_log %}
+                <span class="badge bg-secondary bg-opacity-15 text-secondary" style="font-size: 0.78rem;">
+                  {{ record.out_office_log }}
+                </span>
+              {% else %}
+                <span class="adm-muted">—</span>
+              {% endif %}
+            </td>
+
+            <!-- Override Comment -->
+            <td>
+              {% if record.user_override_comment %}
+                <span class="att-comment" title="{{ record.user_override_comment }}">
+                  <i class="bi bi-chat-left-text me-1"></i>{{ record.user_override_comment }}
+                </span>
+              {% else %}
+                <span class="adm-muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Pagination ─────────────────────────────────────── -->
+    {% if pagination['pages'] > 1 %}
+    <div class="adm-pagination">
+      <div class="adm-page-info">
+        Showing {{ (pagination['page'] - 1) * pagination['per_page'] + 1 }}–
+        {{ [pagination['page'] * pagination['per_page'], pagination['total']] | min }}
+        of {{ pagination['total'] }} records &nbsp;·&nbsp;
+        Page {{ pagination['page'] }} of {{ pagination['pages'] }}
+      </div>
+      <div class="adm-page-nav">
+        {% if pagination['has_prev'] %}
+          <a href="{{ url_for('admin.syncore_employee_attendance', employee_id=employee.id,
+                              start_date=start_date, end_date=end_date,
+                              page=pagination['prev_num']) }}"
+             class="adm-page-btn">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+        {% else %}
+          <span class="adm-page-btn adm-page-btn-disabled">
+            <i class="bi bi-chevron-left"></i>
+          </span>
+        {% endif %}
+
+        {% for p in range(1, pagination['pages'] + 1) %}
+          {% if p == pagination['page'] %}
+            <span class="adm-page-btn adm-page-btn-active">{{ p }}</span>
+          {% elif p == 1 or p == pagination['pages'] or (p >= pagination['page'] - 2 and p <= pagination['page'] + 2) %}
+            <a href="{{ url_for('admin.syncore_employee_attendance', employee_id=employee.id,
+                                start_date=start_date, end_date=end_date, page=p) }}"
+               class="adm-page-btn">{{ p }}</a>
+          {% elif p == pagination['page'] - 3 or p == pagination['page'] + 3 %}
+            <span class="adm-page-btn adm-page-btn-disabled">…</span>
+          {% endif %}
+        {% endfor %}
+
+        {% if pagination['has_next'] %}
+          <a href="{{ url_for('admin.syncore_employee_attendance', employee_id=employee.id,
+                              start_date=start_date, end_date=end_date,
+                              page=pagination['next_num']) }}"
+             class="adm-page-btn">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        {% else %}
+          <span class="adm-page-btn adm-page-btn-disabled">
+            <i class="bi bi-chevron-right"></i>
+          </span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="adm-empty">
+      <i class="bi bi-calendar-x adm-empty-icon"></i>
+      <div class="adm-empty-title">No attendance records found</div>
+      <p class="adm-empty-text">
+        No attendance data found for <strong>{{ employee.name }}</strong>
+        between {{ start_date }} and {{ end_date }}.
+      </p>
+      <a href="{{ url_for('admin.syncore_employee_attendance', employee_id=employee.id) }}"
+         class="btn-save px-4">
+        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Dates
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const filterForm = document.getElementById('attendanceFilterForm');
+  const applyBtn   = document.getElementById('applyBtn');
+  const resetBtn   = document.getElementById('resetBtn');
+  const applyIcon  = document.getElementById('applyIcon');
+  const applyText  = document.getElementById('applyText');
+  const resetIcon  = document.getElementById('resetIcon');
+  const resetText  = document.getElementById('resetText');
+
+  // Apply button — show spinner on form submit
+  filterForm.addEventListener('submit', function () {
+    applyBtn.disabled = true;
+    applyIcon.className = 'spinner-border spinner-border-sm me-1';
+    applyIcon.setAttribute('role', 'status');
+    applyText.textContent = 'Loading...';
+  });
+
+  // Reset button — show spinner on click before navigation
+  resetBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    resetBtn.style.pointerEvents = 'none';
+    resetBtn.style.opacity = '0.65';
+    resetIcon.className = 'spinner-border spinner-border-sm me-1';
+    resetIcon.setAttribute('role', 'status');
+    resetText.textContent = 'Resetting...';
+    window.location.href = resetBtn.getAttribute('href');
+  });
+</script>
+{% endblock %}

@@ -432,6 +432,60 @@ def get_user_mail_setting(user_id: Optional[str] = None, signed_array: Optional[
     return response_data
 
 
+def get_attendance(
+    start_date: str = "",
+    end_date: str = "",
+    user_id: Optional[str] = None,
+    signed_array: Optional[str] = None
+) -> List[Dict]:
+    """
+    Fetch attendance records for a specific employee within a date range.
+
+    Args:
+        start_date: Start date in MM/DD/YYYY format
+        end_date: End date in MM/DD/YYYY format
+        user_id: Employee user ID
+        signed_array: Employee signed array for authentication
+
+    Returns:
+        List of attendance record dictionaries with keys:
+            - name: str
+            - user_id: str
+            - attendance_id: str
+            - log_date: str (MM/DD/YYYY)
+            - user_override_comment: str or None
+            - out_office_log: str or None
+            - is_came_late: str ('-' or 'yes')
+            - logged_hours: str (H:MM format)
+    """
+    endpoint = "/attendance/show_attendance"
+    extra_fields = {"start_date": start_date, "end_date": end_date}
+    payload = build_user_payload(user_id, signed_array, extra_fields)
+
+    logger.info(
+        "Fetching attendance for user_id=%s from %s to %s",
+        user_id, start_date, end_date
+    )
+    data = post_request(endpoint, payload, log=False)
+
+    if not isinstance(data, dict):
+        logger.error("Invalid response format: expected dict, got %s", type(data))
+        return []
+
+    if "error" in data:
+        logger.error("Failed to fetch attendance: %s", data["error"])
+        return []
+
+    response_data = data.get("response_data", [])
+    print(response_data)
+    if not isinstance(response_data, list):
+        logger.error("Invalid response_data format: expected list, got %s", type(response_data))
+        return []
+
+    logger.info("Retrieved %d attendance records", len(response_data))
+    return response_data
+
+
 def login(user_id: Optional[str] = None, signed_array: Optional[str] = None, override_comment: str = "") -> Dict:
     """
     Mark employee login/attendance entry.
