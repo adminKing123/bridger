@@ -123,13 +123,35 @@
 
   <!-- ── Status filter ─────────────────────────────────── -->
   <div class="panel mb-3">
-    <div class="adm-status-tabs" style="padding: 1rem 1.25rem;">
-      {% for val, label in [('all','All Projects'), ('active','Active'), ('inactive','Inactive')] %}
-        <a
-          href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id, status=val) }}"
-          class="adm-status-tab {% if status_filter == val %}active{% endif %}"
-        >{{ label }}</a>
-      {% endfor %}
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2" style="padding: 1rem 1.25rem;">
+      <!-- Status tabs -->
+      <div class="adm-status-tabs">
+        {% for val, label in [('all','All Projects'), ('active','Active'), ('inactive','Inactive')] %}
+          <a
+            href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id, status=val, q=search_query) }}"
+            class="adm-status-tab {% if status_filter == val %}active{% endif %}"
+          >{{ label }}</a>
+        {% endfor %}
+      </div>
+      <!-- Search -->
+      <form method="GET" action="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id) }}"
+            class="d-flex align-items-center gap-2">
+        <input type="hidden" name="status" value="{{ status_filter }}">
+        <div class="adm-search-wrap" style="min-width: 220px;">
+          <i class="bi bi-search adm-search-icon"></i>
+          <input type="text" name="q" class="adm-search-input" placeholder="Search by name…"
+                 value="{{ search_query }}" autocomplete="off">
+        </div>
+        <button type="submit" class="btn-save px-3" style="height: 34px; font-size: 0.8rem;">
+          Search
+        </button>
+        {% if search_query %}
+          <a href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id, status=status_filter) }}"
+             class="btn-discard px-3" style="height: 34px; font-size: 0.8rem; line-height: 1;">
+            Clear
+          </a>
+        {% endif %}
+      </form>
     </div>
   </div>
 
@@ -184,29 +206,35 @@
     {% if pagination['pages'] > 1 %}
     <div class="adm-pagination">
       <div class="adm-page-info">
-        Page {{ pagination['page'] }} of {{ pagination['pages'] }}
+        Showing {{ (pagination['page'] - 1) * pagination['per_page'] + 1 }}–
+        {{ [pagination['page'] * pagination['per_page'], pagination['total']] | min }}
+        of {{ pagination['total'] }} project{{ 's' if pagination['total'] != 1 else '' }}
+        &nbsp;·&nbsp; Page {{ pagination['page'] }} of {{ pagination['pages'] }}
       </div>
       <div class="adm-page-nav">
         {% if pagination['has_prev'] %}
-          <a href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id, status=status_filter, page=pagination['prev_num']) }}" 
-             class="adm-page-btn">
-            <i class="bi bi-chevron-left"></i>
-          </a>
+          <a href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id, status=status_filter, q=search_query, page=pagination['prev_num']) }}"
+             class="adm-page-btn"><i class="bi bi-chevron-left"></i></a>
         {% else %}
-          <span class="adm-page-btn adm-page-btn-disabled">
-            <i class="bi bi-chevron-left"></i>
-          </span>
+          <span class="adm-page-btn adm-page-btn-disabled"><i class="bi bi-chevron-left"></i></span>
         {% endif %}
 
+        {% for p in range(1, pagination['pages'] + 1) %}
+          {% if p == pagination['page'] %}
+            <span class="adm-page-btn adm-page-btn-active">{{ p }}</span>
+          {% elif p == 1 or p == pagination['pages'] or (p >= pagination['page'] - 2 and p <= pagination['page'] + 2) %}
+            <a href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id, status=status_filter, q=search_query, page=p) }}"
+               class="adm-page-btn">{{ p }}</a>
+          {% elif p == pagination['page'] - 3 or p == pagination['page'] + 3 %}
+            <span class="adm-page-btn adm-page-btn-disabled">…</span>
+          {% endif %}
+        {% endfor %}
+
         {% if pagination['has_next'] %}
-          <a href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id, status=status_filter, page=pagination['next_num']) }}" 
-             class="adm-page-btn">
-            <i class="bi bi-chevron-right"></i>
-          </a>
+          <a href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id, status=status_filter, q=search_query, page=pagination['next_num']) }}"
+             class="adm-page-btn"><i class="bi bi-chevron-right"></i></a>
         {% else %}
-          <span class="adm-page-btn adm-page-btn-disabled">
-            <i class="bi bi-chevron-right"></i>
-          </span>
+          <span class="adm-page-btn adm-page-btn-disabled"><i class="bi bi-chevron-right"></i></span>
         {% endif %}
       </div>
     </div>
@@ -218,7 +246,10 @@
       <i class="bi bi-folder-x adm-empty-icon"></i>
       <div class="adm-empty-title">No projects found</div>
       <p class="adm-empty-text">
-        {% if status_filter != 'all' %}
+        {% if search_query %}
+          No projects matching "<strong>{{ search_query }}</strong>"
+          {% if status_filter != 'all' %} with status <strong>{{ status_filter }}</strong>{% endif %}.
+        {% elif status_filter != 'all' %}
           No {{ status_filter }} projects found for this employee.
         {% else %}
           This employee has no projects assigned.

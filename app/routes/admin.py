@@ -484,10 +484,13 @@ def syncore_employee_projects(employee_id: int):
         # Pagination parameters
         page = request.args.get("page", 1, type=int)
         per_page = 20
-        
+
         # Filter by status if provided
         status_filter = request.args.get("status", "all")
-        
+
+        # Filter by search query (project name)
+        search_query = request.args.get("q", "").strip()
+
         # Apply status filter
         if status_filter == "active":
             filtered_projects = [p for p in all_projects if p.get("project_status") == "Active"]
@@ -495,16 +498,23 @@ def syncore_employee_projects(employee_id: int):
             filtered_projects = [p for p in all_projects if p.get("project_status") == "In-Active"]
         else:
             filtered_projects = all_projects
-        
+
+        # Apply search filter
+        if search_query:
+            filtered_projects = [
+                p for p in filtered_projects
+                if search_query.lower() in (p.get("project_name") or "").lower()
+            ]
+
         # Calculate pagination
         total = len(filtered_projects)
-        total_pages = (total + per_page - 1) // per_page if total > 0 else 1
+        total_pages = max((total + per_page - 1) // per_page, 1)
+        page = max(1, min(page, total_pages))
         start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        
+
         # Get projects for current page
-        projects = filtered_projects[start_idx:end_idx]
-        
+        projects = filtered_projects[start_idx:start_idx + per_page]
+
         # Build pagination object
         pagination = {
             "items": projects,
@@ -517,16 +527,17 @@ def syncore_employee_projects(employee_id: int):
             "prev_num": page - 1 if page > 1 else None,
             "next_num": page + 1 if page < total_pages else None,
         }
-        
-        # Count active and inactive projects
+
+        # Count active and inactive projects (unfiltered)
         active_count = sum(1 for p in all_projects if p.get("project_status") == "Active")
         inactive_count = len(all_projects) - active_count
-        
+
         return render_template(
             "admin/syncore_employee_projects.html",
             employee=employee,
             pagination=pagination,
             status_filter=status_filter,
+            search_query=search_query,
             active_count=active_count,
             inactive_count=inactive_count,
             total_count=len(all_projects)
