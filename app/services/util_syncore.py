@@ -486,6 +486,97 @@ def get_attendance(
     return response_data
 
 
+def get_project_modules(
+    user_id: Optional[str] = None,
+    signed_array: Optional[str] = None,
+    project_id: Optional[str] = None
+) -> List[Dict]:
+    """
+    Fetch all modules for a specific project.
+
+    Args:
+        user_id: Employee user ID
+        signed_array: Employee signed array for authentication
+        project_id: Project ID to fetch modules for
+
+    Returns:
+        List of module dictionaries with keys:
+            - project_id: str
+            - module_id: str
+            - module_name: str
+            - estimated_time: str
+            - module_startdate: str (MM/DD/YYYY)
+            - module_enddate: str or None
+            - module_status: str (e.g. 'Open')
+    """
+    endpoint = "/project/get_modules"
+    extra_fields = {"project_id": project_id}
+    payload = build_user_payload(user_id, signed_array, extra_fields)
+
+    logger.info("Fetching modules for project_id=%s", project_id)
+    data = post_request(endpoint, payload, log=False)
+
+    if not isinstance(data, dict):
+        logger.error("Invalid response format: expected dict, got %s", type(data))
+        return []
+
+    if "error" in data:
+        logger.error("Failed to fetch project modules: %s", data["error"])
+        return []
+
+    response_data = data.get("response_data", [])
+    if not isinstance(response_data, list):
+        response_data = [response_data] if response_data else []
+
+    logger.info("Retrieved %d modules", len(response_data))
+    return response_data
+
+
+def get_project_activities(
+    user_id: Optional[str] = None,
+    signed_array: Optional[str] = None,
+    project_id: Optional[str] = None
+) -> List[Dict]:
+    """
+    Fetch all activities for a specific project.
+
+    Args:
+        user_id: Employee user ID
+        signed_array: Employee signed array for authentication
+        project_id: Project ID to fetch activities for
+
+    Returns:
+        List of activity dictionaries with keys:
+            - project_id: str
+            - activity_id: str
+            - activity_name: str
+            - total_forecast_hours: str
+            - project_activity_id: str
+            - act_status: str ('1' = active)
+    """
+    endpoint = "/project/get_activities"
+    extra_fields = {"project_id": project_id}
+    payload = build_user_payload(user_id, signed_array, extra_fields)
+
+    logger.info("Fetching activities for project_id=%s", project_id)
+    data = post_request(endpoint, payload, log=False)
+
+    if not isinstance(data, dict):
+        logger.error("Invalid response format: expected dict, got %s", type(data))
+        return []
+
+    if "error" in data:
+        logger.error("Failed to fetch project activities: %s", data["error"])
+        return []
+
+    response_data = data.get("response_data", [])
+    if not isinstance(response_data, list):
+        response_data = [response_data] if response_data else []
+
+    logger.info("Retrieved %d activities", len(response_data))
+    return response_data
+
+
 def login(user_id: Optional[str] = None, signed_array: Optional[str] = None, override_comment: str = "") -> Dict:
     """
     Mark employee login/attendance entry.

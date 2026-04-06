@@ -554,6 +554,55 @@ def syncore_employee_projects(employee_id: int):
         return redirect(url_for("admin.syncore_employee_detail", employee_id=employee_id))
 
 
+@admin_bp.route("/syncore/employees/<int:employee_id>/projects/<project_id>")
+@superadmin_required
+def syncore_project_detail(employee_id: int, project_id: str):
+    """View modules and activities for a specific project."""
+    employee = SynCoreEmployee.query.get_or_404(employee_id)
+
+    try:
+        from app.services.util_syncore import get_project_modules, get_project_activities
+
+        modules, activities = (
+            get_project_modules(
+                user_id=employee.user_id,
+                signed_array=employee.signed_array,
+                project_id=project_id
+            ),
+            get_project_activities(
+                user_id=employee.user_id,
+                signed_array=employee.signed_array,
+                project_id=project_id
+            )
+        )
+
+        # Derive project name from modules/activities if available
+        project_name = None
+        if modules:
+            project_name = modules[0].get("project_name")
+        if not project_name and activities:
+            project_name = activities[0].get("project_name")
+        if not project_name:
+            project_name = f"Project #{project_id}"
+
+        return render_template(
+            "admin/syncore_project_detail.html",
+            employee=employee,
+            project_id=project_id,
+            project_name=project_name,
+            modules=modules,
+            activities=activities,
+        )
+
+    except Exception as e:
+        logger.error(
+            "Error fetching project detail for employee %s project %s: %s",
+            employee_id, project_id, str(e), exc_info=True
+        )
+        flash(f"Failed to fetch project details: {str(e)}", "danger")
+        return redirect(url_for("admin.syncore_employee_projects", employee_id=employee_id))
+
+
 @admin_bp.route("/syncore/employees/<int:employee_id>/email-settings")
 @superadmin_required
 def syncore_employee_email_settings(employee_id: int):

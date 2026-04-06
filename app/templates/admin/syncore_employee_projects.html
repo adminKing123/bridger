@@ -166,6 +166,7 @@
             <th>Project Name</th>
             <th>Type ID</th>
             <th>Status</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -195,6 +196,14 @@
               {% else %}
                 <span class="adm-badge adm-badge-blocked">Inactive</span>
               {% endif %}
+            </td>
+
+            <!-- Actions -->
+            <td style="width: 80px;">
+              <a href="{{ url_for('admin.syncore_project_detail', employee_id=employee.id, project_id=project.project_id) }}"
+                 class="btn-save px-2 py-1 text-decoration-none" style="font-size: 0.78rem;">
+                <i class="bi bi-layers me-1"></i>Details
+              </a>
             </td>
           </tr>
           {% endfor %}

@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% block title %}{{ project_name }} — Project Details — Admin{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- ── Breadcrumb ─────────────────────────────────────── -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('admin.syncore_management') }}">SynCore</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('admin.syncore_employees') }}">Employees</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('admin.syncore_employee_detail', employee_id=employee.id) }}">{{ employee.name }}</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id) }}">Projects</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">{{ project_name }}</li>
+    </ol>
+  </nav>
+
+  <!-- ── Page Header ────────────────────────────────────── -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="dash-title mb-1">
+        <i class="bi bi-layers me-2"></i>{{ project_name }}
+      </h1>
+      <p class="dash-subtitle mb-0">
+        Project ID: <span style="font-family: monospace;">{{ project_id }}</span>
+        &middot; {{ employee.name }}
+      </p>
+    </div>
+    <a href="{{ url_for('admin.syncore_employee_projects', employee_id=employee.id) }}"
+       class="btn-discard px-3 py-2 text-decoration-none">
+      <i class="bi bi-arrow-left me-1"></i>Back to Projects
+    </a>
+  </div>
+
+  <!-- ── Summary Counters ───────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="panel p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div style="width:46px;height:46px;border-radius:var(--radius);background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.35rem;color:#fff;flex-shrink:0;">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;">Modules</div>
+            <div style="font-size:1.75rem;font-weight:700;line-height:1;color:var(--primary);">{{ modules|length }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="panel p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div style="width:46px;height:46px;border-radius:var(--radius);background:var(--success);display:flex;align-items:center;justify-content:center;font-size:1.35rem;color:#fff;flex-shrink:0;">
+            <i class="bi bi-check2-square"></i>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;">Activities</div>
+            <div style="font-size:1.75rem;font-weight:700;line-height:1;color:var(--success);">{{ activities|length }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modules ────────────────────────────────────────── -->
+  <div class="panel mb-4">
+    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);">
+      <h2 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--text);">
+        <i class="bi bi-grid-3x3-gap-fill me-2 text-primary"></i>Modules
+        <span class="badge bg-primary bg-opacity-10 text-primary ms-2" style="font-size: 0.75rem;">{{ modules|length }}</span>
+      </h2>
+    </div>
+
+    {% if modules %}
+    <div class="table-responsive">
+      <table class="adm-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Module ID</th>
+            <th>Module Name</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Estimated Time</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mod in modules %}
+          <tr>
+            <td class="adm-muted" style="width:40px;"><small>{{ loop.index }}</small></td>
+            <td>
+              <span class="adm-muted" style="font-family: monospace; font-size: 0.82rem;">{{ mod.module_id }}</span>
+            </td>
+            <td><strong>{{ mod.module_name or '—' }}</strong></td>
+            <td>{{ mod.module_startdate or '—' }}</td>
+            <td>{{ mod.module_enddate or '—' }}</td>
+            <td>
+              {% if mod.estimated_time %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.78rem;">
+                  <i class="bi bi-clock me-1"></i>{{ mod.estimated_time }}
+                </span>
+              {% else %}
+                <span class="adm-muted">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if mod.module_status == 'Open' %}
+                <span class="adm-badge adm-badge-active">Open</span>
+              {% elif mod.module_status == 'Closed' %}
+                <span class="adm-badge adm-badge-blocked">Closed</span>
+              {% else %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.75rem;">
+                  {{ mod.module_status or '—' }}
+                </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="adm-empty">
+      <i class="bi bi-grid-3x3-gap adm-empty-icon"></i>
+      <div class="adm-empty-title">No modules found</div>
+      <p class="adm-empty-text">This project has no modules assigned.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── Activities ─────────────────────────────────────── -->
+  <div class="panel">
+    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);">
+      <h2 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--text);">
+        <i class="bi bi-check2-square me-2 text-success"></i>Activities
+        <span class="badge bg-success bg-opacity-10 text-success ms-2" style="font-size: 0.75rem;">{{ activities|length }}</span>
+      </h2>
+    </div>
+
+    {% if activities %}
+    <div class="table-responsive">
+      <table class="adm-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Activity ID</th>
+            <th>Project Activity ID</th>
+            <th>Activity Name</th>
+            <th>Forecast Hours</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for act in activities %}
+          <tr>
+            <td class="adm-muted" style="width:40px;"><small>{{ loop.index }}</small></td>
+            <td>
+              <span class="adm-muted" style="font-family: monospace; font-size: 0.82rem;">{{ act.activity_id }}</span>
+            </td>
+            <td>
+              <span class="adm-muted" style="font-family: monospace; font-size: 0.82rem;">{{ act.project_activity_id }}</span>
+            </td>
+            <td><strong>{{ act.activity_name or '—' }}</strong></td>
+            <td>
+              {% if act.total_forecast_hours and act.total_forecast_hours != '0.0' %}
+                <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size: 0.78rem;">
+                  <i class="bi bi-clock me-1"></i>{{ act.total_forecast_hours }}h
+                </span>
+              {% else %}
+                <span class="adm-muted">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if act.act_status == '1' %}
+                <span class="adm-badge adm-badge-active">Active</span>
+              {% else %}
+                <span class="adm-badge adm-badge-blocked">Inactive</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="adm-empty">
+      <i class="bi bi-check2-square adm-empty-icon"></i>
+      <div class="adm-empty-title">No activities found</div>
+      <p class="adm-empty-text">This project has no activities assigned.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
