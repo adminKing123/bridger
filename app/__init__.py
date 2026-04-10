@@ -66,12 +66,49 @@ def create_app(config_class=DevelopmentConfig) -> Flask:
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(proxy_manager_bp)
     app.register_blueprint(proxy_handler_bp)
+
+    # Proxy routes are called cross-origin by external clients — they must
+    # never require a CSRF token.  Exempt the entire blueprint so Flask-WTF
+    # does not reject OPTIONS preflights or POST/PUT/DELETE requests.
+    csrf.exempt(proxy_handler_bp)
+
     app.register_blueprint(webex_bp)
     app.register_blueprint(syncore_bp)
     app.register_blueprint(admin_bp)
 
     # Intercept subdomain-mode proxy requests before normal routing
     app.before_request(handle_subdomain_proxy)
+
+    # ── CORS for proxy paths (app-level, covers both endpoint + subdomain) ────
+    # This after_request runs for EVERY response, including ones returned by
+    # before_request hooks (which blueprint-level after_request misses).
+    # We only inject headers for actual proxy traffic so the rest of the app
+    # is unaffected.
+    @app.after_request
+    def _proxy_cors_headers(response):
+        from flask import request as _req
+        host     = _req.host
+        hostname = host.split(":")[0]
+        parts    = hostname.rsplit(".", 1)
+        is_subdomain_proxy = (
+            len(parts) == 2
+            and parts[1] == "localhost"
+            and parts[0] not in ("www", "localhost")
+        )
+        is_endpoint_proxy = _req.path.startswith("/proxy/")
+        if not (is_endpoint_proxy or is_subdomain_proxy):
+            return response
+        # Always allow the browser to reach proxy endpoints.
+        # The per-proxy cors_bypass / cors_origins settings control finer-grained
+        # origin filtering inside _forward(); here we just unblock the pre-flight.
+        if "Access-Control-Allow-Origin" not in response.headers:
+            response.headers["Access-Control-Allow-Origin"] = "*"
+        if _req.method == "OPTIONS":
+            response.headers.setdefault("Access-Control-Allow-Headers", "*")
+            response.headers.setdefault("Access-Control-Allow-Methods",
+                                        "GET, POST, PUT, DELETE, PATCH, OPTIONS")
+            response.headers.setdefault("Access-Control-Max-Age", "86400")
+        return response
 
     # ── Custom Jinja2 filters ─────────────────────────────────────────────────
     @app.template_filter('to_date_input')
