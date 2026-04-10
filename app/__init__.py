@@ -44,6 +44,15 @@ def create_app(config_class=DevelopmentConfig) -> Flask:
     db.init_app(app)
     login_manager.init_app(app)
     bcrypt.init_app(app)
+
+    # Subdomain-proxy requests are plain cross-origin API calls — they never
+    # carry a CSRF token.  Register the handler BEFORE csrf.init_app so it
+    # runs first and returns a response before Flask-WTF's protect() hook
+    # fires.  When handle_subdomain_proxy returns None (non-proxy request)
+    # all subsequent before_request hooks (including CSRF) run normally.
+    from app.routes.proxy_handler import handle_subdomain_proxy
+    app.before_request(handle_subdomain_proxy)
+
     csrf.init_app(app)
 
     # ── Login manager settings ────────────────────────────────────────────────
@@ -56,7 +65,7 @@ def create_app(config_class=DevelopmentConfig) -> Flask:
     from app.routes.profile import profile_bp
     from app.routes.dashboard import dashboard_bp
     from app.routes.proxy_manager import proxy_manager_bp
-    from app.routes.proxy_handler import proxy_handler_bp, handle_subdomain_proxy
+    from app.routes.proxy_handler import proxy_handler_bp
     from app.routes.webex import webex_bp
     from app.routes.syncore import syncore_bp
     from app.routes.admin import admin_bp
@@ -75,9 +84,6 @@ def create_app(config_class=DevelopmentConfig) -> Flask:
     app.register_blueprint(webex_bp)
     app.register_blueprint(syncore_bp)
     app.register_blueprint(admin_bp)
-
-    # Intercept subdomain-mode proxy requests before normal routing
-    app.before_request(handle_subdomain_proxy)
 
     # ── CORS for proxy paths (app-level, covers both endpoint + subdomain) ────
     # This after_request runs for EVERY response, including ones returned by
