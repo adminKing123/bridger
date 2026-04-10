@@ -91,6 +91,11 @@ class ProxyConfig(db.Model):
         nullable=False,
         default="GET,POST,PUT,DELETE,PATCH,OPTIONS",
     )
+    cors_origins = db.Column(
+        db.String(2000),
+        nullable=False,
+        default="*",
+    )
 
     # ── Timestamps ─────────────────────────────────────────────────────────────
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -117,6 +122,10 @@ class ProxyConfig(db.Model):
     def allowed_methods_list(self) -> list[str]:
         """Return allowed_methods as a Python list."""
         return [m.strip().upper() for m in self.allowed_methods.split(",") if m.strip()]
+
+    def cors_origins_list(self) -> list[str]:
+        """Return cors_origins as a Python list."""
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     # Slugs that cannot be used — they conflict with existing app routes or
     # common DNS names that would cause confusion.

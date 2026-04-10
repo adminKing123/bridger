@@ -102,6 +102,7 @@ def create_proxy():
             proxy_type=form.proxy_type.data,
             allowed_methods=",".join(form.allowed_methods.data),
             cors_bypass=form.cors_bypass.data,
+            cors_origins=form.cors_origins.data,
             skip_ngrok_warning=form.skip_ngrok_warning.data,
             status=ProxyConfig.STATUS_STOPPED,
         )
@@ -125,6 +126,7 @@ def detail_proxy(proxy_id: int):
     # Pre-populate MultiCheckboxField from the comma-separated DB value
     if not edit_form.is_submitted():
         edit_form.allowed_methods.data = proxy.allowed_methods_list()
+        edit_form.cors_origins.data = proxy.cors_origins.replace(",", "\n")
     return render_template("proxy/detail.html", proxy=proxy, edit_form=edit_form)
 
 
@@ -145,6 +147,7 @@ def edit_proxy(proxy_id: int):
         proxy.target_url        = form.target_url.data
         proxy.allowed_methods   = ",".join(form.allowed_methods.data)
         proxy.cors_bypass       = form.cors_bypass.data
+        proxy.cors_origins      = form.cors_origins.data
         proxy.skip_ngrok_warning = form.skip_ngrok_warning.data
         db.session.commit()
         logger.info("Proxy updated: slug=%s", proxy.slug)

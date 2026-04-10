@@ -131,6 +131,12 @@
               {% endif %}
             </span>
           </div>
+          {% if proxy.cors_bypass %}
+          <div class="profile-view-field">
+            <span class="profile-view-label">CORS Origins</span>
+            <span class="profile-view-val" style="font-family:monospace;font-size:.82rem;word-break:break-all;white-space:pre-line;">{{ proxy.cors_origins.replace(',', '\n') }}</span>
+          </div>
+          {% endif %}
           <div class="profile-view-field" style="border-bottom:none;">
             <span class="profile-view-label">Ngrok Skip</span>
             <span class="profile-view-val">
@@ -191,12 +197,25 @@
             <div class="proxy-option-row">
               <div class="proxy-option-text">
                 <span class="proxy-option-label">Bypass CORS</span>
-                <span class="proxy-option-desc">Adds <code>Access-Control-Allow-Origin: *</code></span>
+                <span class="proxy-option-desc">Sets <code>Access-Control-Allow-Origin</code></span>
               </div>
               <label class="proxy-toggle">
                 {{ edit_form.cors_bypass(class="proxy-toggle-input") }}
                 <span class="proxy-toggle-track"></span>
               </label>
+            </div>
+            <div id="editCorsOriginsWrap" class="px-1 pb-2">
+              {{ edit_form.cors_origins.label(class="form-label small fw-semibold mb-1") }}
+              {{ edit_form.cors_origins(
+                class="form-control font-mono" + (" is-invalid" if edit_form.cors_origins.errors else ""),
+                rows="3",
+                placeholder="*",
+                style="font-size:.82rem;"
+              ) }}
+              {% for e in edit_form.cors_origins.errors %}
+                <div class="invalid-feedback"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}</div>
+              {% endfor %}
+              <div class="form-text">Use <code>*</code> for all origins, or one per line.</div>
             </div>
 
             <div class="proxy-option-row" style="border-bottom:none;margin-bottom:1rem;">
@@ -404,6 +423,17 @@
 
   /* ── Open edit if server returned an edit_open flag (via data-attr) ── */
   {% if edit_open %}openEdit();{% endif %}
+
+  /* ── CORS origins show/hide in edit form ── */
+  var editCorsToggle      = document.getElementById('cors_bypass');
+  var editCorsOriginsWrap = document.getElementById('editCorsOriginsWrap');
+  function syncEditCorsOrigins() {
+    if (editCorsOriginsWrap) {
+      editCorsOriginsWrap.style.display = (editCorsToggle && editCorsToggle.checked) ? 'block' : 'none';
+    }
+  }
+  if (editCorsToggle) editCorsToggle.addEventListener('change', syncEditCorsOrigins);
+  syncEditCorsOrigins();
 })();
 </script>
 <script src="{{ url_for('static', filename='js/proxy.js') }}"></script>

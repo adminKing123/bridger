@@ -153,12 +153,25 @@
         <div class="proxy-option-row">
           <div class="proxy-option-text">
             <span class="proxy-option-label">Bypass CORS</span>
-            <span class="proxy-option-desc">Adds <code>Access-Control-Allow-Origin: *</code> to every response.</span>
+            <span class="proxy-option-desc">Sets <code>Access-Control-Allow-Origin</code> on every response.</span>
           </div>
           <label class="proxy-toggle">
             {{ form.cors_bypass(class="proxy-toggle-input") }}
             <span class="proxy-toggle-track"></span>
           </label>
+        </div>
+        <div id="corsOriginsWrap" class="px-1 pb-2">
+          {{ form.cors_origins.label(class="form-label small fw-semibold mb-1") }}
+          {{ form.cors_origins(
+            class="form-control font-mono" + (" is-invalid" if form.cors_origins.errors else ""),
+            rows="3",
+            placeholder="*",
+            style="font-size:.82rem;"
+          ) }}
+          {% for e in form.cors_origins.errors %}
+            <div class="invalid-feedback"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ e }}</div>
+          {% endfor %}
+          <div class="form-text">Use <code>*</code> to allow all origins, or enter one origin per line (e.g. <code>https://example.com</code>).</div>
         </div>
 
         <div class="proxy-option-row" style="border-bottom:none;">
@@ -366,6 +379,17 @@
   /* Initial sync */
   syncSlugPreview();
   syncUrlPreview();
+
+  /* ── CORS origins show/hide ── */
+  var corsToggle      = document.getElementById('cors_bypass');
+  var corsOriginsWrap = document.getElementById('corsOriginsWrap');
+  function syncCorsOrigins() {
+    if (corsOriginsWrap) {
+      corsOriginsWrap.style.display = (corsToggle && corsToggle.checked) ? 'block' : 'none';
+    }
+  }
+  if (corsToggle) corsToggle.addEventListener('change', syncCorsOrigins);
+  syncCorsOrigins();
 })();
 </script>
 <script src="{{ url_for('static', filename='js/proxy.js') }}"></script>

@@ -12,7 +12,7 @@ ProxyEditForm   — update an existing proxy (slug and type are locked)
 import re
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, RadioField, BooleanField, SubmitField, SelectMultipleField
+from wtforms import StringField, RadioField, BooleanField, SubmitField, SelectMultipleField, TextAreaField
 from wtforms.validators import DataRequired, Length, ValidationError
 from wtforms.widgets import ListWidget, CheckboxInput
 
@@ -67,8 +67,12 @@ class ProxyCreateForm(FlaskForm):
         default=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     )
     cors_bypass = BooleanField(
-        "Bypass CORS  (adds Access-Control-Allow-Origin: *)",
+        "Bypass CORS",
         default=True,
+    )
+    cors_origins = TextAreaField(
+        "Allowed Origins",
+        default="*",
     )
     skip_ngrok_warning = BooleanField(
         "Skip Ngrok browser warning header",
@@ -115,6 +119,26 @@ class ProxyCreateForm(FlaskForm):
             raise ValidationError("Target URL must begin with http:// or https://")
         field.data = url.rstrip("/")  # strip trailing slash for clean concatenation
 
+    def validate_cors_origins(self, field: TextAreaField) -> None:
+        """Normalise and validate the allowed CORS origins list."""
+        if not self.cors_bypass.data:
+            return  # origins irrelevant when CORS bypass is disabled
+        raw = field.data.strip() if field.data else ""
+        if not raw:
+            raise ValidationError("Enter at least one origin, or * to allow all.")
+        origins = [o.strip() for o in re.split(r"[\n,]+", raw) if o.strip()]
+        if not origins:
+            raise ValidationError("Enter at least one origin, or * to allow all.")
+        for origin in origins:
+            if origin == "*":
+                continue
+            if not origin.startswith(("http://", "https://")):
+                raise ValidationError(
+                    f"'{origin}' is invalid. Each origin must be * or start with "
+                    "http:// or https://"
+                )
+        field.data = ",".join(origins)  # normalise to comma-separated storage
+
 
 class ProxyEditForm(FlaskForm):
     """
@@ -137,7 +161,8 @@ class ProxyEditForm(FlaskForm):
         "Allowed Methods",
         choices=HTTP_METHODS,
     )
-    cors_bypass        = BooleanField("Bypass CORS  (adds Access-Control-Allow-Origin: *)")
+    cors_bypass        = BooleanField("Bypass CORS")
+    cors_origins       = TextAreaField("Allowed Origins")
     skip_ngrok_warning = BooleanField("Skip Ngrok browser warning header")
     submit             = SubmitField("Save Changes")
 
@@ -150,3 +175,23 @@ class ProxyEditForm(FlaskForm):
         if not url.startswith(("http://", "https://")):
             raise ValidationError("Target URL must begin with http:// or https://")
         field.data = url.rstrip("/")
+
+    def validate_cors_origins(self, field: TextAreaField) -> None:
+        """Normalise and validate the allowed CORS origins list."""
+        if not self.cors_bypass.data:
+            return
+        raw = field.data.strip() if field.data else ""
+        if not raw:
+            raise ValidationError("Enter at least one origin, or * to allow all.")
+        origins = [o.strip() for o in re.split(r"[\n,]+", raw) if o.strip()]
+        if not origins:
+            raise ValidationError("Enter at least one origin, or * to allow all.")
+        for origin in origins:
+            if origin == "*":
+                continue
+            if not origin.startswith(("http://", "https://")):
+                raise ValidationError(
+                    f"'{origin}' is invalid. Each origin must be * or start with "
+                    "http:// or https://"
+                )
+        field.data = ",".join(origins)

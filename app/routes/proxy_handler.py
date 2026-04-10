@@ -24,7 +24,7 @@ import logging
 import time
 
 import requests as http
-from flask import Blueprint, Response, abort, request
+from flask import Blueprint, Response, abort, request, stream_with_context
 from requests.exceptions import ConnectionError as ReqConnError, Timeout as ReqTimeout
 
 from app import db
@@ -42,10 +42,12 @@ _HOP_BY_HOP_REQUEST = frozenset({
     "te", "trailers", "upgrade",
 })
 
-# Headers that must not be copied from the upstream response
+# Headers that must not be copied from the upstream response.
+# NOTE: content-encoding is intentionally excluded here — it is handled
+# explicitly in _forward because requests auto-decompresses the body, which
+# means both the header and the content-length must be invalidated together.
 _HOP_BY_HOP_RESPONSE = frozenset({
-    "content-encoding", "transfer-encoding", "connection",
-    "keep-alive", "proxy-connection",
+    "transfer-encoding", "connection", "keep-alive", "proxy-connection",
 })
 
 
@@ -89,37 +91,67 @@ def _stopped_response() -> Response:
     )
 
 
+def _resolve_cors_origin(proxy: ProxyConfig) -> str:
+    """
+    Return the value for Access-Control-Allow-Origin.
+
+    If the proxy's allowed origins list contains *, returns * unconditionally.
+    Otherwise, reflects the incoming Origin header if it appears in the list,
+    or returns 'null' (which causes browsers to block the request) if not.
+    """
+    origins = proxy.cors_origins_list()
+    if not origins or "*" in origins:
+        return "*"
+    incoming = request.headers.get("Origin", "")
+    if incoming and incoming in origins:
+        return incoming
+    return "null"  # no match — browser CORS policy will reject the response
+
+
 def _options_preflight(proxy: ProxyConfig) -> Response:
     """Return an immediate 200 for CORS preflight OPTIONS requests."""
     resp = Response(status=200)
     if proxy.cors_bypass:
-        resp.headers["Access-Control-Allow-Origin"]  = "*"
+        origin_val = _resolve_cors_origin(proxy)
+        resp.headers["Access-Control-Allow-Origin"]  = origin_val
         resp.headers["Access-Control-Allow-Headers"] = "*"
         resp.headers["Access-Control-Allow-Methods"] = proxy.allowed_methods
+        if origin_val != "*":
+            resp.headers["Vary"] = "Origin"
     return resp
 
 
-def _forward(proxy: ProxyConfig, path: str) -> Response:
+def _build_target_url(proxy: ProxyConfig, path: str) -> str:
+    """Join proxy.target_url with the forwarded path and query string.
+
+    Strips any trailing slash from the base so that a path like 'api/v1'
+    never produces a double-slash URL regardless of how target_url was saved.
     """
-    Forward the current Flask request to proxy.target_url/path and return
-    the upstream response wrapped in a Flask Response object.
+    base = proxy.target_url.rstrip("/")
+    target = f"{base}/{path}" if path else base
+    if request.query_string:
+        target += "?" + request.query_string.decode("utf-8", errors="replace")
+    return target
+
+
+def _forward(proxy: ProxyConfig, path: str) -> Response:
+    """Forward the current Flask request to the upstream target and stream
+    the response back.  Supports any content type, binary payloads, and
+    large file downloads without buffering the entire body in memory.
 
     Args:
         proxy: The active ProxyConfig record.
         path:  Relative path to append to the target URL (may be empty).
 
     Returns:
-        Flask Response mirroring the upstream reply.
+        Streaming Flask Response mirroring the upstream reply.
     """
     if not proxy.is_running:
         return _stopped_response()
 
-    # Build upstream URL — preserve query string
-    target = f"{proxy.target_url}/{path}" if path else proxy.target_url
-    if request.query_string:
-        target += "?" + request.query_string.decode("utf-8", errors="replace")
+    target = _build_target_url(proxy, path)
 
-    # Build forwarded headers
+    # Build forwarded headers — strip hop-by-hop, optionally inject extras
     headers = {
         k: v
         for k, v in request.headers
@@ -128,7 +160,8 @@ def _forward(proxy: ProxyConfig, path: str) -> Response:
     if proxy.skip_ngrok_warning:
         headers["ngrok-skip-browser-warning"] = "true"
 
-    # Forward the request upstream — track wall time for the log
+    # Send to the upstream server — stream=True means the response body is
+    # not downloaded until we iterate over it, keeping memory usage flat.
     t_start = time.monotonic()
     try:
         upstream = http.request(
@@ -139,9 +172,11 @@ def _forward(proxy: ProxyConfig, path: str) -> Response:
             cookies=request.cookies,
             allow_redirects=False,
             timeout=30,
+            stream=True,
         )
     except ReqConnError:
         logger.warning("Proxy %s: connection refused to %s", proxy.slug, target)
+        _write_log(proxy, 502, None)
         return Response(
             "<h1 style='font-family:sans-serif'>502 — Bad Gateway</h1>"
             "<p style='font-family:sans-serif'>Could not connect to the target server.</p>",
@@ -150,6 +185,7 @@ def _forward(proxy: ProxyConfig, path: str) -> Response:
         )
     except ReqTimeout:
         logger.warning("Proxy %s: timeout reaching %s", proxy.slug, target)
+        _write_log(proxy, 504, None)
         return Response(
             "<h1 style='font-family:sans-serif'>504 — Gateway Timeout</h1>"
             "<p style='font-family:sans-serif'>The target server did not respond in time.</p>",
@@ -157,23 +193,50 @@ def _forward(proxy: ProxyConfig, path: str) -> Response:
             content_type="text/html",
         )
 
-    # Record elapsed time before building the response
+    # Time-to-first-byte — headers are available now; body is still streaming
     duration = int((time.monotonic() - t_start) * 1000)
+    _write_log(proxy, upstream.status_code, duration)
 
-    # Build the Flask response from the upstream reply
-    response = Response(upstream.content, status=upstream.status_code)
+    # Build response headers.
+    # content-encoding is handled explicitly: the requests library automatically
+    # decompresses gzip/deflate/br content when iterating, so the header is now
+    # stale.  We drop it and also drop content-length (which reflected the
+    # *compressed* size).  Werkzeug will use chunked transfer for the decoded
+    # stream instead.
+    resp_headers = {}
+    had_content_encoding = False
     for name, value in upstream.headers.items():
-        if name.lower() not in _HOP_BY_HOP_RESPONSE:
-            response.headers[name] = value
+        lower = name.lower()
+        if lower == "content-encoding":
+            had_content_encoding = True
+            continue  # decoded by requests — header is no longer valid
+        if lower in _HOP_BY_HOP_RESPONSE:
+            continue
+        resp_headers[name] = value
+
+    if had_content_encoding:
+        # Remove stale compressed length; chunked encoding takes over
+        resp_headers.pop("Content-Length", None)
+        resp_headers.pop("content-length", None)
 
     # Apply CORS bypass
     if proxy.cors_bypass:
-        response.headers["Access-Control-Allow-Origin"]  = "*"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = proxy.allowed_methods
+        origin_val = _resolve_cors_origin(proxy)
+        resp_headers["Access-Control-Allow-Origin"]  = origin_val
+        resp_headers["Access-Control-Allow-Headers"] = "*"
+        resp_headers["Access-Control-Allow-Methods"] = proxy.allowed_methods
+        if origin_val != "*":
+            resp_headers["Vary"] = "Origin"
 
-    _write_log(proxy, upstream.status_code, duration)
-    return response
+    def _stream_body():
+        for chunk in upstream.iter_content(chunk_size=16 * 1024):
+            yield chunk
+
+    return Response(
+        stream_with_context(_stream_body()),
+        status=upstream.status_code,
+        headers=resp_headers,
+    )
 
 
 # ── Endpoint mode routes ───────────────────────────────────────────────────────
@@ -262,5 +325,14 @@ def handle_subdomain_proxy():
 
     if request.method == "OPTIONS":
         return _options_preflight(proxy)
+
+    if request.method not in proxy.allowed_methods_list():
+        _write_log(proxy, 405, None)
+        return Response(
+            f"<h1 style='font-family:sans-serif'>405 \u2014 Method Not Allowed</h1>"
+            f"<p style='font-family:sans-serif'>This proxy does not allow {request.method} requests.</p>",
+            status=405,
+            content_type="text/html",
+        )
 
     return _forward(proxy, path)
