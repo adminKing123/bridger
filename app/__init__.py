@@ -10,6 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
 from flask_wtf import CSRFProtect
+from flask_cors import CORS
 
 from config import DevelopmentConfig
 
@@ -44,6 +45,23 @@ def create_app(config_class=DevelopmentConfig) -> Flask:
     db.init_app(app)
     login_manager.init_app(app)
     bcrypt.init_app(app)
+
+    # Apply CORS to all proxy endpoint paths before any Flask routing or CSRF
+    # validation runs.  Flask-CORS intercepts OPTIONS preflights at the
+    # middleware level so they are answered immediately without going through
+    # the request / error-handler pipeline.
+    CORS(
+        app,
+        resources={r"/proxy/*": {
+            "origins": "*",
+            "allow_headers": "*",
+            "expose_headers": "*",
+            "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+            "max_age": 86400,
+            "send_wildcard": True,
+            "supports_credentials": False,
+        }},
+    )
 
     # Subdomain-proxy requests are plain cross-origin API calls — they never
     # carry a CSRF token.  Register the handler BEFORE csrf.init_app so it
@@ -85,34 +103,31 @@ def create_app(config_class=DevelopmentConfig) -> Flask:
     app.register_blueprint(syncore_bp)
     app.register_blueprint(admin_bp)
 
-    # ── CORS for proxy paths (app-level, covers both endpoint + subdomain) ────
-    # This after_request runs for EVERY response, including ones returned by
-    # before_request hooks (which blueprint-level after_request misses).
-    # We only inject headers for actual proxy traffic so the rest of the app
-    # is unaffected.
+    # ── CORS for subdomain-mode proxies ───────────────────────────────────────
+    # Flask-CORS above covers /proxy/* (endpoint mode).  Subdomain requests
+    # arrive at slug.localhost/<path> — the path never matches /proxy/* so
+    # Flask-CORS ignores them.  This after_request hook fills that gap.
+    # after_request fires even when before_request (handle_subdomain_proxy)
+    # short-circuits routing, so all subdomain proxy responses are covered.
     @app.after_request
-    def _proxy_cors_headers(response):
+    def _subdomain_proxy_cors(response):
         from flask import request as _req
-        host     = _req.host
-        hostname = host.split(":")[0]
-        parts    = hostname.rsplit(".", 1)
-        is_subdomain_proxy = (
-            len(parts) == 2
-            and parts[1] == "localhost"
-            and parts[0] not in ("www", "localhost")
-        )
-        is_endpoint_proxy = _req.path.startswith("/proxy/")
-        if not (is_endpoint_proxy or is_subdomain_proxy):
-            return response
-        # Always allow the browser to reach proxy endpoints.
-        # The per-proxy cors_bypass / cors_origins settings control finer-grained
-        # origin filtering inside _forward(); here we just unblock the pre-flight.
+        hostname = _req.host.split(":")[0]          # strip port
+        parts    = hostname.rsplit(".", 1)           # ['slug', 'localhost']
+        if len(parts) != 2 or parts[1] != "localhost":
+            return response                         # not a subdomain request
+        if parts[0] in ("www", "localhost"):
+            return response                         # not a proxy subdomain
+        # Ensure CORS headers are always present on subdomain proxy responses
+        # so browsers can reach them regardless of cors_bypass / error state.
         if "Access-Control-Allow-Origin" not in response.headers:
             response.headers["Access-Control-Allow-Origin"] = "*"
         if _req.method == "OPTIONS":
             response.headers.setdefault("Access-Control-Allow-Headers", "*")
-            response.headers.setdefault("Access-Control-Allow-Methods",
-                                        "GET, POST, PUT, DELETE, PATCH, OPTIONS")
+            response.headers.setdefault(
+                "Access-Control-Allow-Methods",
+                "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+            )
             response.headers.setdefault("Access-Control-Max-Age", "86400")
         return response
 

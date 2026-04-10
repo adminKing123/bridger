@@ -21,3 +21,6 @@ python-dotenv==1.0.1
 
 # HTTP client used by the proxy handler to forward requests upstream
 requests==2.32.3
+
+# Cross-Origin Resource Sharing support for proxy endpoints
+flask-cors==6.0.2
